@@ -1,0 +1,1280 @@
+#!/usr/bin/env python3
+"""Create a customer-specific dwelling and run relevant before/after experiments."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import re
+from copy import deepcopy
+from pathlib import Path
+import sys
+from typing import Any
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from thermal_model import (  # noqa: E402
+    compare_scenarios,
+    load_reference_catalog,
+    resolve_dwelling_references,
+    validate_dwelling,
+    validate_scenario,
+)
+from thermal_model.reference_loader import ReferenceDataError  # noqa: E402
+
+
+ORIENTATIONS = {
+    "N": ("north", 0, "Nord"),
+    "NE": ("northeast", 45, "Nord-Est"),
+    "E": ("east", 90, "Est"),
+    "SE": ("southeast", 135, "Sud-Est"),
+    "S": ("south", 180, "Sud"),
+    "SW": ("southwest", 225, "Sud-Ouest"),
+    "W": ("west", 270, "Ouest"),
+    "NW": ("northwest", 315, "Nord-Ouest"),
+}
+
+ROOM_TYPES = [
+    {"id": "living", "label": "Salon / sejour"},
+    {"id": "bedroom", "label": "Chambre"},
+    {"id": "kitchen", "label": "Cuisine"},
+    {"id": "bathroom", "label": "Salle de bain"},
+    {"id": "office", "label": "Bureau"},
+    {"id": "corridor", "label": "Couloir / entree"},
+    {"id": "other", "label": "Autre"},
+]
+
+DWELLING_TYPES = [
+    {"id": "house", "label": "Maison"},
+    {"id": "apartment", "label": "Appartement"},
+]
+
+WALL_INSULATION_LEVELS = [
+    {"id": "poor", "label": "Murs peu ou pas isoles", "u_factor": 1.25},
+    {"id": "standard", "label": "Murs standard pour l'age du logement", "u_factor": 1.0},
+    {"id": "renovated", "label": "Murs deja renoves/isoles", "u_factor": 0.75},
+]
+
+ROOF_INSULATION_LEVELS = [
+    {"id": "none", "label": "Pas de toiture concernee / ne sait pas", "u_factor": 1.0},
+    {"id": "poor", "label": "Toiture ou combles peu isoles", "u_factor": 1.35},
+    {"id": "standard", "label": "Isolation toiture standard", "u_factor": 1.0},
+    {"id": "renovated", "label": "Toiture bien isolee ou renovee", "u_factor": 0.65},
+]
+
+FLOOR_INSULATION_LEVELS = [
+    {"id": "none", "label": "Pas de plancher bas concerne / ne sait pas", "u_factor": 1.0},
+    {"id": "poor", "label": "Plancher bas peu isole", "u_factor": 1.25},
+    {"id": "standard", "label": "Plancher bas standard", "u_factor": 1.0},
+    {"id": "renovated", "label": "Plancher bas isole/renove", "u_factor": 0.75},
+]
+
+AIRTIGHTNESS_LEVELS = [
+    {"id": "leaky", "label": "Plutot peu etanche / courants d'air", "ach_factor": 1.2},
+    {"id": "standard", "label": "Etancheite standard / je ne sais pas", "ach_factor": 1.0},
+    {"id": "good", "label": "Logement assez etanche", "ach_factor": 0.85},
+]
+
+EXTERIOR_CONTACTS = [
+    {"id": "exterior", "label": "Oui, une ou plusieurs facades donnent dehors"},
+    {"id": "interior", "label": "Non, piece interieure"},
+    {"id": "unheated_space", "label": "Non, contre garage/cave/combles non chauffes"},
+    {"id": "party", "label": "Non, contre voisin ou mitoyen"},
+]
+
+THERMAL_LAYOUTS = [
+    {"id": "open_living", "label": "Plan simple: les pieces communiquent avec le sejour"},
+    {"id": "corridor", "label": "Plan avec couloir/entree comme zone centrale"},
+    {"id": "manual", "label": "Indiquer les connexions principales"},
+]
+
+WINDOW_SIZES = [
+    {"id": "none", "label": "Aucune fenetre", "factor": 0.0},
+    {"id": "small", "label": "Petite surface vitree", "factor": 0.08},
+    {"id": "medium", "label": "Surface vitree moyenne", "factor": 0.14},
+    {"id": "large", "label": "Grande baie / grande surface vitree", "factor": 0.22},
+    {"id": "custom", "label": "Entrer une surface approximative en m2"},
+]
+
+WINDOW_LEVELS = [
+    {"id": "single_glazing_old", "label": "Simple vitrage"},
+    {"id": "double_glazing_old", "label": "Double vitrage ancien"},
+    {"id": "double_glazing_standard", "label": "Double vitrage recent standard"},
+    {"id": "double_glazing_low_e", "label": "Double vitrage performant"},
+]
+
+SHUTTER_LEVELS = [
+    {"id": "none", "label": "Pas de volet/protection"},
+    {"id": "roller_shutter_standard", "label": "Volets roulants ou battants"},
+    {"id": "external_blind", "label": "Stores exterieurs"},
+    {"id": "interior_blind", "label": "Stores interieurs"},
+]
+
+HEATING_SYSTEMS = [
+    {"id": "electric_radiator", "label": "Radiateurs electriques"},
+    {"id": "air_air_heat_pump_standard", "label": "PAC air-air"},
+    {"id": "air_water_heat_pump_standard", "label": "PAC air-eau"},
+]
+
+VENTILATION_SYSTEMS = [
+    {"id": "natural_leaky_old", "label": "Ventilation naturelle logement ancien"},
+    {"id": "natural_average", "label": "Ventilation naturelle moyenne"},
+    {"id": "simple_flow", "label": "VMC simple flux"},
+    {"id": "double_flow_standard", "label": "VMC double flux"},
+    {"id": "airtight_recent", "label": "Logement recent etanche"},
+]
+
+CHANGES = [
+    {
+        "id": "roof_insulation",
+        "label": "Isoler la toiture / les combles",
+        "seasons": ["winter", "summer"],
+    },
+    {
+        "id": "reflective_roof",
+        "label": "Toiture ou revetement reflechissant contre la chaleur",
+        "seasons": ["summer"],
+    },
+    {
+        "id": "better_windows",
+        "label": "Remplacer les fenetres par du double vitrage performant",
+        "seasons": ["winter", "summer"],
+    },
+    {
+        "id": "solar_protection",
+        "label": "Ajouter des volets ou protections solaires",
+        "seasons": ["summer"],
+    },
+    {
+        "id": "heat_pump",
+        "label": "Remplacer le chauffage actuel par une PAC",
+        "seasons": ["winter"],
+    },
+]
+
+CLIMATE_ZONES = [
+    {"id": "FR_H1a", "label": "Nord / Est froid"},
+    {"id": "FR_H2b", "label": "Ouest / climat tempere"},
+    {"id": "FR_H2c", "label": "Sud-Ouest / tempere chaud"},
+    {"id": "FR_H3", "label": "Mediterranee / climat chaud"},
+]
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Create a customer dwelling and run the relevant experiments.",
+    )
+    parser.add_argument(
+        "--reference-dir",
+        default="data/reference",
+        help="Path to the reference data directory.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default="outputs/customer_experiences",
+        help="Directory where generated JSON files are written.",
+    )
+    parser.add_argument(
+        "--air-density-kg-m3",
+        type=float,
+        default=1.2,
+        help="Air density used for ventilation losses.",
+    )
+    parser.add_argument(
+        "--air-heat-capacity-j-kgk",
+        type=float,
+        default=1005.0,
+        help="Air heat capacity used for ventilation losses.",
+    )
+    return parser.parse_args()
+
+
+def choose_one(title: str, options: list[dict[str, Any]]) -> dict[str, Any]:
+    print()
+    print(title)
+    for index, option in enumerate(options, start=1):
+        print(f"{index}. {option['label']}")
+
+    while True:
+        value = input("> ").strip()
+        if value.isdigit() and 1 <= int(value) <= len(options):
+            return options[int(value) - 1]
+        print(f"Choix invalide. Entrez un nombre entre 1 et {len(options)}.")
+
+
+def ask_text(label: str, default: str | None = None) -> str:
+    suffix = f" [{default}]" if default else ""
+    while True:
+        value = input(f"{label}{suffix} > ").strip()
+        if value:
+            return value
+        if default is not None:
+            return default
+        print("Valeur requise.")
+
+
+def ask_float(label: str, default: float | None = None, minimum: float = 0.0) -> float:
+    suffix = f" [{default:g}]" if default is not None else ""
+    while True:
+        raw_value = input(f"{label}{suffix} > ").strip()
+        if not raw_value and default is not None:
+            return default
+        try:
+            value = float(raw_value.replace(",", "."))
+        except ValueError:
+            print("Entrez un nombre.")
+            continue
+        if value >= minimum:
+            return value
+        print(f"La valeur doit etre superieure ou egale a {minimum:g}.")
+
+
+def ask_int(label: str, default: int | None = None, minimum: int = 1) -> int:
+    suffix = f" [{default}]" if default is not None else ""
+    while True:
+        raw_value = input(f"{label}{suffix} > ").strip()
+        if not raw_value and default is not None:
+            return default
+        if raw_value.isdigit() and int(raw_value) >= minimum:
+            return int(raw_value)
+        print(f"Entrez un entier superieur ou egal a {minimum}.")
+
+
+def ask_yes_no(label: str, default: bool) -> bool:
+    suffix = "O/n" if default else "o/N"
+    value = input(f"{label} ({suffix}) > ").strip().lower()
+    if not value:
+        return default
+    return value in {"o", "oui", "y", "yes"}
+
+
+def choose_orientation(title: str) -> str:
+    options = [
+        {"id": code, "label": orientation[2]}
+        for code, orientation in ORIENTATIONS.items()
+    ]
+    return choose_one(title, options)["id"]
+
+
+def choose_window_area(room_type: str, area_m2: float, orientation_code: str) -> float:
+    size = choose_one("Surface vitree sur cette facade", WINDOW_SIZES)
+    if size["id"] == "custom":
+        return ask_float("Surface vitree approximative en m2", minimum=0.0)
+    if size["id"] == "none":
+        return 0.0
+
+    default_area = default_window_area(room_type, area_m2, orientation_code)
+    return round(max(default_area, area_m2 * size["factor"]), 1)
+
+
+def slugify(value: str, default: str) -> str:
+    slug = re.sub(r"[^a-zA-Z0-9]+", "_", value.lower()).strip("_")
+    return slug or default
+
+
+def get_catalog_item(catalog: dict[str, Any], collection: str, item_id: str) -> dict[str, Any]:
+    return catalog[collection][item_id]
+
+
+def collect_customer_input(catalog: dict[str, Any]) -> dict[str, Any]:
+    print("Creation d'une experience client ThermalTwin")
+    print("On va decrire le logement, puis le changement a etudier.")
+    print("Les scenarios meteo seront choisis automatiquement.")
+    print()
+
+    project_name = ask_text("Nom du logement/projet", "mon_logement")
+    city = ask_text("Ville", "Bordeaux")
+    postal_code = ask_text("Code postal", "33000")
+    climate_zone_id = infer_climate_zone(catalog, postal_code)
+    if not climate_zone_id:
+        climate_zone_id = choose_one("Zone climatique approximative", CLIMATE_ZONES)["id"]
+
+    dwelling_type = choose_one("Type de logement", DWELLING_TYPES)
+    period = choose_one(
+        "Periode de construction / niveau reglementaire",
+        envelope_period_options(catalog),
+    )
+    wall_insulation = choose_one("Isolation des murs exterieurs", WALL_INSULATION_LEVELS)
+    roof_insulation = choose_one("Isolation toiture / combles", ROOF_INSULATION_LEVELS)
+    floor_insulation = choose_one("Isolation plancher bas", FLOOR_INSULATION_LEVELS)
+    airtightness = choose_one("Etancheite ressentie du logement", AIRTIGHTNESS_LEVELS)
+    ventilation = choose_one("Ventilation principale", VENTILATION_SYSTEMS)
+    window_level = choose_one("Type de vitrage principal", WINDOW_LEVELS)
+    shutter_level = choose_one("Protections solaires actuelles", SHUTTER_LEVELS)
+    heating = choose_one("Chauffage principal", HEATING_SYSTEMS)
+    has_cooling = ask_yes_no("Le logement a-t-il deja une climatisation active", False)
+
+    room_count = ask_int("Nombre de pieces a modeliser", default=3, minimum=1)
+    rooms = []
+    for index in range(room_count):
+        rooms.append(collect_room(index + 1, dwelling_type["id"]))
+    ensure_unique_room_ids(rooms)
+    thermal_layout = collect_thermal_layout(rooms)
+
+    change = choose_one("Changement a etudier", available_changes(heating["id"]))
+    target_scope = choose_one(
+        "Zone concernee par le changement",
+        [{"id": "all", "label": "Tout le logement"}]
+        + [{"id": room["id"], "label": room["name"]} for room in rooms],
+    )
+
+    return {
+        "project_name": project_name,
+        "dwelling_type": dwelling_type["id"],
+        "city": city,
+        "postal_code": postal_code,
+        "climate_zone_id": climate_zone_id,
+        "period_id": period["id"],
+        "wall_insulation": wall_insulation,
+        "roof_insulation": roof_insulation,
+        "floor_insulation": floor_insulation,
+        "airtightness": airtightness,
+        "ventilation_id": ventilation["id"],
+        "window_ref": window_level["id"],
+        "shutter_ref": shutter_level["id"],
+        "heating_ref": heating["id"],
+        "has_cooling": has_cooling,
+        "rooms": rooms,
+        "thermal_layout": thermal_layout,
+        "change": change,
+        "target_scope": target_scope["id"],
+    }
+
+
+def available_changes(heating_ref: str) -> list[dict[str, Any]]:
+    if "heat_pump" in heating_ref:
+        return [
+            change
+            for change in CHANGES
+            if change["id"] != "heat_pump"
+        ]
+    return CHANGES
+
+
+def infer_climate_zone(catalog: dict[str, Any], postal_code: str) -> str | None:
+    department_code = postal_code[:2]
+    try:
+        return catalog["department_zone_map"][department_code]["climate_zone_id"]
+    except (KeyError, ReferenceDataError):
+        return None
+
+
+def envelope_period_options(catalog: dict[str, Any]) -> list[dict[str, str]]:
+    return [
+        {"id": period["id"], "label": period["name"]}
+        for period in catalog["envelope_defaults"].values()
+    ]
+
+
+def collect_room(index: int, dwelling_type: str) -> dict[str, Any]:
+    print()
+    print(f"Piece {index}")
+    name = ask_text("Nom de la piece", f"Piece {index}")
+    room_type = choose_one("Type de piece", ROOM_TYPES)
+    area_m2 = ask_float("Surface de la piece en m2", minimum=1.0)
+    height_m = ask_float("Hauteur sous plafond en m", default=2.5, minimum=1.5)
+    exterior_contact = choose_one("Contact de la piece avec l'exterieur", EXTERIOR_CONTACTS)
+    facades = []
+    if exterior_contact["id"] == "exterior":
+        facade_count = ask_int("Nombre de facades donnant dehors", default=1, minimum=1)
+        facade_count = min(facade_count, 4)
+        used_orientations = set()
+        for facade_index in range(facade_count):
+            while True:
+                orientation = choose_orientation(f"Orientation facade {facade_index + 1}")
+                if orientation not in used_orientations:
+                    used_orientations.add(orientation)
+                    break
+                print("Cette orientation est deja saisie pour la piece.")
+            window_area = choose_window_area(room_type["id"], area_m2, orientation)
+            facades.append(
+                {
+                    "orientation": orientation,
+                    "window_area_m2": window_area,
+                },
+            )
+
+    has_roof = False
+    has_ground_floor = False
+    if dwelling_type == "house":
+        has_roof = ask_yes_no("Cette piece est-elle directement sous toiture/combles", True)
+        has_ground_floor = ask_yes_no("Cette piece est-elle au contact du sol", True)
+    else:
+        has_roof = ask_yes_no("Cette piece est-elle au dernier etage sous toiture", False)
+        has_ground_floor = ask_yes_no("Cette piece est-elle au-dessus d'un local non chauffe/sol", False)
+
+    return {
+        "id": slugify(name, f"room_{index}"),
+        "name": name,
+        "type": room_type["id"],
+        "floor_area_m2": area_m2,
+        "height_m": height_m,
+        "exterior_contact": exterior_contact["id"],
+        "facades": facades,
+        "has_roof": has_roof,
+        "has_ground_floor": has_ground_floor,
+    }
+
+
+def collect_thermal_layout(rooms: list[dict[str, Any]]) -> dict[str, Any]:
+    if len(rooms) < 2:
+        return {"type": "single_room", "connections": []}
+
+    layout = choose_one("Communication thermique entre les pieces", THERMAL_LAYOUTS)
+    if layout["id"] != "manual":
+        return {"type": layout["id"], "connections": []}
+
+    print()
+    print("Connexions principales")
+    print("Repondez oui si les deux pieces communiquent souvent ou sont separees par une porte souvent ouverte.")
+    connections = []
+    for index, first_room in enumerate(rooms):
+        for second_room in rooms[index + 1:]:
+            if ask_yes_no(f"{first_room['name']} <-> {second_room['name']}", False):
+                connections.append(
+                    {
+                        "room_a": first_room["id"],
+                        "room_b": second_room["id"],
+                    },
+                )
+    return {"type": "manual", "connections": connections}
+
+
+def ensure_unique_room_ids(rooms: list[dict[str, Any]]) -> None:
+    seen: dict[str, int] = {}
+    for index, room in enumerate(rooms, start=1):
+        base_id = room["id"] or f"room_{index}"
+        count = seen.get(base_id, 0) + 1
+        seen[base_id] = count
+        if count > 1:
+            room["id"] = f"{base_id}_{count}"
+
+
+def default_window_area(room_type: str, area_m2: float, orientation: str) -> float:
+    if room_type == "bathroom":
+        return 0.6
+    if room_type == "corridor":
+        return 0.0
+    if room_type == "living":
+        factor = 0.18 if orientation in {"S", "SE", "SW", "W"} else 0.1
+        return round(max(1.5, area_m2 * factor), 1)
+    if room_type == "bedroom":
+        return round(max(1.2, area_m2 * 0.12), 1)
+    return round(max(0.8, area_m2 * 0.1), 1)
+
+
+def build_dwelling(customer: dict[str, Any], catalog: dict[str, Any]) -> dict[str, Any]:
+    period = get_catalog_item(catalog, "envelope_defaults", customer["period_id"])
+    ventilation = get_catalog_item(catalog, "ventilation", customer["ventilation_id"])
+    ach_factor = customer["airtightness"]["ach_factor"]
+    dwelling_id = slugify(customer["project_name"], "customer_dwelling")
+
+    rooms = [
+        build_room(room, customer, catalog, period, ventilation, ach_factor)
+        for room in customer["rooms"]
+    ]
+    total_area_m2 = sum(room["floor_area_m2"] for room in rooms)
+    room_ids = [room["id"] for room in rooms]
+
+    return {
+        "schema_version": "0.1",
+        "dwelling_id": dwelling_id,
+        "metadata": {
+            "name": customer["project_name"],
+            "description": "Logement cree depuis la CLI client ThermalTwin.",
+            "created_by": "create_customer_experience.py",
+        },
+        "location": {
+            "country": "FR",
+            "postal_code": customer["postal_code"],
+            "city": customer["city"],
+            "climate_zone_id": customer["climate_zone_id"],
+            "ground_albedo": 0.2,
+        },
+        "defaults": {
+            "initial_temperature_c": 20.0,
+            "building_period_ref": customer["period_id"],
+            "equivalent_capacity_j_m2k": period["equivalent_capacity_j_m2k"],
+            "thermal_bridge_factor": period["thermal_bridge_factor"],
+            "internal_gain_w_m2": 4.0,
+            "ach_h": round(ventilation["default_ach_h"] * ach_factor, 2),
+        },
+        "rooms": rooms,
+        "thermal_links": build_thermal_links(rooms, customer["thermal_layout"]),
+        "systems": {
+            "heating": [
+                build_heating_system(
+                    customer["heating_ref"],
+                    room_ids,
+                    total_area_m2,
+                    catalog,
+                ),
+            ],
+            "cooling": build_cooling_systems(
+                customer["has_cooling"],
+                rooms,
+                total_area_m2,
+            ),
+            "ventilation": {
+                "ventilation_ref": customer["ventilation_id"],
+                "type": ventilation_type(customer["ventilation_id"]),
+                "default_ach_h": round(ventilation["default_ach_h"] * ach_factor, 2),
+            },
+        },
+    }
+
+
+def build_room(
+    room_input: dict[str, Any],
+    customer: dict[str, Any],
+    catalog: dict[str, Any],
+    period: dict[str, Any],
+    ventilation: dict[str, Any],
+    ach_factor: float,
+) -> dict[str, Any]:
+    room_id = room_input["id"]
+    area_m2 = room_input["floor_area_m2"]
+    height_m = room_input["height_m"]
+    volume_m3 = area_m2 * height_m
+    windows = build_windows(room_input, customer, catalog)
+
+    return {
+        "id": room_id,
+        "name": room_input["name"],
+        "type": room_input["type"],
+        "floor_area_m2": area_m2,
+        "height_m": height_m,
+        "volume_m3": round(volume_m3, 2),
+        "initial_temperature_c": 20.0,
+        "equivalent_capacity_j_m2k": period["equivalent_capacity_j_m2k"],
+        "internal_gain_w_m2": internal_gain_for_room(room_input["type"]),
+        "ventilation": {
+            "mode": "ach",
+            "ach_h": round(ventilation["default_ach_h"] * ach_factor, 2),
+            "ventilation_ref": customer["ventilation_id"],
+        },
+        "surfaces": build_surfaces(room_input, windows, customer, period),
+        "windows": windows,
+    }
+
+
+def build_surfaces(
+    room_input: dict[str, Any],
+    windows: list[dict[str, Any]],
+    customer: dict[str, Any],
+    period: dict[str, Any],
+) -> list[dict[str, Any]]:
+    room_id = room_input["id"]
+    area_m2 = room_input["floor_area_m2"]
+    height_m = room_input["height_m"]
+    side_width_m = math.sqrt(area_m2)
+    window_area_by_orientation = {
+        orientation: sum(
+            window["area_m2"]
+            for window in windows
+            if orientation_key(window["azimuth_deg"]) == orientation
+        )
+        for orientation in ("north", "east", "south", "west")
+    }
+
+    surfaces = []
+    for facade in room_input["facades"]:
+        orientation_key_name, azimuth_deg, _label = ORIENTATIONS[facade["orientation"]]
+        solar_orientation = orientation_key(azimuth_deg)
+        gross_wall_area = side_width_m * height_m
+        net_wall_area = max(1.0, gross_wall_area - window_area_by_orientation[solar_orientation])
+        surfaces.append(
+            {
+                "id": f"{room_id}_{orientation_key_name}_wall",
+                "type": "external_wall",
+                "boundary": "exterior",
+                "area_m2": round(net_wall_area, 2),
+                "u_value_w_m2k": rounded_u(
+                    period,
+                    "external_wall",
+                    customer["wall_insulation"]["u_factor"],
+                ),
+                "azimuth_deg": azimuth_deg,
+                "tilt_deg": 90,
+                "albedo": 0.35,
+                "solar_to_room_factor": 0.08,
+                "mask_factor": 1.0,
+            },
+        )
+
+    if room_input["exterior_contact"] in {"unheated_space", "party"}:
+        surfaces.append(
+            {
+                "id": f"{room_id}_{room_input['exterior_contact']}_wall",
+                "type": "party_wall",
+                "boundary": room_input["exterior_contact"],
+                "area_m2": round(side_width_m * height_m, 2),
+                "u_value_w_m2k": rounded_u(
+                    period,
+                    "external_wall",
+                    customer["wall_insulation"]["u_factor"],
+                ),
+            },
+        )
+
+    if room_input["has_roof"]:
+        surfaces.append(
+            {
+                "id": f"{room_id}_roof",
+                "type": "roof",
+                "boundary": "exterior",
+                "area_m2": round(area_m2, 2),
+                "u_value_w_m2k": rounded_u(
+                    period,
+                    "roof",
+                    customer["roof_insulation"]["u_factor"],
+                ),
+                "azimuth_deg": 180,
+                "tilt_deg": 25,
+                "albedo": 0.25,
+                "solar_to_room_factor": 0.06,
+                "mask_factor": 1.0,
+            },
+        )
+
+    if room_input["has_ground_floor"]:
+        surfaces.append(
+            {
+                "id": f"{room_id}_floor",
+                "type": "floor",
+                "boundary": "ground",
+                "area_m2": round(area_m2, 2),
+                "u_value_w_m2k": rounded_u(
+                    period,
+                    "floor",
+                    customer["floor_insulation"]["u_factor"],
+                ),
+            },
+        )
+
+    return surfaces
+
+
+def build_windows(
+    room_input: dict[str, Any],
+    customer: dict[str, Any],
+    catalog: dict[str, Any],
+) -> list[dict[str, Any]]:
+    window_ref = get_catalog_item(catalog, "windows", customer["window_ref"])
+    shutter_ref = get_catalog_item(catalog, "shutters", customer["shutter_ref"])
+    windows = []
+    for index, facade in enumerate(room_input["facades"], start=1):
+        if facade["window_area_m2"] <= 0:
+            continue
+        orientation_name, azimuth_deg, _label = ORIENTATIONS[facade["orientation"]]
+        window_data = {
+            "id": f"{room_input['id']}_{orientation_name}_window_{index}",
+            "window_ref": customer["window_ref"],
+            "area_m2": round(facade["window_area_m2"], 2),
+            "u_value_w_m2k": window_ref["u_value_w_m2k"],
+            "g_value": window_ref["g_value"],
+            "azimuth_deg": azimuth_deg,
+            "tilt_deg": 90,
+            "mask_factor": 1.0,
+            "shutter_ref": customer["shutter_ref"],
+        }
+        if customer["shutter_ref"] != "none":
+            window_data["shutter"] = {
+                "type": shutter_ref["type"],
+                "solar_factor_closed": shutter_ref["solar_factor_closed"],
+                "solar_factor_open": shutter_ref["solar_factor_open"],
+                "u_factor_closed": shutter_ref["u_factor_closed"],
+            }
+        windows.append(window_data)
+    return windows
+
+
+def internal_gain_for_room(room_type: str) -> float:
+    if room_type in {"living", "kitchen"}:
+        return 5.0
+    if room_type in {"bedroom", "office"}:
+        return 3.0
+    return 2.0
+
+
+def rounded_u(period: dict[str, Any], surface_type: str, u_factor: float) -> float:
+    return round(period["u_values"][surface_type] * u_factor, 3)
+
+
+def orientation_key(azimuth_deg: float) -> str:
+    if azimuth_deg < 45 or azimuth_deg >= 315:
+        return "north"
+    if azimuth_deg < 135:
+        return "east"
+    if azimuth_deg < 225:
+        return "south"
+    return "west"
+
+
+def build_thermal_links(
+    rooms: list[dict[str, Any]],
+    thermal_layout: dict[str, Any],
+) -> list[dict[str, Any]]:
+    if len(rooms) < 2:
+        return []
+
+    rooms_by_id = {room["id"]: room for room in rooms}
+    if thermal_layout["type"] == "manual":
+        pairs = [
+            (connection["room_a"], connection["room_b"])
+            for connection in thermal_layout["connections"]
+        ]
+    elif thermal_layout["type"] == "corridor":
+        hub = next(
+            (room for room in rooms if room["type"] == "corridor"),
+            next((room for room in rooms if room["type"] == "living"), rooms[0]),
+        )
+        pairs = [
+            (hub["id"], room["id"])
+            for room in rooms
+            if room["id"] != hub["id"]
+        ]
+    else:
+        hub = next((room for room in rooms if room["type"] == "living"), rooms[0])
+        pairs = [
+            (hub["id"], room["id"])
+            for room in rooms
+            if room["id"] != hub["id"]
+        ]
+
+    links = []
+    seen_pairs = set()
+    for room_a_id, room_b_id in pairs:
+        if room_a_id == room_b_id:
+            continue
+        pair_key = tuple(sorted((room_a_id, room_b_id)))
+        if pair_key in seen_pairs:
+            continue
+        seen_pairs.add(pair_key)
+        room_b = rooms_by_id[room_b_id]
+        area_m2 = min(10.0, max(4.0, math.sqrt(room_b["floor_area_m2"]) * room_b["height_m"]))
+        links.append(
+            {
+                "id": f"{room_a_id}_{room_b_id}_link",
+                "room_a": room_a_id,
+                "room_b": room_b_id,
+                "type": "internal_wall",
+                "area_m2": round(area_m2, 2),
+                "u_value_w_m2k": 1.8,
+                "opening_factor": 0.8,
+            },
+        )
+    return links
+
+
+def build_heating_system(
+    heating_ref: str,
+    room_ids: list[str],
+    total_area_m2: float,
+    catalog: dict[str, Any],
+) -> dict[str, Any]:
+    reference = get_catalog_item(catalog, "heating_systems", heating_ref)
+    return {
+        "id": "main_heating",
+        "system_ref": heating_ref,
+        "type": reference["type"],
+        "served_rooms": room_ids,
+        "max_power_w": round(max(1500.0, total_area_m2 * 95.0), 0),
+        "performance_ref": deepcopy(reference["performance_ref"]),
+    }
+
+
+def build_cooling_systems(
+    has_cooling: bool,
+    rooms: list[dict[str, Any]],
+    total_area_m2: float,
+) -> list[dict[str, Any]]:
+    if not has_cooling:
+        return []
+    served_rooms = [
+        room["id"]
+        for room in rooms
+        if room["type"] in {"living", "bedroom", "office"}
+    ] or [room["id"] for room in rooms]
+    return [
+        {
+            "id": "main_cooling",
+            "system_ref": "air_conditioner_standard",
+            "type": "air_conditioner",
+            "served_rooms": served_rooms,
+            "max_power_w": round(max(1200.0, total_area_m2 * 70.0), 0),
+            "performance_ref": {"mode": "constant", "eer": 3.0},
+        },
+    ]
+
+
+def ventilation_type(ventilation_id: str) -> str:
+    if "double_flow" in ventilation_id:
+        return "double_flow"
+    if "natural" in ventilation_id:
+        return "natural"
+    if "simple_flow" in ventilation_id:
+        return "simple_flow"
+    return "other"
+
+
+def selected_room_ids(customer: dict[str, Any], dwelling: dict[str, Any]) -> list[str]:
+    if customer["target_scope"] == "all":
+        return [room["id"] for room in dwelling["rooms"]]
+    return [customer["target_scope"]]
+
+
+def ensure_applicable_target(customer: dict[str, Any], dwelling: dict[str, Any]) -> bool:
+    room_ids = selected_room_ids(customer, dwelling)
+    if change_applies(dwelling, customer["change"]["id"], room_ids):
+        return True
+
+    print()
+    print("Le changement choisi ne s'applique pas a la zone selectionnee.")
+    print(change_inapplicable_reason(dwelling, customer["change"]["id"], room_ids))
+    options = applicable_target_options(customer, dwelling)
+    if not options:
+        return False
+
+    if not ask_yes_no("Choisir une autre zone compatible", True):
+        return False
+
+    target = choose_one("Zone compatible", options)
+    customer["target_scope"] = target["id"]
+    return True
+
+
+def applicable_target_options(
+    customer: dict[str, Any],
+    dwelling: dict[str, Any],
+) -> list[dict[str, str]]:
+    change_id = customer["change"]["id"]
+    options = []
+    all_room_ids = [room["id"] for room in dwelling["rooms"]]
+    if change_applies(dwelling, change_id, all_room_ids):
+        options.append({"id": "all", "label": "Tout le logement"})
+    for room in dwelling["rooms"]:
+        if change_applies(dwelling, change_id, [room["id"]]):
+            options.append({"id": room["id"], "label": room["name"]})
+    return options
+
+
+def change_inapplicable_reason(
+    dwelling: dict[str, Any],
+    change_id: str,
+    room_ids: list[str],
+) -> str:
+    if change_id in {"roof_insulation", "reflective_roof"}:
+        return "Aucune toiture n'a ete decrite dans la zone cible."
+    if change_id in {"better_windows", "solar_protection"}:
+        return "Aucune fenetre n'a ete decrite dans la zone cible."
+    if change_id == "heat_pump":
+        return "Aucun systeme de chauffage ne dessert la zone cible."
+    return "La zone cible ne contient aucun element compatible."
+
+
+def build_experiments(
+    customer: dict[str, Any],
+    dwelling: dict[str, Any],
+    catalog: dict[str, Any],
+) -> list[dict[str, Any]]:
+    change = customer["change"]
+    room_ids = selected_room_ids(customer, dwelling)
+    if not change_applies(dwelling, change["id"], room_ids):
+        return []
+
+    experiments = []
+    for season in change["seasons"]:
+        base_id = f"{dwelling['dwelling_id']}_{change['id']}_{season}"
+        before = build_scenario(base_id, dwelling, season, None, room_ids, catalog)
+        after = build_scenario(base_id, dwelling, season, change["id"], room_ids, catalog)
+        experiments.append(
+            {
+                "id": base_id,
+                "season": season,
+                "before": before,
+                "after": after,
+            },
+        )
+    return experiments
+
+
+def change_applies(
+    dwelling: dict[str, Any],
+    change_id: str,
+    room_ids: list[str],
+) -> bool:
+    rooms = [room for room in dwelling["rooms"] if room["id"] in room_ids]
+    if change_id in {"roof_insulation", "reflective_roof"}:
+        return any(
+            surface["type"] == "roof"
+            for room in rooms
+            for surface in room["surfaces"]
+        )
+    if change_id in {"better_windows", "solar_protection"}:
+        return any(room["windows"] for room in rooms)
+    if change_id == "heat_pump":
+        return any(
+            any(room_id in system["served_rooms"] for room_id in room_ids)
+            for system in dwelling["systems"]["heating"]
+        )
+    return False
+
+
+def build_scenario(
+    base_id: str,
+    dwelling: dict[str, Any],
+    season: str,
+    change_id: str | None,
+    room_ids: list[str],
+    catalog: dict[str, Any],
+) -> dict[str, Any]:
+    scenario = {
+        "schema_version": "0.1",
+        "scenario_id": f"{base_id}_{'after' if change_id else 'before'}",
+        "dwelling_id": dwelling["dwelling_id"],
+        "description": f"Scenario {season} {'apres' if change_id else 'avant'}",
+        "timestep_h": 1.0,
+        "initial_temperatures_c": {
+            room["id"]: 26.0 if season == "summer" else 19.0
+            for room in dwelling["rooms"]
+        },
+        "setpoints": (
+            {"heating_c": 18.0, "cooling_c": 26.0}
+            if season == "summer"
+            else {"heating_c": 19.0, "cooling_c": 28.0}
+        ),
+        "weather": build_weather(season, dwelling["location"]["climate_zone_id"]),
+        "energy_prices": {"electricity_eur_kwh": 0.25},
+        "co2_factors": {"electricity_kg_kwh": 0.06},
+    }
+    if season == "summer":
+        scenario["controls"] = {"shutters": build_summer_shutter_controls()}
+    if change_id:
+        retrofit = build_retrofit(dwelling, change_id, room_ids, catalog)
+        if retrofit:
+            scenario["retrofit"] = retrofit
+    return scenario
+
+
+def build_weather(season: str, climate_zone_id: str) -> dict[str, Any]:
+    if season == "summer":
+        duration_days = 3
+        base_temp, amplitude = summer_temperature_profile(climate_zone_id)
+    else:
+        duration_days = 7
+        base_temp, amplitude = winter_temperature_profile(climate_zone_id)
+
+    hourly = []
+    for hour in range(duration_days * 24):
+        hour_in_day = hour % 24
+        outdoor_temperature_c = base_temp + amplitude * math.sin(
+            2.0 * math.pi * (hour_in_day - 8) / 24.0,
+        )
+        weather_point = {
+            "hour": hour,
+            "outdoor_temperature_c": round(outdoor_temperature_c, 2),
+            "solar_irradiance_w_m2": solar_profile(season, hour_in_day),
+        }
+        hourly.append(weather_point)
+    return {"source": f"generated_{season}_{climate_zone_id}", "hourly": hourly}
+
+
+def summer_temperature_profile(climate_zone_id: str) -> tuple[float, float]:
+    if climate_zone_id == "FR_H3":
+        return 31.0, 8.0
+    if climate_zone_id.startswith("FR_H1"):
+        return 26.5, 6.0
+    return 29.0, 7.0
+
+
+def winter_temperature_profile(climate_zone_id: str) -> tuple[float, float]:
+    if climate_zone_id.startswith("FR_H1"):
+        return 0.0, 4.0
+    if climate_zone_id == "FR_H3":
+        return 7.0, 4.0
+    return 3.0, 4.0
+
+
+def solar_profile(season: str, hour_in_day: int) -> dict[str, float]:
+    if season == "winter":
+        peak = max(0.0, math.sin(math.pi * (hour_in_day - 8) / 8.0))
+        return {
+            "north": 0.0,
+            "east": round(120.0 * peak if hour_in_day < 13 else 30.0 * peak, 2),
+            "south": round(280.0 * peak, 2),
+            "west": round(120.0 * peak if hour_in_day > 12 else 30.0 * peak, 2),
+            "roof": round(240.0 * peak, 2),
+        }
+
+    peak = max(0.0, math.sin(math.pi * (hour_in_day - 6) / 13.0))
+    return {
+        "north": round(80.0 * peak, 2),
+        "east": round((520.0 if hour_in_day < 13 else 160.0) * peak, 2),
+        "south": round(620.0 * peak, 2),
+        "west": round((520.0 if hour_in_day > 12 else 160.0) * peak, 2),
+        "roof": round(760.0 * peak, 2),
+    }
+
+
+def build_summer_shutter_controls() -> dict[str, Any]:
+    return {
+        "default_opening_ratio": 1.0,
+        "hourly": [
+            {"hour": hour, "opening_ratio": 0.25}
+            for hour in range(72)
+            if 8 <= hour % 24 <= 19
+        ],
+    }
+
+
+def build_retrofit(
+    dwelling: dict[str, Any],
+    change_id: str,
+    room_ids: list[str],
+    catalog: dict[str, Any],
+) -> dict[str, Any]:
+    rooms = [room for room in dwelling["rooms"] if room["id"] in room_ids]
+    if change_id == "roof_insulation":
+        return clean_retrofit({
+            "surface_overrides": [
+                {"surface_id": surface["id"], "u_value_w_m2k": 0.18}
+                for room in rooms
+                for surface in room["surfaces"]
+                if surface["type"] == "roof"
+            ],
+        })
+    if change_id == "reflective_roof":
+        return clean_retrofit({
+            "surface_overrides": [
+                {
+                    "surface_id": surface["id"],
+                    "albedo": 0.75,
+                    "solar_to_room_factor": 0.03,
+                }
+                for room in rooms
+                for surface in room["surfaces"]
+                if surface["type"] == "roof"
+            ],
+        })
+    if change_id == "better_windows":
+        window_ref = get_catalog_item(catalog, "windows", "double_glazing_low_e")
+        return clean_retrofit({
+            "window_overrides": [
+                {
+                    "window_id": window["id"],
+                    "window_ref": "double_glazing_low_e",
+                    "u_value_w_m2k": window_ref["u_value_w_m2k"],
+                    "g_value": window_ref["g_value"],
+                }
+                for room in rooms
+                for window in room["windows"]
+            ],
+        })
+    if change_id == "solar_protection":
+        shutter_ref = get_catalog_item(catalog, "shutters", "roller_shutter_standard")
+        return clean_retrofit({
+            "shutter_overrides": [
+                {
+                    "window_id": window["id"],
+                    "type": shutter_ref["type"],
+                    "solar_factor_closed": 0.08,
+                    "solar_factor_open": shutter_ref["solar_factor_open"],
+                    "u_factor_closed": shutter_ref["u_factor_closed"],
+                }
+                for room in rooms
+                for window in room["windows"]
+            ],
+        })
+    if change_id == "heat_pump":
+        reference = get_catalog_item(catalog, "heating_systems", "air_air_heat_pump_standard")
+        return clean_retrofit({
+            "system_overrides": [
+                {
+                    "category": "heating",
+                    "system_id": system["id"],
+                    "system_ref": "air_air_heat_pump_standard",
+                    "type": reference["type"],
+                    "performance_ref": reference["performance_ref"],
+                }
+                for system in dwelling["systems"]["heating"]
+                if any(room_id in system["served_rooms"] for room_id in room_ids)
+            ],
+        })
+    return {}
+
+
+def clean_retrofit(retrofit: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    return {
+        key: value
+        for key, value in retrofit.items()
+        if value
+    }
+
+
+def write_json(output_path: str | Path, payload: dict[str, Any]) -> None:
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as file:
+        json.dump(payload, file, indent=2, ensure_ascii=False)
+
+
+def run_customer_experience(args: argparse.Namespace) -> None:
+    catalog = load_reference_catalog(args.reference_dir)
+    customer = collect_customer_input(catalog)
+    dwelling = build_dwelling(customer, catalog)
+    validate_dwelling(dwelling)
+    resolved_dwelling = resolve_dwelling_references(dwelling, catalog)
+    target_is_applicable = ensure_applicable_target(customer, resolved_dwelling)
+    experiments = build_experiments(customer, resolved_dwelling, catalog)
+
+    output_dir = Path(args.output_dir) / dwelling["dwelling_id"]
+    write_json(output_dir / "dwelling.json", dwelling)
+    print()
+    print(f"Logement exporte: {output_dir / 'dwelling.json'}")
+
+    if not target_is_applicable or not experiments:
+        print("Aucune experience lancee: le changement choisi ne s'applique pas aux elements saisis.")
+        return
+
+    for experiment in experiments:
+        before = experiment["before"]
+        after = experiment["after"]
+        validate_scenario(before)
+        validate_scenario(after)
+        before_path = output_dir / f"{experiment['id']}_before.json"
+        after_path = output_dir / f"{experiment['id']}_after.json"
+        comparison_path = output_dir / f"{experiment['id']}_comparison.json"
+        summary_path = output_dir / f"{experiment['id']}_customer_summary.json"
+        write_json(before_path, before)
+        write_json(after_path, after)
+
+        comparison = compare_scenarios(
+            resolved_dwelling,
+            before,
+            after,
+            args.air_density_kg_m3,
+            args.air_heat_capacity_j_kgk,
+        )
+        write_json(comparison_path, comparison)
+        customer_summary = build_customer_summary(experiment["season"], comparison)
+        write_json(summary_path, customer_summary)
+        print(f"Scenario avant: {before_path}")
+        print(f"Scenario apres: {after_path}")
+        print(f"Comparaison: {comparison_path}")
+        print(f"Resume client: {summary_path}")
+        print_customer_summary(customer_summary)
+
+
+def build_customer_summary(season: str, comparison: dict[str, Any]) -> dict[str, Any]:
+    key_room_id, room = most_improved_room(comparison)
+    energy = comparison["summary"]["energy_savings"]
+    driver = comparison["summary"]["main_gain_driver"]
+    return {
+        "season": season,
+        "dwelling_id": comparison["dwelling_id"],
+        "before_scenario_id": comparison["before_scenario_id"],
+        "after_scenario_id": comparison["after_scenario_id"],
+        "headline": {
+            "electricity_saved_kwh": round(energy["electricity_saved_kwh"], 2),
+            "cost_saved_eur": round(energy["cost_saved_eur"], 2),
+            "co2_saved_kg": round(energy["co2_saved_kg"], 2),
+            "main_gain_driver": driver["label"],
+        },
+        "comfort": {
+            "room_id": key_room_id,
+            "room_name": room["room_name"],
+            "max_temperature_before_c": round(room["before_max_temperature_c"], 1),
+            "max_temperature_after_c": round(room["after_max_temperature_c"], 1),
+            "max_temperature_reduction_c": round(room["delta_max_temperature_c"], 1),
+            "hot_discomfort_before_c_h": round(room["before_hot_degree_hours"], 0),
+            "hot_discomfort_after_c_h": round(room["after_hot_degree_hours"], 0),
+            "hot_discomfort_reduced_c_h": round(room["delta_hot_degree_hours"], 0),
+            "cold_discomfort_before_c_h": round(room["before_cold_degree_hours"], 0),
+            "cold_discomfort_after_c_h": round(room["after_cold_degree_hours"], 0),
+            "cold_discomfort_reduced_c_h": round(room["delta_cold_degree_hours"], 0),
+            "explanation": discomfort_explanation(room),
+        },
+    }
+
+
+def most_improved_room(comparison: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    rooms = comparison["deltas"]["rooms"]
+    return max(
+        rooms.items(),
+        key=lambda item: (
+            item[1]["delta_hot_degree_hours"]
+            + item[1]["delta_cold_degree_hours"]
+            + max(0.0, item[1]["delta_max_temperature_c"]) * 24.0
+        ),
+    )
+
+
+def discomfort_explanation(room: dict[str, Any]) -> str:
+    if room["delta_hot_degree_hours"] > 0:
+        return (
+            "L'inconfort chaud cumule correspond aux heures passees au-dessus "
+            "de la consigne de confort, ponderees par l'ecart de temperature."
+        )
+    if room["delta_cold_degree_hours"] > 0:
+        return (
+            "L'inconfort froid cumule correspond aux heures passees sous la "
+            "consigne de chauffage, ponderees par l'ecart de temperature."
+        )
+    if room["delta_max_temperature_c"] > 0:
+        return "La temperature maximale baisse, sans gain significatif sur l'inconfort cumule."
+    return "Le confort simule reste globalement stable."
+
+
+def print_customer_summary(summary: dict[str, Any]) -> None:
+    comfort = summary["comfort"]
+    headline = summary["headline"]
+    print(f"Lecture {summary['season']}:")
+    if headline["electricity_saved_kwh"] > 0:
+        print(
+            "- Energie: "
+            f"{headline['electricity_saved_kwh']:.2f} kWh, "
+            f"{headline['cost_saved_eur']:.2f} EUR, "
+            f"{headline['co2_saved_kg']:.2f} kg CO2 economises"
+        )
+    elif headline["electricity_saved_kwh"] < 0:
+        print(
+            "- Energie: "
+            f"{abs(headline['electricity_saved_kwh']):.2f} kWh supplementaires"
+        )
+    else:
+        print("- Energie: consommation inchangee dans cette simulation")
+    print(
+        "- Piece la plus impactee: "
+        f"{comfort['room_name']} "
+        f"({comfort['max_temperature_before_c']:.1f} C -> "
+        f"{comfort['max_temperature_after_c']:.1f} C en temperature max)"
+    )
+    if comfort["hot_discomfort_reduced_c_h"] > 0:
+        print(
+            "- Confort ete: inconfort chaud reduit de "
+            f"{comfort['hot_discomfort_reduced_c_h']:.0f} C.h "
+            f"({comfort['hot_discomfort_before_c_h']:.0f} -> "
+            f"{comfort['hot_discomfort_after_c_h']:.0f} C.h)"
+        )
+    elif comfort["cold_discomfort_reduced_c_h"] > 0:
+        print(
+            "- Confort hiver: inconfort froid reduit de "
+            f"{comfort['cold_discomfort_reduced_c_h']:.0f} C.h "
+            f"({comfort['cold_discomfort_before_c_h']:.0f} -> "
+            f"{comfort['cold_discomfort_after_c_h']:.0f} C.h)"
+        )
+    else:
+        print("- Confort: stable dans cette simulation")
+    print(f"- Explication principale: {headline['main_gain_driver']}")
+
+
+def main() -> None:
+    run_customer_experience(parse_args())
+
+
+if __name__ == "__main__":
+    main()
