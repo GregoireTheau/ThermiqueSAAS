@@ -1,0 +1,67 @@
+{
+  "schema_version": "0.1",
+  "data_quality": "mvp_working_assumptions_to_calibrate",
+  "description": "Default U-values and inertia assumptions by broad building period for quick first tests.",
+  "units": {
+    "u_value_w_m2k": "W/m2.K",
+    "equivalent_capacity_j_m2k": "J/m2.K",
+    "thermal_bridge_factor": "ratio"
+  },
+  "building_periods": [
+    {
+      "id": "pre_1975_uninsulated",
+      "name": "Avant 1975 non isole",
+      "thermal_bridge_factor": 0.18,
+      "equivalent_capacity_j_m2k": 190000,
+      "u_values": {
+        "external_wall": 1.8,
+        "roof": 1.5,
+        "floor": 1.2
+      }
+    },
+    {
+      "id": "1975_1988_basic_insulation",
+      "name": "1975-1988 isolation basique",
+      "thermal_bridge_factor": 0.15,
+      "equivalent_capacity_j_m2k": 175000,
+      "u_values": {
+        "external_wall": 1.0,
+        "roof": 0.7,
+        "floor": 0.8
+      }
+    },
+    {
+      "id": "1989_2000_improved_insulation",
+      "name": "1989-2000 isolation amelioree",
+      "thermal_bridge_factor": 0.12,
+      "equivalent_capacity_j_m2k": 165000,
+      "u_values": {
+        "external_wall": 0.65,
+        "roof": 0.4,
+        "floor": 0.55
+      }
+    },
+    {
+      "id": "2001_2012_good_insulation",
+      "name": "2001-2012 bonne isolation",
+      "thermal_bridge_factor": 0.1,
+      "equivalent_capacity_j_m2k": 160000,
+      "u_values": {
+        "external_wall": 0.45,
+        "roof": 0.28,
+        "floor": 0.4
+      }
+    },
+    {
+      "id": "rt2012_or_later",
+      "name": "RT2012 ou plus recent",
+      "thermal_bridge_factor": 0.06,
+      "equivalent_capacity_j_m2k": 155000,
+      "u_values": {
+        "external_wall": 0.28,
+        "roof": 0.18,
+        "floor": 0.25
+      }
+    }
+  ]
+}

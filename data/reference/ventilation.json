@@ -1,0 +1,41 @@
+{
+  "schema_version": "0.1",
+  "data_quality": "mvp_working_assumptions_to_calibrate",
+  "description": "Simplified ACH assumptions by ventilation type.",
+  "units": {
+    "ach_h": "air changes per hour",
+    "recovery_efficiency": "ratio"
+  },
+  "ventilation_types": [
+    {
+      "id": "natural_leaky_old",
+      "name": "Ventilation naturelle logement ancien peu etanche",
+      "default_ach_h": 0.9,
+      "recovery_efficiency": 0.0
+    },
+    {
+      "id": "natural_average",
+      "name": "Ventilation naturelle moyenne",
+      "default_ach_h": 0.6,
+      "recovery_efficiency": 0.0
+    },
+    {
+      "id": "simple_flow",
+      "name": "VMC simple flux",
+      "default_ach_h": 0.5,
+      "recovery_efficiency": 0.0
+    },
+    {
+      "id": "double_flow_standard",
+      "name": "VMC double flux standard",
+      "default_ach_h": 0.45,
+      "recovery_efficiency": 0.75
+    },
+    {
+      "id": "airtight_recent",
+      "name": "Logement recent etanche avec ventilation controlee",
+      "default_ach_h": 0.35,
+      "recovery_efficiency": 0.0
+    }
+  ]
+}

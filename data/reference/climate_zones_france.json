@@ -1,0 +1,76 @@
+{
+  "schema_version": "0.1",
+  "data_quality": "zone_ids_verified_department_mapping_todo",
+  "description": "French RT2012/RE2020 climate zone identifiers. Department-level mapping will be added later.",
+  "sources": [
+    {
+      "name": "Legifrance - Arrete du 28 decembre 2012, annexe zones climatiques",
+      "url": "https://www.legifrance.gouv.fr/jorf/id/JORFSCTA000026871766"
+    },
+    {
+      "name": "Ministere de la Transition ecologique - RT2012",
+      "url": "https://www.ecologie.gouv.fr/politiques-publiques/reglementation-thermique-rt2012"
+    }
+  ],
+  "climate_zones": [
+    {
+      "id": "FR_H1a",
+      "rt_label": "H1a",
+      "winter_family": "H1",
+      "summer_variant": "a",
+      "description": "Zone froide, variante a"
+    },
+    {
+      "id": "FR_H1b",
+      "rt_label": "H1b",
+      "winter_family": "H1",
+      "summer_variant": "b",
+      "description": "Zone froide, variante b"
+    },
+    {
+      "id": "FR_H1c",
+      "rt_label": "H1c",
+      "winter_family": "H1",
+      "summer_variant": "c",
+      "description": "Zone froide, variante c"
+    },
+    {
+      "id": "FR_H2a",
+      "rt_label": "H2a",
+      "winter_family": "H2",
+      "summer_variant": "a",
+      "description": "Zone temperee, variante a"
+    },
+    {
+      "id": "FR_H2b",
+      "rt_label": "H2b",
+      "winter_family": "H2",
+      "summer_variant": "b",
+      "description": "Zone temperee, variante b"
+    },
+    {
+      "id": "FR_H2c",
+      "rt_label": "H2c",
+      "winter_family": "H2",
+      "summer_variant": "c",
+      "description": "Zone temperee, variante c"
+    },
+    {
+      "id": "FR_H2d",
+      "rt_label": "H2d",
+      "winter_family": "H2",
+      "summer_variant": "d",
+      "description": "Zone temperee, variante d"
+    },
+    {
+      "id": "FR_H3",
+      "rt_label": "H3",
+      "winter_family": "H3",
+      "summer_variant": null,
+      "description": "Zone chaude mediterraneenne"
+    }
+  ],
+  "department_zone_map": {
+    "33": "FR_H2c"
+  }
+}

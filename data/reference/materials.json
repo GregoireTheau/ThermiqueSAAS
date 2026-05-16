@@ -1,0 +1,92 @@
+{
+  "schema_version": "0.1",
+  "data_quality": "mvp_working_assumptions_to_calibrate",
+  "description": "Reference material properties for first ThermalTwin tests. Values are broad working assumptions and must be reviewed before commercial use.",
+  "units": {
+    "thermal_conductivity_w_mk": "W/m.K",
+    "default_density_kg_m3": "kg/m3",
+    "default_specific_heat_j_kgk": "J/kg.K"
+  },
+  "materials": [
+    {
+      "id": "concrete_standard",
+      "name": "Beton standard",
+      "category": "structure",
+      "thermal_conductivity_w_mk": 1.75,
+      "default_density_kg_m3": 2300,
+      "default_specific_heat_j_kgk": 880
+    },
+    {
+      "id": "brick_hollow",
+      "name": "Brique creuse",
+      "category": "masonry",
+      "thermal_conductivity_w_mk": 0.45,
+      "default_density_kg_m3": 900,
+      "default_specific_heat_j_kgk": 840
+    },
+    {
+      "id": "concrete_block",
+      "name": "Parpaing beton",
+      "category": "masonry",
+      "thermal_conductivity_w_mk": 1.1,
+      "default_density_kg_m3": 1200,
+      "default_specific_heat_j_kgk": 1000
+    },
+    {
+      "id": "stone_wall",
+      "name": "Mur pierre",
+      "category": "masonry",
+      "thermal_conductivity_w_mk": 1.8,
+      "default_density_kg_m3": 2200,
+      "default_specific_heat_j_kgk": 900
+    },
+    {
+      "id": "wood_softwood",
+      "name": "Bois resineux",
+      "category": "wood",
+      "thermal_conductivity_w_mk": 0.13,
+      "default_density_kg_m3": 500,
+      "default_specific_heat_j_kgk": 1600
+    },
+    {
+      "id": "plasterboard",
+      "name": "Plaque de platre",
+      "category": "lining",
+      "thermal_conductivity_w_mk": 0.25,
+      "default_density_kg_m3": 900,
+      "default_specific_heat_j_kgk": 1000
+    },
+    {
+      "id": "glass_wool",
+      "name": "Laine de verre",
+      "category": "insulation",
+      "thermal_conductivity_w_mk": 0.04,
+      "default_density_kg_m3": 25,
+      "default_specific_heat_j_kgk": 1030
+    },
+    {
+      "id": "rock_wool",
+      "name": "Laine de roche",
+      "category": "insulation",
+      "thermal_conductivity_w_mk": 0.04,
+      "default_density_kg_m3": 40,
+      "default_specific_heat_j_kgk": 1030
+    },
+    {
+      "id": "eps",
+      "name": "Polystyrene expanse",
+      "category": "insulation",
+      "thermal_conductivity_w_mk": 0.038,
+      "default_density_kg_m3": 20,
+      "default_specific_heat_j_kgk": 1400
+    },
+    {
+      "id": "polyurethane",
+      "name": "Polyurethane",
+      "category": "insulation",
+      "thermal_conductivity_w_mk": 0.026,
+      "default_density_kg_m3": 35,
+      "default_specific_heat_j_kgk": 1400
+    }
+  ]
+}

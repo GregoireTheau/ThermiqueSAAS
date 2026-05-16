@@ -1,0 +1,75 @@
+{
+  "schema_version": "0.1",
+  "data_quality": "mvp_working_assumptions_to_calibrate",
+  "description": "Default glazing performances for first ThermalTwin tests.",
+  "units": {
+    "u_value_w_m2k": "W/m2.K",
+    "g_value": "ratio"
+  },
+  "windows": [
+    {
+      "id": "single_glazing_old",
+      "name": "Simple vitrage ancien",
+      "u_value_w_m2k": 5.0,
+      "g_value": 0.85
+    },
+    {
+      "id": "double_glazing_old",
+      "name": "Double vitrage ancien",
+      "u_value_w_m2k": 2.8,
+      "g_value": 0.7
+    },
+    {
+      "id": "double_glazing_standard",
+      "name": "Double vitrage standard",
+      "u_value_w_m2k": 1.6,
+      "g_value": 0.55
+    },
+    {
+      "id": "double_glazing_low_e",
+      "name": "Double vitrage faible emissivite",
+      "u_value_w_m2k": 1.2,
+      "g_value": 0.5
+    },
+    {
+      "id": "triple_glazing",
+      "name": "Triple vitrage",
+      "u_value_w_m2k": 0.8,
+      "g_value": 0.45
+    }
+  ],
+  "shutters": [
+    {
+      "id": "none",
+      "name": "Aucune protection",
+      "type": "other",
+      "solar_factor_closed": 1.0,
+      "solar_factor_open": 1.0,
+      "u_factor_closed": 1.0
+    },
+    {
+      "id": "roller_shutter_standard",
+      "name": "Volet roulant standard",
+      "type": "roller_shutter",
+      "solar_factor_closed": 0.15,
+      "solar_factor_open": 1.0,
+      "u_factor_closed": 0.8
+    },
+    {
+      "id": "external_blind",
+      "name": "Store exterieur",
+      "type": "external_blind",
+      "solar_factor_closed": 0.25,
+      "solar_factor_open": 1.0,
+      "u_factor_closed": 0.95
+    },
+    {
+      "id": "interior_blind",
+      "name": "Store interieur",
+      "type": "blind",
+      "solar_factor_closed": 0.55,
+      "solar_factor_open": 1.0,
+      "u_factor_closed": 1.0
+    }
+  ]
+}

@@ -1,0 +1,347 @@
+{
+  "schema_version": "0.1",
+  "dwelling_id": "house_simple",
+  "metadata": {
+    "name": "Maison simple MVP",
+    "description": "Maison fictive de plain-pied pour tester les premieres fonctions thermiques.",
+    "created_by": "manual_example"
+  },
+  "location": {
+    "country": "FR",
+    "postal_code": "33000",
+    "city": "Bordeaux",
+    "climate_zone_id": "FR_H2c",
+    "ground_albedo": 0.2
+  },
+  "defaults": {
+    "initial_temperature_c": 20.0,
+    "equivalent_capacity_j_m2k": 165000,
+    "thermal_bridge_factor": 0.1,
+    "internal_gain_w_m2": 5.0,
+    "ach_h": 0.5,
+    "building_period_ref": "2001_2012_good_insulation"
+  },
+  "rooms": [
+    {
+      "id": "living_room",
+      "name": "Salon cuisine",
+      "type": "living",
+      "floor_area_m2": 32.0,
+      "height_m": 2.5,
+      "volume_m3": 80.0,
+      "initial_temperature_c": 20.0,
+      "equivalent_capacity_j_m2k": 165000,
+      "internal_gain_w_m2": 5.0,
+      "ventilation": {
+        "mode": "ach",
+        "ach_h": 0.5,
+        "ventilation_ref": "simple_flow"
+      },
+      "surfaces": [
+        {
+          "id": "living_south_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 18.0,
+          "u_value_w_m2k": 0.55,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "living_west_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 12.0,
+          "u_value_w_m2k": 0.55,
+          "azimuth_deg": 270,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "living_roof",
+          "type": "roof",
+          "boundary": "exterior",
+          "area_m2": 32.0,
+          "u_value_w_m2k": 0.3,
+          "azimuth_deg": 180,
+          "tilt_deg": 25,
+          "albedo": 0.25,
+          "solar_to_room_factor": 0.06,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "living_floor",
+          "type": "floor",
+          "boundary": "ground",
+          "area_m2": 32.0,
+          "u_value_w_m2k": 0.45
+        }
+      ],
+      "windows": [
+        {
+          "id": "living_south_window",
+          "window_ref": "double_glazing_standard",
+          "area_m2": 4.0,
+          "u_value_w_m2k": 1.6,
+          "g_value": 0.55,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "mask_factor": 1.0,
+          "shutter_ref": "roller_shutter_standard",
+          "shutter": {
+            "type": "roller_shutter",
+            "solar_factor_closed": 0.15,
+            "solar_factor_open": 1.0,
+            "u_factor_closed": 0.8
+          }
+        },
+        {
+          "id": "living_west_window",
+          "window_ref": "double_glazing_standard",
+          "area_m2": 2.0,
+          "u_value_w_m2k": 1.6,
+          "g_value": 0.55,
+          "azimuth_deg": 270,
+          "tilt_deg": 90,
+          "mask_factor": 1.0,
+          "shutter_ref": "roller_shutter_standard",
+          "shutter": {
+            "type": "roller_shutter",
+            "solar_factor_closed": 0.15,
+            "solar_factor_open": 1.0,
+            "u_factor_closed": 0.8
+          }
+        }
+      ]
+    },
+    {
+      "id": "bedroom",
+      "name": "Chambre",
+      "type": "bedroom",
+      "floor_area_m2": 14.0,
+      "height_m": 2.5,
+      "volume_m3": 35.0,
+      "initial_temperature_c": 20.0,
+      "equivalent_capacity_j_m2k": 165000,
+      "internal_gain_w_m2": 3.0,
+      "ventilation": {
+        "mode": "ach",
+        "ach_h": 0.4,
+        "ventilation_ref": "simple_flow"
+      },
+      "surfaces": [
+        {
+          "id": "bedroom_east_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 10.0,
+          "u_value_w_m2k": 0.55,
+          "azimuth_deg": 90,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "bedroom_north_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 9.0,
+          "u_value_w_m2k": 0.55,
+          "azimuth_deg": 0,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "bedroom_roof",
+          "type": "roof",
+          "boundary": "exterior",
+          "area_m2": 14.0,
+          "u_value_w_m2k": 0.3,
+          "azimuth_deg": 180,
+          "tilt_deg": 25,
+          "albedo": 0.25,
+          "solar_to_room_factor": 0.06,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "bedroom_floor",
+          "type": "floor",
+          "boundary": "ground",
+          "area_m2": 14.0,
+          "u_value_w_m2k": 0.45
+        }
+      ],
+      "windows": [
+        {
+          "id": "bedroom_east_window",
+          "window_ref": "double_glazing_standard",
+          "area_m2": 1.8,
+          "u_value_w_m2k": 1.6,
+          "g_value": 0.55,
+          "azimuth_deg": 90,
+          "tilt_deg": 90,
+          "mask_factor": 1.0,
+          "shutter_ref": "roller_shutter_standard",
+          "shutter": {
+            "type": "roller_shutter",
+            "solar_factor_closed": 0.15,
+            "solar_factor_open": 1.0,
+            "u_factor_closed": 0.8
+          }
+        }
+      ]
+    },
+    {
+      "id": "bathroom",
+      "name": "Salle de bain",
+      "type": "bathroom",
+      "floor_area_m2": 6.0,
+      "height_m": 2.5,
+      "volume_m3": 15.0,
+      "initial_temperature_c": 20.0,
+      "equivalent_capacity_j_m2k": 165000,
+      "internal_gain_w_m2": 3.0,
+      "ventilation": {
+        "mode": "ach",
+        "ach_h": 0.8,
+        "ventilation_ref": "simple_flow"
+      },
+      "surfaces": [
+        {
+          "id": "bathroom_north_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 7.0,
+          "u_value_w_m2k": 0.55,
+          "azimuth_deg": 0,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "bathroom_roof",
+          "type": "roof",
+          "boundary": "exterior",
+          "area_m2": 6.0,
+          "u_value_w_m2k": 0.3,
+          "azimuth_deg": 180,
+          "tilt_deg": 25,
+          "albedo": 0.25,
+          "solar_to_room_factor": 0.06,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "bathroom_floor",
+          "type": "floor",
+          "boundary": "ground",
+          "area_m2": 6.0,
+          "u_value_w_m2k": 0.45
+        }
+      ],
+      "windows": [
+        {
+          "id": "bathroom_north_window",
+          "window_ref": "double_glazing_standard",
+          "area_m2": 0.8,
+          "u_value_w_m2k": 1.6,
+          "g_value": 0.5,
+          "azimuth_deg": 0,
+          "tilt_deg": 90,
+          "mask_factor": 1.0
+        }
+      ]
+    }
+  ],
+  "thermal_links": [
+    {
+      "id": "living_bedroom_link",
+      "room_a": "living_room",
+      "room_b": "bedroom",
+      "type": "internal_wall",
+      "area_m2": 10.0,
+      "u_value_w_m2k": 1.8,
+      "opening_factor": 1.0
+    },
+    {
+      "id": "living_bathroom_link",
+      "room_a": "living_room",
+      "room_b": "bathroom",
+      "type": "internal_wall",
+      "area_m2": 6.0,
+      "u_value_w_m2k": 1.8,
+      "opening_factor": 0.8
+    }
+  ],
+  "systems": {
+    "heating": [
+      {
+        "id": "living_heat_pump_unit",
+        "system_ref": "air_air_heat_pump_standard",
+        "type": "heat_pump",
+        "served_rooms": [
+          "living_room"
+        ],
+        "max_power_w": 3500,
+        "performance_ref": {
+          "mode": "constant",
+          "cop": 3.2
+        }
+      },
+      {
+        "id": "bedroom_radiator",
+        "system_ref": "electric_radiator",
+        "type": "electric_radiator",
+        "served_rooms": [
+          "bedroom"
+        ],
+        "max_power_w": 1500,
+        "performance_ref": {
+          "mode": "constant",
+          "cop": 1.0
+        }
+      },
+      {
+        "id": "bathroom_radiator",
+        "system_ref": "electric_radiator",
+        "type": "electric_radiator",
+        "served_rooms": [
+          "bathroom"
+        ],
+        "max_power_w": 1000,
+        "performance_ref": {
+          "mode": "constant",
+          "cop": 1.0
+        }
+      }
+    ],
+    "cooling": [
+      {
+        "id": "living_ac",
+        "system_ref": "air_conditioner_standard",
+        "type": "air_conditioner",
+        "served_rooms": [
+          "living_room"
+        ],
+        "max_power_w": 3000,
+        "performance_ref": {
+          "mode": "constant",
+          "eer": 3.0
+        }
+      }
+    ],
+    "ventilation": {
+      "ventilation_ref": "simple_flow",
+      "type": "simple_flow",
+      "default_ach_h": 0.5
+    }
+  }
+}

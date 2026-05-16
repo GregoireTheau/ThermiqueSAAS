@@ -1,0 +1,46 @@
+{
+  "schema_version": "0.1",
+  "data_quality": "mvp_working_assumptions_to_calibrate",
+  "description": "Simplified cooling equipment performance assumptions for sensible cooling.",
+  "units": {
+    "eer": "cooling W / electric W"
+  },
+  "systems": [
+    {
+      "id": "air_conditioner_entry_level",
+      "name": "Climatisation air-air entree de gamme",
+      "type": "air_conditioner",
+      "performance_ref": {
+        "mode": "constant",
+        "eer": 2.6
+      }
+    },
+    {
+      "id": "air_conditioner_standard",
+      "name": "Climatisation air-air standard",
+      "type": "air_conditioner",
+      "performance_ref": {
+        "mode": "constant",
+        "eer": 3.0
+      }
+    },
+    {
+      "id": "air_conditioner_high_efficiency",
+      "name": "Climatisation air-air performante",
+      "type": "air_conditioner",
+      "performance_ref": {
+        "mode": "constant",
+        "eer": 3.6
+      }
+    },
+    {
+      "id": "reversible_heat_pump_standard",
+      "name": "PAC reversible standard",
+      "type": "reversible_heat_pump",
+      "performance_ref": {
+        "mode": "constant",
+        "eer": 3.2
+      }
+    }
+  ]
+}

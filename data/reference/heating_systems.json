@@ -1,0 +1,56 @@
+{
+  "schema_version": "0.1",
+  "data_quality": "mvp_working_assumptions_to_calibrate",
+  "description": "Simplified heating equipment performance assumptions for first tests.",
+  "units": {
+    "cop": "thermal W / electric W",
+    "efficiency": "thermal W / final energy W"
+  },
+  "systems": [
+    {
+      "id": "electric_radiator",
+      "name": "Radiateur electrique",
+      "type": "electric_radiator",
+      "performance_ref": {
+        "mode": "constant",
+        "cop": 1.0
+      }
+    },
+    {
+      "id": "air_air_heat_pump_standard",
+      "name": "PAC air-air standard",
+      "type": "heat_pump",
+      "performance_ref": {
+        "mode": "constant",
+        "cop": 3.2
+      }
+    },
+    {
+      "id": "air_water_heat_pump_standard",
+      "name": "PAC air-eau standard",
+      "type": "heat_pump",
+      "performance_ref": {
+        "mode": "constant",
+        "cop": 3.0
+      }
+    },
+    {
+      "id": "gas_boiler_standard",
+      "name": "Chaudiere gaz standard",
+      "type": "boiler",
+      "performance_ref": {
+        "mode": "constant",
+        "cop": 0.9
+      }
+    },
+    {
+      "id": "gas_boiler_condensing",
+      "name": "Chaudiere gaz condensation",
+      "type": "boiler",
+      "performance_ref": {
+        "mode": "constant",
+        "cop": 1.0
+      }
+    }
+  ]
+}

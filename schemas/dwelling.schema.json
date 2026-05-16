@@ -1,0 +1,576 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thermaltwin.local/schemas/dwelling.schema.json",
+  "title": "ThermalTwin dwelling MVP schema",
+  "description": "Schema for a simplified ThermalTwin dwelling used by the MVP thermal model.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "dwelling_id",
+    "metadata",
+    "location",
+    "defaults",
+    "rooms",
+    "thermal_links",
+    "systems"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "dwelling_id": {
+      "$ref": "#/$defs/id"
+    },
+    "metadata": {
+      "$ref": "#/$defs/metadata"
+    },
+    "location": {
+      "$ref": "#/$defs/location"
+    },
+    "defaults": {
+      "$ref": "#/$defs/defaults"
+    },
+    "rooms": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/room"
+      }
+    },
+    "thermal_links": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/thermal_link"
+      }
+    },
+    "systems": {
+      "$ref": "#/$defs/systems"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_\\-]*$"
+    },
+    "non_empty_string": {
+      "type": "string",
+      "minLength": 1
+    },
+    "positive_number": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "non_negative_number": {
+      "type": "number",
+      "minimum": 0
+    },
+    "factor_0_1": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "azimuth_deg": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 360
+    },
+    "tilt_deg": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 180
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description",
+        "created_by"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/non_empty_string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "created_by": {
+          "$ref": "#/$defs/non_empty_string"
+        }
+      }
+    },
+    "location": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "country",
+        "postal_code",
+        "city",
+        "climate_zone_id",
+        "ground_albedo"
+      ],
+      "properties": {
+        "country": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 2
+        },
+        "postal_code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "city": {
+          "$ref": "#/$defs/non_empty_string"
+        },
+        "climate_zone_id": {
+          "$ref": "#/$defs/id"
+        },
+        "ground_albedo": {
+          "$ref": "#/$defs/factor_0_1"
+        }
+      }
+    },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "initial_temperature_c",
+        "internal_gain_w_m2",
+        "ach_h"
+      ],
+      "properties": {
+        "initial_temperature_c": {
+          "type": "number"
+        },
+        "equivalent_capacity_j_m2k": {
+          "$ref": "#/$defs/positive_number"
+        },
+        "thermal_bridge_factor": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "internal_gain_w_m2": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "ach_h": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "building_period_ref": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "room": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "type",
+        "floor_area_m2",
+        "height_m",
+        "volume_m3",
+        "surfaces",
+        "windows"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/non_empty_string"
+        },
+        "type": {
+          "enum": [
+            "living",
+            "bedroom",
+            "bathroom",
+            "kitchen",
+            "office",
+            "corridor",
+            "utility",
+            "other"
+          ]
+        },
+        "floor_area_m2": {
+          "$ref": "#/$defs/positive_number"
+        },
+        "height_m": {
+          "$ref": "#/$defs/positive_number"
+        },
+        "volume_m3": {
+          "$ref": "#/$defs/positive_number"
+        },
+        "initial_temperature_c": {
+          "type": "number"
+        },
+        "equivalent_capacity_j_m2k": {
+          "$ref": "#/$defs/positive_number"
+        },
+        "internal_gain_w_m2": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "ventilation": {
+          "$ref": "#/$defs/room_ventilation"
+        },
+        "surfaces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/surface"
+          }
+        },
+        "windows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/window"
+          }
+        }
+      }
+    },
+    "room_ventilation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "ach_h"
+      ],
+      "properties": {
+        "mode": {
+          "const": "ach"
+        },
+        "ach_h": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "ventilation_ref": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "boundary",
+        "area_m2"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "enum": [
+            "external_wall",
+            "roof",
+            "floor",
+            "internal_wall",
+            "party_wall"
+          ]
+        },
+        "boundary": {
+          "enum": [
+            "exterior",
+            "ground",
+            "unheated_space",
+            "room",
+            "party"
+          ]
+        },
+        "area_m2": {
+          "$ref": "#/$defs/positive_number"
+        },
+        "u_value_w_m2k": {
+          "$ref": "#/$defs/positive_number"
+        },
+        "azimuth_deg": {
+          "$ref": "#/$defs/azimuth_deg"
+        },
+        "tilt_deg": {
+          "$ref": "#/$defs/tilt_deg"
+        },
+        "albedo": {
+          "$ref": "#/$defs/factor_0_1"
+        },
+        "solar_to_room_factor": {
+          "$ref": "#/$defs/factor_0_1"
+        },
+        "mask_factor": {
+          "$ref": "#/$defs/factor_0_1"
+        }
+      }
+    },
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "area_m2",
+        "azimuth_deg",
+        "tilt_deg"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "area_m2": {
+          "$ref": "#/$defs/positive_number"
+        },
+        "u_value_w_m2k": {
+          "$ref": "#/$defs/positive_number"
+        },
+        "g_value": {
+          "$ref": "#/$defs/factor_0_1"
+        },
+        "azimuth_deg": {
+          "$ref": "#/$defs/azimuth_deg"
+        },
+        "tilt_deg": {
+          "$ref": "#/$defs/tilt_deg"
+        },
+        "mask_factor": {
+          "$ref": "#/$defs/factor_0_1"
+        },
+        "shutter": {
+          "$ref": "#/$defs/shutter"
+        },
+        "window_ref": {
+          "$ref": "#/$defs/id"
+        },
+        "shutter_ref": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "shutter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "solar_factor_closed",
+        "solar_factor_open",
+        "u_factor_closed"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "roller_shutter",
+            "swing_shutter",
+            "blind",
+            "external_blind",
+            "other"
+          ]
+        },
+        "solar_factor_closed": {
+          "$ref": "#/$defs/factor_0_1"
+        },
+        "solar_factor_open": {
+          "$ref": "#/$defs/factor_0_1"
+        },
+        "u_factor_closed": {
+          "$ref": "#/$defs/factor_0_1"
+        }
+      }
+    },
+    "thermal_link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "room_a",
+        "room_b",
+        "type",
+        "area_m2",
+        "u_value_w_m2k",
+        "opening_factor"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "room_a": {
+          "$ref": "#/$defs/id"
+        },
+        "room_b": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "enum": [
+            "internal_wall",
+            "door",
+            "open_connection",
+            "other"
+          ]
+        },
+        "area_m2": {
+          "$ref": "#/$defs/positive_number"
+        },
+        "u_value_w_m2k": {
+          "$ref": "#/$defs/positive_number"
+        },
+        "opening_factor": {
+          "$ref": "#/$defs/non_negative_number"
+        }
+      }
+    },
+    "systems": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "heating",
+        "cooling",
+        "ventilation"
+      ],
+      "properties": {
+        "heating": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/heating_system"
+          }
+        },
+        "cooling": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/cooling_system"
+          }
+        },
+        "ventilation": {
+          "$ref": "#/$defs/building_ventilation"
+        }
+      }
+    },
+    "heating_system": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "served_rooms",
+        "max_power_w"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "enum": [
+            "heat_pump",
+            "electric_radiator",
+            "boiler",
+            "stove",
+            "other"
+          ]
+        },
+        "served_rooms": {
+          "$ref": "#/$defs/served_rooms"
+        },
+        "max_power_w": {
+          "$ref": "#/$defs/positive_number"
+        },
+        "performance_ref": {
+          "$ref": "#/$defs/heating_performance_ref"
+        },
+        "system_ref": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "cooling_system": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "served_rooms",
+        "max_power_w"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "enum": [
+            "air_conditioner",
+            "reversible_heat_pump",
+            "other"
+          ]
+        },
+        "served_rooms": {
+          "$ref": "#/$defs/served_rooms"
+        },
+        "max_power_w": {
+          "$ref": "#/$defs/positive_number"
+        },
+        "performance_ref": {
+          "$ref": "#/$defs/cooling_performance_ref"
+        },
+        "system_ref": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "served_rooms": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/id"
+      },
+      "uniqueItems": true
+    },
+    "heating_performance_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "cop"
+      ],
+      "properties": {
+        "mode": {
+          "const": "constant"
+        },
+        "cop": {
+          "$ref": "#/$defs/positive_number"
+        }
+      }
+    },
+    "cooling_performance_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "eer"
+      ],
+      "properties": {
+        "mode": {
+          "const": "constant"
+        },
+        "eer": {
+          "$ref": "#/$defs/positive_number"
+        }
+      }
+    },
+    "building_ventilation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "none",
+            "simple_flow",
+            "double_flow",
+            "natural",
+            "other"
+          ]
+        },
+        "default_ach_h": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "ventilation_ref": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    }
+  }
+}

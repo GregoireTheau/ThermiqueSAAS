@@ -1,0 +1,118 @@
+{
+  "schema_version": "0.1",
+  "scenario_id": "scenario_simple_winter_24h",
+  "dwelling_id": "house_simple",
+  "description": "Scenario hiver synthetique de 24 h pour tester la premiere simulation horaire 1R1C.",
+  "timestep_h": 1.0,
+  "setpoints": {
+    "heating_c": 19.0,
+    "cooling_c": 26.0
+  },
+  "weather": {
+    "source": "synthetic",
+    "hourly": [
+      {
+        "hour": 0,
+        "outdoor_temperature_c": 2.0
+      },
+      {
+        "hour": 1,
+        "outdoor_temperature_c": 1.5
+      },
+      {
+        "hour": 2,
+        "outdoor_temperature_c": 1.0
+      },
+      {
+        "hour": 3,
+        "outdoor_temperature_c": 0.5
+      },
+      {
+        "hour": 4,
+        "outdoor_temperature_c": 0.0
+      },
+      {
+        "hour": 5,
+        "outdoor_temperature_c": 0.0
+      },
+      {
+        "hour": 6,
+        "outdoor_temperature_c": 1.0
+      },
+      {
+        "hour": 7,
+        "outdoor_temperature_c": 2.0
+      },
+      {
+        "hour": 8,
+        "outdoor_temperature_c": 4.0
+      },
+      {
+        "hour": 9,
+        "outdoor_temperature_c": 6.0
+      },
+      {
+        "hour": 10,
+        "outdoor_temperature_c": 8.0
+      },
+      {
+        "hour": 11,
+        "outdoor_temperature_c": 9.0
+      },
+      {
+        "hour": 12,
+        "outdoor_temperature_c": 10.0
+      },
+      {
+        "hour": 13,
+        "outdoor_temperature_c": 10.5
+      },
+      {
+        "hour": 14,
+        "outdoor_temperature_c": 10.0
+      },
+      {
+        "hour": 15,
+        "outdoor_temperature_c": 9.0
+      },
+      {
+        "hour": 16,
+        "outdoor_temperature_c": 7.0
+      },
+      {
+        "hour": 17,
+        "outdoor_temperature_c": 5.0
+      },
+      {
+        "hour": 18,
+        "outdoor_temperature_c": 4.0
+      },
+      {
+        "hour": 19,
+        "outdoor_temperature_c": 3.0
+      },
+      {
+        "hour": 20,
+        "outdoor_temperature_c": 2.5
+      },
+      {
+        "hour": 21,
+        "outdoor_temperature_c": 2.0
+      },
+      {
+        "hour": 22,
+        "outdoor_temperature_c": 1.5
+      },
+      {
+        "hour": 23,
+        "outdoor_temperature_c": 1.0
+      }
+    ]
+  },
+  "energy_prices": {
+    "electricity_eur_kwh": 0.25
+  },
+  "co2_factors": {
+    "electricity_kg_kwh": 0.06
+  }
+}
