@@ -5,7 +5,7 @@
 - [x] Construire une description du projet la plus claire possible (`Project Description`)
 - [x] Distinguer les différentes parties du projet
 - [ ] Interviewer 2-3 installateurs / revendeurs cibles pour valider ce qu'ils attendent du rapport
-- [ ] Documenter les bases de physique thermique nécessaires aux calculs (Q = U·A·ΔT, ponts thermiques, apports solaires)
+- [x] Documenter les bases de physique thermique nécessaires aux calculs (Q = U·A·ΔT, ponts thermiques, apports solaires)
 - [ ] Déterminer les types de simulation à lancer (année moyenne, cas extrême canicule, cas extrême gel)
 - [ ] Recenser les valeurs de référence : coefficients U par matériau (source RT2012), zones climatiques France
 

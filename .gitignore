@@ -1,4 +1,24 @@
-__pycache____pycache__/
-*.pyc
+# Python
+__pycache__/
+*.py[cod]
 *.pyo
 *.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local outputs
+outputs/
+*.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

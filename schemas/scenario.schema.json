@@ -1,0 +1,253 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thermaltwin.local/schemas/scenario.schema.json",
+  "title": "ThermalTwin scenario MVP schema",
+  "description": "Schema for simplified ThermalTwin scenario inputs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "scenario_id",
+    "dwelling_id",
+    "timestep_h",
+    "setpoints",
+    "weather",
+    "energy_prices",
+    "co2_factors"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "scenario_id": {
+      "$ref": "#/$defs/id"
+    },
+    "dwelling_id": {
+      "$ref": "#/$defs/id"
+    },
+    "description": {
+      "type": "string"
+    },
+    "timestep_h": {
+      "$ref": "#/$defs/positive_number"
+    },
+    "initial_temperatures_c": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "setpoints": {
+      "$ref": "#/$defs/setpoints"
+    },
+    "controls": {
+      "$ref": "#/$defs/controls"
+    },
+    "retrofit": {
+      "$ref": "#/$defs/retrofit"
+    },
+    "weather": {
+      "$ref": "#/$defs/weather"
+    },
+    "energy_prices": {
+      "$ref": "#/$defs/energy_prices"
+    },
+    "co2_factors": {
+      "$ref": "#/$defs/co2_factors"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_\\-]*$"
+    },
+    "positive_number": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "non_negative_number": {
+      "type": "number",
+      "minimum": 0
+    },
+    "factor_0_1": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "setpoints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "heating_c",
+        "cooling_c"
+      ],
+      "properties": {
+        "heating_c": {
+          "type": "number"
+        },
+        "cooling_c": {
+          "type": "number"
+        }
+      }
+    },
+    "controls": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "shutters": {
+          "$ref": "#/$defs/shutter_controls"
+        }
+      }
+    },
+    "shutter_controls": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "default_opening_ratio": {
+          "$ref": "#/$defs/factor_0_1"
+        },
+        "hourly": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/shutter_hourly_control"
+          }
+        }
+      }
+    },
+    "shutter_hourly_control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hour",
+        "opening_ratio"
+      ],
+      "properties": {
+        "hour": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "opening_ratio": {
+          "$ref": "#/$defs/factor_0_1"
+        }
+      }
+    },
+    "retrofit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "surface_overrides": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/surface_override"
+          }
+        }
+      }
+    },
+    "surface_override": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "surface_id"
+      ],
+      "properties": {
+        "surface_id": {
+          "$ref": "#/$defs/id"
+        },
+        "albedo": {
+          "$ref": "#/$defs/factor_0_1"
+        },
+        "solar_to_room_factor": {
+          "$ref": "#/$defs/factor_0_1"
+        },
+        "u_value_w_m2k": {
+          "$ref": "#/$defs/positive_number"
+        }
+      }
+    },
+    "weather": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hourly"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "hourly": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/weather_hour"
+          }
+        }
+      }
+    },
+    "weather_hour": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hour",
+        "outdoor_temperature_c"
+      ],
+      "properties": {
+        "hour": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "outdoor_temperature_c": {
+          "type": "number"
+        },
+        "solar_irradiance_w_m2": {
+          "$ref": "#/$defs/solar_irradiance"
+        }
+      }
+    },
+    "solar_irradiance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "north": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "east": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "south": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "west": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "roof": {
+          "$ref": "#/$defs/non_negative_number"
+        }
+      }
+    },
+    "energy_prices": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "electricity_eur_kwh"
+      ],
+      "properties": {
+        "electricity_eur_kwh": {
+          "$ref": "#/$defs/non_negative_number"
+        }
+      }
+    },
+    "co2_factors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "electricity_kg_kwh"
+      ],
+      "properties": {
+        "electricity_kg_kwh": {
+          "$ref": "#/$defs/non_negative_number"
+        }
+      }
+    }
+  }
+}
