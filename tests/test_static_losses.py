@@ -1,5 +1,9 @@
-from thermal_model import load_dwelling, load_reference_catalog, resolve_dwelling_references
-from scripts.compute_static_losses import compute_dwelling_static_losses
+from thermal_model import (
+    compute_dwelling_static_losses,
+    load_dwelling,
+    load_reference_catalog,
+    resolve_dwelling_references,
+)
 
 
 def test_compute_static_losses_house_simple_total():

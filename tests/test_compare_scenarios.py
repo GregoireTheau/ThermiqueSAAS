@@ -1,5 +1,10 @@
-from thermal_model import load_dwelling, load_reference_catalog, load_scenario, resolve_dwelling_references
-from scripts.compare_scenarios import compare_scenarios
+from thermal_model import (
+    compare_scenarios,
+    load_dwelling,
+    load_reference_catalog,
+    load_scenario,
+    resolve_dwelling_references,
+)
 
 
 def test_compare_heatwave_before_after_reflective_roof():
@@ -22,3 +27,14 @@ def test_compare_heatwave_before_after_reflective_roof():
         comparison["deltas"]["rooms"]["bedroom"]["delta_max_temperature_c"],
         1,
     ) == 4.0
+    bedroom_deltas = comparison["deltas"]["rooms"]["bedroom"]
+    assert "delta_hot_degree_hours" in bedroom_deltas
+    assert "delta_cold_degree_hours" in bedroom_deltas
+    assert "delta_solar_gain_kwh" in bedroom_deltas
+    assert "delta_transmission_exchange_kwh" in bedroom_deltas
+    assert "delta_ventilation_exchange_kwh" in bedroom_deltas
+    assert "delta_heating_thermal_kwh" in bedroom_deltas
+    assert "delta_cooling_thermal_kwh" in bedroom_deltas
+    assert comparison["comparison_schema_version"] == "0.2"
+    assert comparison["summary"]["energy_savings"]["electricity_saved_kwh"] == comparison["deltas"]["electricity_kwh"]
+    assert comparison["summary"]["main_gain_driver"]["key"] == "solar_gains"

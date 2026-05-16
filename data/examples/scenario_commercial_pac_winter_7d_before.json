@@ -1,0 +1,713 @@
+{
+  "schema_version": "0.1",
+  "dwelling_id": "house_simple",
+  "timestep_h": 1.0,
+  "initial_temperatures_c": {
+    "living_room": 19.0,
+    "bedroom": 19.0,
+    "bathroom": 19.0
+  },
+  "setpoints": {
+    "heating_c": 19.0,
+    "cooling_c": 26.0
+  },
+  "weather": {
+    "source": "synthetic_winter_7d",
+    "hourly": [
+      {
+        "hour": 0,
+        "outdoor_temperature_c": 1.0
+      },
+      {
+        "hour": 1,
+        "outdoor_temperature_c": 0.5
+      },
+      {
+        "hour": 2,
+        "outdoor_temperature_c": 0.0
+      },
+      {
+        "hour": 3,
+        "outdoor_temperature_c": -0.5
+      },
+      {
+        "hour": 4,
+        "outdoor_temperature_c": -1.0
+      },
+      {
+        "hour": 5,
+        "outdoor_temperature_c": -1.0
+      },
+      {
+        "hour": 6,
+        "outdoor_temperature_c": 0.0
+      },
+      {
+        "hour": 7,
+        "outdoor_temperature_c": 1.0
+      },
+      {
+        "hour": 8,
+        "outdoor_temperature_c": 3.0
+      },
+      {
+        "hour": 9,
+        "outdoor_temperature_c": 5.0
+      },
+      {
+        "hour": 10,
+        "outdoor_temperature_c": 7.0
+      },
+      {
+        "hour": 11,
+        "outdoor_temperature_c": 8.0
+      },
+      {
+        "hour": 12,
+        "outdoor_temperature_c": 9.0
+      },
+      {
+        "hour": 13,
+        "outdoor_temperature_c": 9.5
+      },
+      {
+        "hour": 14,
+        "outdoor_temperature_c": 9.0
+      },
+      {
+        "hour": 15,
+        "outdoor_temperature_c": 8.0
+      },
+      {
+        "hour": 16,
+        "outdoor_temperature_c": 6.0
+      },
+      {
+        "hour": 17,
+        "outdoor_temperature_c": 4.0
+      },
+      {
+        "hour": 18,
+        "outdoor_temperature_c": 3.0
+      },
+      {
+        "hour": 19,
+        "outdoor_temperature_c": 2.0
+      },
+      {
+        "hour": 20,
+        "outdoor_temperature_c": 1.5
+      },
+      {
+        "hour": 21,
+        "outdoor_temperature_c": 1.0
+      },
+      {
+        "hour": 22,
+        "outdoor_temperature_c": 0.5
+      },
+      {
+        "hour": 23,
+        "outdoor_temperature_c": 0.0
+      },
+      {
+        "hour": 24,
+        "outdoor_temperature_c": 0.0
+      },
+      {
+        "hour": 25,
+        "outdoor_temperature_c": -0.5
+      },
+      {
+        "hour": 26,
+        "outdoor_temperature_c": -1.0
+      },
+      {
+        "hour": 27,
+        "outdoor_temperature_c": -1.5
+      },
+      {
+        "hour": 28,
+        "outdoor_temperature_c": -2.0
+      },
+      {
+        "hour": 29,
+        "outdoor_temperature_c": -2.0
+      },
+      {
+        "hour": 30,
+        "outdoor_temperature_c": -1.0
+      },
+      {
+        "hour": 31,
+        "outdoor_temperature_c": 0.0
+      },
+      {
+        "hour": 32,
+        "outdoor_temperature_c": 2.0
+      },
+      {
+        "hour": 33,
+        "outdoor_temperature_c": 4.0
+      },
+      {
+        "hour": 34,
+        "outdoor_temperature_c": 6.0
+      },
+      {
+        "hour": 35,
+        "outdoor_temperature_c": 7.0
+      },
+      {
+        "hour": 36,
+        "outdoor_temperature_c": 8.0
+      },
+      {
+        "hour": 37,
+        "outdoor_temperature_c": 8.5
+      },
+      {
+        "hour": 38,
+        "outdoor_temperature_c": 8.0
+      },
+      {
+        "hour": 39,
+        "outdoor_temperature_c": 7.0
+      },
+      {
+        "hour": 40,
+        "outdoor_temperature_c": 5.0
+      },
+      {
+        "hour": 41,
+        "outdoor_temperature_c": 3.0
+      },
+      {
+        "hour": 42,
+        "outdoor_temperature_c": 2.0
+      },
+      {
+        "hour": 43,
+        "outdoor_temperature_c": 1.0
+      },
+      {
+        "hour": 44,
+        "outdoor_temperature_c": 0.5
+      },
+      {
+        "hour": 45,
+        "outdoor_temperature_c": 0.0
+      },
+      {
+        "hour": 46,
+        "outdoor_temperature_c": -0.5
+      },
+      {
+        "hour": 47,
+        "outdoor_temperature_c": -1.0
+      },
+      {
+        "hour": 48,
+        "outdoor_temperature_c": -1.0
+      },
+      {
+        "hour": 49,
+        "outdoor_temperature_c": -1.5
+      },
+      {
+        "hour": 50,
+        "outdoor_temperature_c": -2.0
+      },
+      {
+        "hour": 51,
+        "outdoor_temperature_c": -2.5
+      },
+      {
+        "hour": 52,
+        "outdoor_temperature_c": -3.0
+      },
+      {
+        "hour": 53,
+        "outdoor_temperature_c": -3.0
+      },
+      {
+        "hour": 54,
+        "outdoor_temperature_c": -2.0
+      },
+      {
+        "hour": 55,
+        "outdoor_temperature_c": -1.0
+      },
+      {
+        "hour": 56,
+        "outdoor_temperature_c": 1.0
+      },
+      {
+        "hour": 57,
+        "outdoor_temperature_c": 3.0
+      },
+      {
+        "hour": 58,
+        "outdoor_temperature_c": 5.0
+      },
+      {
+        "hour": 59,
+        "outdoor_temperature_c": 6.0
+      },
+      {
+        "hour": 60,
+        "outdoor_temperature_c": 7.0
+      },
+      {
+        "hour": 61,
+        "outdoor_temperature_c": 7.5
+      },
+      {
+        "hour": 62,
+        "outdoor_temperature_c": 7.0
+      },
+      {
+        "hour": 63,
+        "outdoor_temperature_c": 6.0
+      },
+      {
+        "hour": 64,
+        "outdoor_temperature_c": 4.0
+      },
+      {
+        "hour": 65,
+        "outdoor_temperature_c": 2.0
+      },
+      {
+        "hour": 66,
+        "outdoor_temperature_c": 1.0
+      },
+      {
+        "hour": 67,
+        "outdoor_temperature_c": 0.0
+      },
+      {
+        "hour": 68,
+        "outdoor_temperature_c": -0.5
+      },
+      {
+        "hour": 69,
+        "outdoor_temperature_c": -1.0
+      },
+      {
+        "hour": 70,
+        "outdoor_temperature_c": -1.5
+      },
+      {
+        "hour": 71,
+        "outdoor_temperature_c": -2.0
+      },
+      {
+        "hour": 72,
+        "outdoor_temperature_c": 0.0
+      },
+      {
+        "hour": 73,
+        "outdoor_temperature_c": -0.5
+      },
+      {
+        "hour": 74,
+        "outdoor_temperature_c": -1.0
+      },
+      {
+        "hour": 75,
+        "outdoor_temperature_c": -1.5
+      },
+      {
+        "hour": 76,
+        "outdoor_temperature_c": -2.0
+      },
+      {
+        "hour": 77,
+        "outdoor_temperature_c": -2.0
+      },
+      {
+        "hour": 78,
+        "outdoor_temperature_c": -1.0
+      },
+      {
+        "hour": 79,
+        "outdoor_temperature_c": 0.0
+      },
+      {
+        "hour": 80,
+        "outdoor_temperature_c": 2.0
+      },
+      {
+        "hour": 81,
+        "outdoor_temperature_c": 4.0
+      },
+      {
+        "hour": 82,
+        "outdoor_temperature_c": 6.0
+      },
+      {
+        "hour": 83,
+        "outdoor_temperature_c": 7.0
+      },
+      {
+        "hour": 84,
+        "outdoor_temperature_c": 8.0
+      },
+      {
+        "hour": 85,
+        "outdoor_temperature_c": 8.5
+      },
+      {
+        "hour": 86,
+        "outdoor_temperature_c": 8.0
+      },
+      {
+        "hour": 87,
+        "outdoor_temperature_c": 7.0
+      },
+      {
+        "hour": 88,
+        "outdoor_temperature_c": 5.0
+      },
+      {
+        "hour": 89,
+        "outdoor_temperature_c": 3.0
+      },
+      {
+        "hour": 90,
+        "outdoor_temperature_c": 2.0
+      },
+      {
+        "hour": 91,
+        "outdoor_temperature_c": 1.0
+      },
+      {
+        "hour": 92,
+        "outdoor_temperature_c": 0.5
+      },
+      {
+        "hour": 93,
+        "outdoor_temperature_c": 0.0
+      },
+      {
+        "hour": 94,
+        "outdoor_temperature_c": -0.5
+      },
+      {
+        "hour": 95,
+        "outdoor_temperature_c": -1.0
+      },
+      {
+        "hour": 96,
+        "outdoor_temperature_c": 0.5
+      },
+      {
+        "hour": 97,
+        "outdoor_temperature_c": 0.0
+      },
+      {
+        "hour": 98,
+        "outdoor_temperature_c": -0.5
+      },
+      {
+        "hour": 99,
+        "outdoor_temperature_c": -1.0
+      },
+      {
+        "hour": 100,
+        "outdoor_temperature_c": -1.5
+      },
+      {
+        "hour": 101,
+        "outdoor_temperature_c": -1.5
+      },
+      {
+        "hour": 102,
+        "outdoor_temperature_c": -0.5
+      },
+      {
+        "hour": 103,
+        "outdoor_temperature_c": 0.5
+      },
+      {
+        "hour": 104,
+        "outdoor_temperature_c": 2.5
+      },
+      {
+        "hour": 105,
+        "outdoor_temperature_c": 4.5
+      },
+      {
+        "hour": 106,
+        "outdoor_temperature_c": 6.5
+      },
+      {
+        "hour": 107,
+        "outdoor_temperature_c": 7.5
+      },
+      {
+        "hour": 108,
+        "outdoor_temperature_c": 8.5
+      },
+      {
+        "hour": 109,
+        "outdoor_temperature_c": 9.0
+      },
+      {
+        "hour": 110,
+        "outdoor_temperature_c": 8.5
+      },
+      {
+        "hour": 111,
+        "outdoor_temperature_c": 7.5
+      },
+      {
+        "hour": 112,
+        "outdoor_temperature_c": 5.5
+      },
+      {
+        "hour": 113,
+        "outdoor_temperature_c": 3.5
+      },
+      {
+        "hour": 114,
+        "outdoor_temperature_c": 2.5
+      },
+      {
+        "hour": 115,
+        "outdoor_temperature_c": 1.5
+      },
+      {
+        "hour": 116,
+        "outdoor_temperature_c": 1.0
+      },
+      {
+        "hour": 117,
+        "outdoor_temperature_c": 0.5
+      },
+      {
+        "hour": 118,
+        "outdoor_temperature_c": 0.0
+      },
+      {
+        "hour": 119,
+        "outdoor_temperature_c": -0.5
+      },
+      {
+        "hour": 120,
+        "outdoor_temperature_c": -0.5
+      },
+      {
+        "hour": 121,
+        "outdoor_temperature_c": -1.0
+      },
+      {
+        "hour": 122,
+        "outdoor_temperature_c": -1.5
+      },
+      {
+        "hour": 123,
+        "outdoor_temperature_c": -2.0
+      },
+      {
+        "hour": 124,
+        "outdoor_temperature_c": -2.5
+      },
+      {
+        "hour": 125,
+        "outdoor_temperature_c": -2.5
+      },
+      {
+        "hour": 126,
+        "outdoor_temperature_c": -1.5
+      },
+      {
+        "hour": 127,
+        "outdoor_temperature_c": -0.5
+      },
+      {
+        "hour": 128,
+        "outdoor_temperature_c": 1.5
+      },
+      {
+        "hour": 129,
+        "outdoor_temperature_c": 3.5
+      },
+      {
+        "hour": 130,
+        "outdoor_temperature_c": 5.5
+      },
+      {
+        "hour": 131,
+        "outdoor_temperature_c": 6.5
+      },
+      {
+        "hour": 132,
+        "outdoor_temperature_c": 7.5
+      },
+      {
+        "hour": 133,
+        "outdoor_temperature_c": 8.0
+      },
+      {
+        "hour": 134,
+        "outdoor_temperature_c": 7.5
+      },
+      {
+        "hour": 135,
+        "outdoor_temperature_c": 6.5
+      },
+      {
+        "hour": 136,
+        "outdoor_temperature_c": 4.5
+      },
+      {
+        "hour": 137,
+        "outdoor_temperature_c": 2.5
+      },
+      {
+        "hour": 138,
+        "outdoor_temperature_c": 1.5
+      },
+      {
+        "hour": 139,
+        "outdoor_temperature_c": 0.5
+      },
+      {
+        "hour": 140,
+        "outdoor_temperature_c": 0.0
+      },
+      {
+        "hour": 141,
+        "outdoor_temperature_c": -0.5
+      },
+      {
+        "hour": 142,
+        "outdoor_temperature_c": -1.0
+      },
+      {
+        "hour": 143,
+        "outdoor_temperature_c": -1.5
+      },
+      {
+        "hour": 144,
+        "outdoor_temperature_c": 1.0
+      },
+      {
+        "hour": 145,
+        "outdoor_temperature_c": 0.5
+      },
+      {
+        "hour": 146,
+        "outdoor_temperature_c": 0.0
+      },
+      {
+        "hour": 147,
+        "outdoor_temperature_c": -0.5
+      },
+      {
+        "hour": 148,
+        "outdoor_temperature_c": -1.0
+      },
+      {
+        "hour": 149,
+        "outdoor_temperature_c": -1.0
+      },
+      {
+        "hour": 150,
+        "outdoor_temperature_c": 0.0
+      },
+      {
+        "hour": 151,
+        "outdoor_temperature_c": 1.0
+      },
+      {
+        "hour": 152,
+        "outdoor_temperature_c": 3.0
+      },
+      {
+        "hour": 153,
+        "outdoor_temperature_c": 5.0
+      },
+      {
+        "hour": 154,
+        "outdoor_temperature_c": 7.0
+      },
+      {
+        "hour": 155,
+        "outdoor_temperature_c": 8.0
+      },
+      {
+        "hour": 156,
+        "outdoor_temperature_c": 9.0
+      },
+      {
+        "hour": 157,
+        "outdoor_temperature_c": 9.5
+      },
+      {
+        "hour": 158,
+        "outdoor_temperature_c": 9.0
+      },
+      {
+        "hour": 159,
+        "outdoor_temperature_c": 8.0
+      },
+      {
+        "hour": 160,
+        "outdoor_temperature_c": 6.0
+      },
+      {
+        "hour": 161,
+        "outdoor_temperature_c": 4.0
+      },
+      {
+        "hour": 162,
+        "outdoor_temperature_c": 3.0
+      },
+      {
+        "hour": 163,
+        "outdoor_temperature_c": 2.0
+      },
+      {
+        "hour": 164,
+        "outdoor_temperature_c": 1.5
+      },
+      {
+        "hour": 165,
+        "outdoor_temperature_c": 1.0
+      },
+      {
+        "hour": 166,
+        "outdoor_temperature_c": 0.5
+      },
+      {
+        "hour": 167,
+        "outdoor_temperature_c": 0.0
+      }
+    ]
+  },
+  "energy_prices": {
+    "electricity_eur_kwh": 0.25
+  },
+  "co2_factors": {
+    "electricity_kg_kwh": 0.06
+  },
+  "scenario_id": "commercial_winter_7d_electric_heating_before",
+  "description": "Experience commerciale hiver 7 jours avant PAC: chauffage electrique direct.",
+  "retrofit": {
+    "system_overrides": [
+      {
+        "category": "heating",
+        "system_id": "living_heat_pump_unit",
+        "type": "electric_radiator",
+        "max_power_w": 3500,
+        "performance_ref": {
+          "mode": "constant",
+          "cop": 1.0
+        }
+      }
+    ]
+  }
+}

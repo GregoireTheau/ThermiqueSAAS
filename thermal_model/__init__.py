@@ -1,5 +1,6 @@
 """Thermal model data loading helpers."""
 
+from .comparison import compare_scenarios
 from .dwelling_loader import (
     DwellingValidationError,
     get_rooms_by_id,
@@ -29,8 +30,14 @@ from .scenario_loader import (
     load_scenario,
     validate_scenario,
 )
+from .simulation import apply_scenario_overrides, simulate_1r1c
+from .static_losses import compute_dwelling_static_losses, compute_room_static_losses
 
 __all__ = [
+    "apply_scenario_overrides",
+    "compare_scenarios",
+    "compute_dwelling_static_losses",
+    "compute_room_static_losses",
     "DwellingValidationError",
     "ReferenceDataError",
     "ScenarioValidationError",
@@ -52,6 +59,7 @@ __all__ = [
     "load_reference_catalog",
     "load_scenario",
     "resolve_dwelling_references",
+    "simulate_1r1c",
     "validate_scenario",
     "validate_dwelling",
 ]

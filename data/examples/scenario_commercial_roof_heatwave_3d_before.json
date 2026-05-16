@@ -1,0 +1,958 @@
+{
+  "schema_version": "0.1",
+  "dwelling_id": "house_simple",
+  "timestep_h": 1.0,
+  "initial_temperatures_c": {
+    "living_room": 26.0,
+    "bedroom": 26.0,
+    "bathroom": 26.0
+  },
+  "setpoints": {
+    "heating_c": 18.0,
+    "cooling_c": 26.0
+  },
+  "controls": {
+    "shutters": {
+      "default_opening_ratio": 1.0,
+      "hourly": [
+        {
+          "hour": 8,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 9,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 10,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 11,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 12,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 13,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 14,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 15,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 16,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 17,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 18,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 32,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 33,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 34,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 35,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 36,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 37,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 38,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 39,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 40,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 41,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 42,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 56,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 57,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 58,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 59,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 60,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 61,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 62,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 63,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 64,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 65,
+          "opening_ratio": 0.25
+        },
+        {
+          "hour": 66,
+          "opening_ratio": 0.25
+        }
+      ]
+    }
+  },
+  "weather": {
+    "source": "synthetic_heatwave_3d",
+    "hourly": [
+      {
+        "hour": 0,
+        "outdoor_temperature_c": 27.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 1,
+        "outdoor_temperature_c": 26.5,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 2,
+        "outdoor_temperature_c": 26.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 3,
+        "outdoor_temperature_c": 25.5,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 4,
+        "outdoor_temperature_c": 25.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 5,
+        "outdoor_temperature_c": 25.5,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 50,
+          "south": 0,
+          "west": 0,
+          "roof": 80
+        }
+      },
+      {
+        "hour": 6,
+        "outdoor_temperature_c": 27.0,
+        "solar_irradiance_w_m2": {
+          "north": 30,
+          "east": 200,
+          "south": 60,
+          "west": 0,
+          "roof": 220
+        }
+      },
+      {
+        "hour": 7,
+        "outdoor_temperature_c": 29.0,
+        "solar_irradiance_w_m2": {
+          "north": 50,
+          "east": 420,
+          "south": 120,
+          "west": 20,
+          "roof": 420
+        }
+      },
+      {
+        "hour": 8,
+        "outdoor_temperature_c": 31.0,
+        "solar_irradiance_w_m2": {
+          "north": 70,
+          "east": 560,
+          "south": 220,
+          "west": 40,
+          "roof": 620
+        }
+      },
+      {
+        "hour": 9,
+        "outdoor_temperature_c": 33.0,
+        "solar_irradiance_w_m2": {
+          "north": 80,
+          "east": 520,
+          "south": 360,
+          "west": 80,
+          "roof": 760
+        }
+      },
+      {
+        "hour": 10,
+        "outdoor_temperature_c": 35.0,
+        "solar_irradiance_w_m2": {
+          "north": 90,
+          "east": 400,
+          "south": 520,
+          "west": 140,
+          "roof": 860
+        }
+      },
+      {
+        "hour": 11,
+        "outdoor_temperature_c": 37.0,
+        "solar_irradiance_w_m2": {
+          "north": 100,
+          "east": 260,
+          "south": 650,
+          "west": 220,
+          "roof": 920
+        }
+      },
+      {
+        "hour": 12,
+        "outdoor_temperature_c": 39.0,
+        "solar_irradiance_w_m2": {
+          "north": 110,
+          "east": 160,
+          "south": 720,
+          "west": 320,
+          "roof": 950
+        }
+      },
+      {
+        "hour": 13,
+        "outdoor_temperature_c": 40.0,
+        "solar_irradiance_w_m2": {
+          "north": 110,
+          "east": 100,
+          "south": 700,
+          "west": 450,
+          "roof": 930
+        }
+      },
+      {
+        "hour": 14,
+        "outdoor_temperature_c": 40.5,
+        "solar_irradiance_w_m2": {
+          "north": 100,
+          "east": 60,
+          "south": 620,
+          "west": 580,
+          "roof": 860
+        }
+      },
+      {
+        "hour": 15,
+        "outdoor_temperature_c": 40.0,
+        "solar_irradiance_w_m2": {
+          "north": 90,
+          "east": 40,
+          "south": 500,
+          "west": 650,
+          "roof": 740
+        }
+      },
+      {
+        "hour": 16,
+        "outdoor_temperature_c": 39.0,
+        "solar_irradiance_w_m2": {
+          "north": 80,
+          "east": 20,
+          "south": 360,
+          "west": 620,
+          "roof": 560
+        }
+      },
+      {
+        "hour": 17,
+        "outdoor_temperature_c": 37.0,
+        "solar_irradiance_w_m2": {
+          "north": 70,
+          "east": 0,
+          "south": 220,
+          "west": 480,
+          "roof": 360
+        }
+      },
+      {
+        "hour": 18,
+        "outdoor_temperature_c": 35.0,
+        "solar_irradiance_w_m2": {
+          "north": 40,
+          "east": 0,
+          "south": 100,
+          "west": 260,
+          "roof": 160
+        }
+      },
+      {
+        "hour": 19,
+        "outdoor_temperature_c": 33.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 80,
+          "roof": 40
+        }
+      },
+      {
+        "hour": 20,
+        "outdoor_temperature_c": 31.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 21,
+        "outdoor_temperature_c": 30.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 22,
+        "outdoor_temperature_c": 29.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 23,
+        "outdoor_temperature_c": 28.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 24,
+        "outdoor_temperature_c": 28.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 25,
+        "outdoor_temperature_c": 27.5,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 26,
+        "outdoor_temperature_c": 27.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 27,
+        "outdoor_temperature_c": 26.5,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 28,
+        "outdoor_temperature_c": 26.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 29,
+        "outdoor_temperature_c": 26.5,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 50,
+          "south": 0,
+          "west": 0,
+          "roof": 80
+        }
+      },
+      {
+        "hour": 30,
+        "outdoor_temperature_c": 28.0,
+        "solar_irradiance_w_m2": {
+          "north": 30,
+          "east": 200,
+          "south": 60,
+          "west": 0,
+          "roof": 220
+        }
+      },
+      {
+        "hour": 31,
+        "outdoor_temperature_c": 30.0,
+        "solar_irradiance_w_m2": {
+          "north": 50,
+          "east": 420,
+          "south": 120,
+          "west": 20,
+          "roof": 420
+        }
+      },
+      {
+        "hour": 32,
+        "outdoor_temperature_c": 32.0,
+        "solar_irradiance_w_m2": {
+          "north": 70,
+          "east": 560,
+          "south": 220,
+          "west": 40,
+          "roof": 620
+        }
+      },
+      {
+        "hour": 33,
+        "outdoor_temperature_c": 34.0,
+        "solar_irradiance_w_m2": {
+          "north": 80,
+          "east": 520,
+          "south": 360,
+          "west": 80,
+          "roof": 760
+        }
+      },
+      {
+        "hour": 34,
+        "outdoor_temperature_c": 36.0,
+        "solar_irradiance_w_m2": {
+          "north": 90,
+          "east": 400,
+          "south": 520,
+          "west": 140,
+          "roof": 860
+        }
+      },
+      {
+        "hour": 35,
+        "outdoor_temperature_c": 38.0,
+        "solar_irradiance_w_m2": {
+          "north": 100,
+          "east": 260,
+          "south": 650,
+          "west": 220,
+          "roof": 920
+        }
+      },
+      {
+        "hour": 36,
+        "outdoor_temperature_c": 40.0,
+        "solar_irradiance_w_m2": {
+          "north": 110,
+          "east": 160,
+          "south": 720,
+          "west": 320,
+          "roof": 950
+        }
+      },
+      {
+        "hour": 37,
+        "outdoor_temperature_c": 41.0,
+        "solar_irradiance_w_m2": {
+          "north": 110,
+          "east": 100,
+          "south": 700,
+          "west": 450,
+          "roof": 930
+        }
+      },
+      {
+        "hour": 38,
+        "outdoor_temperature_c": 41.5,
+        "solar_irradiance_w_m2": {
+          "north": 100,
+          "east": 60,
+          "south": 620,
+          "west": 580,
+          "roof": 860
+        }
+      },
+      {
+        "hour": 39,
+        "outdoor_temperature_c": 41.0,
+        "solar_irradiance_w_m2": {
+          "north": 90,
+          "east": 40,
+          "south": 500,
+          "west": 650,
+          "roof": 740
+        }
+      },
+      {
+        "hour": 40,
+        "outdoor_temperature_c": 40.0,
+        "solar_irradiance_w_m2": {
+          "north": 80,
+          "east": 20,
+          "south": 360,
+          "west": 620,
+          "roof": 560
+        }
+      },
+      {
+        "hour": 41,
+        "outdoor_temperature_c": 38.0,
+        "solar_irradiance_w_m2": {
+          "north": 70,
+          "east": 0,
+          "south": 220,
+          "west": 480,
+          "roof": 360
+        }
+      },
+      {
+        "hour": 42,
+        "outdoor_temperature_c": 36.0,
+        "solar_irradiance_w_m2": {
+          "north": 40,
+          "east": 0,
+          "south": 100,
+          "west": 260,
+          "roof": 160
+        }
+      },
+      {
+        "hour": 43,
+        "outdoor_temperature_c": 34.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 80,
+          "roof": 40
+        }
+      },
+      {
+        "hour": 44,
+        "outdoor_temperature_c": 32.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 45,
+        "outdoor_temperature_c": 31.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 46,
+        "outdoor_temperature_c": 30.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 47,
+        "outdoor_temperature_c": 29.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 48,
+        "outdoor_temperature_c": 28.5,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 49,
+        "outdoor_temperature_c": 28.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 50,
+        "outdoor_temperature_c": 27.5,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 51,
+        "outdoor_temperature_c": 27.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 52,
+        "outdoor_temperature_c": 26.5,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 53,
+        "outdoor_temperature_c": 27.0,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 50,
+          "south": 0,
+          "west": 0,
+          "roof": 80
+        }
+      },
+      {
+        "hour": 54,
+        "outdoor_temperature_c": 28.5,
+        "solar_irradiance_w_m2": {
+          "north": 30,
+          "east": 200,
+          "south": 60,
+          "west": 0,
+          "roof": 220
+        }
+      },
+      {
+        "hour": 55,
+        "outdoor_temperature_c": 30.5,
+        "solar_irradiance_w_m2": {
+          "north": 50,
+          "east": 420,
+          "south": 120,
+          "west": 20,
+          "roof": 420
+        }
+      },
+      {
+        "hour": 56,
+        "outdoor_temperature_c": 32.5,
+        "solar_irradiance_w_m2": {
+          "north": 70,
+          "east": 560,
+          "south": 220,
+          "west": 40,
+          "roof": 620
+        }
+      },
+      {
+        "hour": 57,
+        "outdoor_temperature_c": 34.5,
+        "solar_irradiance_w_m2": {
+          "north": 80,
+          "east": 520,
+          "south": 360,
+          "west": 80,
+          "roof": 760
+        }
+      },
+      {
+        "hour": 58,
+        "outdoor_temperature_c": 36.5,
+        "solar_irradiance_w_m2": {
+          "north": 90,
+          "east": 400,
+          "south": 520,
+          "west": 140,
+          "roof": 860
+        }
+      },
+      {
+        "hour": 59,
+        "outdoor_temperature_c": 38.5,
+        "solar_irradiance_w_m2": {
+          "north": 100,
+          "east": 260,
+          "south": 650,
+          "west": 220,
+          "roof": 920
+        }
+      },
+      {
+        "hour": 60,
+        "outdoor_temperature_c": 40.5,
+        "solar_irradiance_w_m2": {
+          "north": 110,
+          "east": 160,
+          "south": 720,
+          "west": 320,
+          "roof": 950
+        }
+      },
+      {
+        "hour": 61,
+        "outdoor_temperature_c": 41.5,
+        "solar_irradiance_w_m2": {
+          "north": 110,
+          "east": 100,
+          "south": 700,
+          "west": 450,
+          "roof": 930
+        }
+      },
+      {
+        "hour": 62,
+        "outdoor_temperature_c": 42.0,
+        "solar_irradiance_w_m2": {
+          "north": 100,
+          "east": 60,
+          "south": 620,
+          "west": 580,
+          "roof": 860
+        }
+      },
+      {
+        "hour": 63,
+        "outdoor_temperature_c": 41.5,
+        "solar_irradiance_w_m2": {
+          "north": 90,
+          "east": 40,
+          "south": 500,
+          "west": 650,
+          "roof": 740
+        }
+      },
+      {
+        "hour": 64,
+        "outdoor_temperature_c": 40.5,
+        "solar_irradiance_w_m2": {
+          "north": 80,
+          "east": 20,
+          "south": 360,
+          "west": 620,
+          "roof": 560
+        }
+      },
+      {
+        "hour": 65,
+        "outdoor_temperature_c": 38.5,
+        "solar_irradiance_w_m2": {
+          "north": 70,
+          "east": 0,
+          "south": 220,
+          "west": 480,
+          "roof": 360
+        }
+      },
+      {
+        "hour": 66,
+        "outdoor_temperature_c": 36.5,
+        "solar_irradiance_w_m2": {
+          "north": 40,
+          "east": 0,
+          "south": 100,
+          "west": 260,
+          "roof": 160
+        }
+      },
+      {
+        "hour": 67,
+        "outdoor_temperature_c": 34.5,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 80,
+          "roof": 40
+        }
+      },
+      {
+        "hour": 68,
+        "outdoor_temperature_c": 32.5,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 69,
+        "outdoor_temperature_c": 31.5,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 70,
+        "outdoor_temperature_c": 30.5,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      },
+      {
+        "hour": 71,
+        "outdoor_temperature_c": 29.5,
+        "solar_irradiance_w_m2": {
+          "north": 0,
+          "east": 0,
+          "south": 0,
+          "west": 0,
+          "roof": 0
+        }
+      }
+    ]
+  },
+  "energy_prices": {
+    "electricity_eur_kwh": 0.25
+  },
+  "co2_factors": {
+    "electricity_kg_kwh": 0.06
+  },
+  "scenario_id": "commercial_heatwave_3d_roof_before",
+  "description": "Experience commerciale canicule 3 jours avant toiture reflective."
+}
