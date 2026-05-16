@@ -1,0 +1,123 @@
+"""Thermal calculation utilities for the ThermalTwin MVP.
+
+The package exposes pure functions only. It does not run a full simulation:
+callers compose these helpers in the future modelling engine.
+"""
+
+from .conduction_utils import (
+    adjacent_heat_flow,
+    corrected_transmission_coefficient,
+    external_loss_coefficient,
+    heat_loss,
+    linear_thermal_bridges_coefficient,
+    reduced_adjacent_heat_flow,
+    sum_ua,
+    thermal_resistance_layer,
+    thermal_resistance_total,
+    transmission_heat_flow,
+    u_value_from_resistance,
+)
+from .comfort_utils import (
+    cold_degree_hours,
+    operative_temperature,
+    warm_degree_hours,
+)
+from .energy_utils import (
+    co2_emissions,
+    compare_scenarios,
+    energy_from_power,
+    sum_energy_from_powers,
+    total_cost,
+)
+from .equipment_utils import (
+    cooling_electric_power,
+    cooling_power_required,
+    heating_electric_power,
+    heating_power_required,
+    limited_cooling_power,
+    limited_heating_power,
+)
+from .inertia_utils import (
+    air_thermal_capacity,
+    equivalent_capacity_from_floor_area,
+    next_temperature_explicit,
+)
+from .solar_utils import (
+    absorbed_opaque_solar_power,
+    albedo_to_absorptivity,
+    diffuse_irradiance_on_plane,
+    direct_irradiance_on_plane,
+    ground_reflected_irradiance_on_plane,
+    irradiance_on_plane,
+    mask_irradiance,
+    opaque_solar_power_to_room,
+    shutter_factor,
+    sky_ground_view_factors,
+    solar_delta_absorbed_power,
+    solar_delta_room_power_from_albedo,
+    solar_gain_for_windows,
+    solar_gain_window,
+    window_u_with_shutter,
+)
+from .ventilation_utils import (
+    ach_with_wind,
+    airflow_from_ach,
+    effective_air_coefficient_with_recovery,
+    supply_temperature_with_recovery,
+    ventilation_heat_flow,
+    ventilation_heat_transfer_coefficient,
+    wind_factor,
+)
+
+__all__ = [
+    "adjacent_heat_flow",
+    "corrected_transmission_coefficient",
+    "external_loss_coefficient",
+    "heat_loss",
+    "linear_thermal_bridges_coefficient",
+    "reduced_adjacent_heat_flow",
+    "sum_ua",
+    "thermal_resistance_layer",
+    "thermal_resistance_total",
+    "transmission_heat_flow",
+    "u_value_from_resistance",
+    "cold_degree_hours",
+    "operative_temperature",
+    "warm_degree_hours",
+    "co2_emissions",
+    "compare_scenarios",
+    "energy_from_power",
+    "sum_energy_from_powers",
+    "total_cost",
+    "cooling_electric_power",
+    "cooling_power_required",
+    "heating_electric_power",
+    "heating_power_required",
+    "limited_cooling_power",
+    "limited_heating_power",
+    "air_thermal_capacity",
+    "equivalent_capacity_from_floor_area",
+    "next_temperature_explicit",
+    "absorbed_opaque_solar_power",
+    "albedo_to_absorptivity",
+    "diffuse_irradiance_on_plane",
+    "direct_irradiance_on_plane",
+    "ground_reflected_irradiance_on_plane",
+    "irradiance_on_plane",
+    "mask_irradiance",
+    "opaque_solar_power_to_room",
+    "shutter_factor",
+    "sky_ground_view_factors",
+    "solar_delta_absorbed_power",
+    "solar_delta_room_power_from_albedo",
+    "solar_gain_for_windows",
+    "solar_gain_window",
+    "window_u_with_shutter",
+    "ach_with_wind",
+    "airflow_from_ach",
+    "effective_air_coefficient_with_recovery",
+    "supply_temperature_with_recovery",
+    "ventilation_heat_flow",
+    "ventilation_heat_transfer_coefficient",
+    "wind_factor",
+]
