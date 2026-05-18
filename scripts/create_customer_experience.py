@@ -17,8 +17,10 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from thermal_model import (  # noqa: E402
+    build_report_model,
     compare_scenarios,
     load_reference_catalog,
+    render_report_html,
     resolve_dwelling_references,
     validate_dwelling,
     validate_scenario,
@@ -86,9 +88,9 @@ EXTERIOR_CONTACTS = [
 ]
 
 THERMAL_LAYOUTS = [
-    {"id": "open_living", "label": "Plan simple: les pieces communiquent avec le sejour"},
-    {"id": "corridor", "label": "Plan avec couloir/entree comme zone centrale"},
-    {"id": "manual", "label": "Indiquer les connexions principales"},
+    {"id": "open_living", "label": "Les pieces donnent surtout sur le sejour"},
+    {"id": "corridor", "label": "Les pieces donnent surtout sur un couloir / une entree"},
+    {"id": "manual", "label": "Indiquer les portes ou ouvertures principales une par une"},
 ]
 
 WINDOW_SIZES = [
@@ -130,30 +132,79 @@ VENTILATION_SYSTEMS = [
 CHANGES = [
     {
         "id": "roof_insulation",
-        "label": "Isoler la toiture / les combles",
-        "seasons": ["winter", "summer"],
+        "label": "Ameliorer l'isolation de la toiture / des combles",
+        "experiments": ["winter_cold_primary", "summer_heatwave_secondary"],
     },
     {
         "id": "reflective_roof",
-        "label": "Toiture ou revetement reflechissant contre la chaleur",
-        "seasons": ["summer"],
+        "label": "Ajouter un revetement reflechissant sur la toiture contre la chaleur",
+        "experiments": ["summer_heatwave_primary", "summer_long_secondary"],
     },
     {
         "id": "better_windows",
         "label": "Remplacer les fenetres par du double vitrage performant",
-        "seasons": ["winter", "summer"],
+        "experiments": ["winter_cold_primary", "summer_heatwave_if_exposed"],
     },
     {
         "id": "solar_protection",
         "label": "Ajouter des volets ou protections solaires",
-        "seasons": ["summer"],
+        "experiments": ["summer_heatwave_primary"],
     },
     {
         "id": "heat_pump",
         "label": "Remplacer le chauffage actuel par une PAC",
-        "seasons": ["winter"],
+        "experiments": ["winter_cold_primary"],
     },
 ]
+
+EXPERIMENT_SPECS = {
+    "winter_cold_primary": {
+        "id": "winter_cold",
+        "season": "winter",
+        "weather_variant": "winter_cold",
+        "duration_days": 7,
+        "role": "primary",
+        "label": "Hiver froid",
+        "reason": "Experience principale pour mesurer les pertes et les besoins de chauffage.",
+    },
+    "summer_heatwave_primary": {
+        "id": "summer_heatwave",
+        "season": "summer",
+        "weather_variant": "summer_heatwave",
+        "duration_days": 3,
+        "role": "primary",
+        "label": "Ete canicule",
+        "reason": "Experience principale pour mesurer le confort d'ete et les apports solaires.",
+    },
+    "summer_heatwave_secondary": {
+        "id": "summer_heatwave",
+        "season": "summer",
+        "weather_variant": "summer_heatwave",
+        "duration_days": 3,
+        "role": "secondary",
+        "label": "Ete canicule",
+        "reason": "Experience secondaire pour verifier l'effet sur la surchauffe.",
+    },
+    "summer_heatwave_if_exposed": {
+        "id": "summer_heatwave",
+        "season": "summer",
+        "weather_variant": "summer_heatwave",
+        "duration_days": 3,
+        "role": "secondary",
+        "condition": "exposed_windows",
+        "label": "Ete canicule",
+        "reason": "Experience secondaire lancee si des vitrages exposes peuvent influencer les apports solaires.",
+    },
+    "summer_long_secondary": {
+        "id": "summer_long",
+        "season": "summer",
+        "weather_variant": "summer_long_with_heatwave",
+        "duration_days": 60,
+        "role": "secondary",
+        "label": "Ete long avec canicule",
+        "reason": "Experience secondaire sur deux mois d'ete type avec un episode de canicule integre.",
+    },
+}
 
 CLIMATE_ZONES = [
     {"id": "FR_H1a", "label": "Nord / Est froid"},
@@ -423,17 +474,20 @@ def collect_thermal_layout(rooms: list[dict[str, Any]]) -> dict[str, Any]:
     if len(rooms) < 2:
         return {"type": "single_room", "connections": []}
 
-    layout = choose_one("Communication thermique entre les pieces", THERMAL_LAYOUTS)
+    layout = choose_one("Comment les pieces communiquent-elles entre elles ?", THERMAL_LAYOUTS)
     if layout["id"] != "manual":
         return {"type": layout["id"], "connections": []}
 
     print()
-    print("Connexions principales")
-    print("Repondez oui si les deux pieces communiquent souvent ou sont separees par une porte souvent ouverte.")
+    print("Portes ou ouvertures principales")
+    print("Repondez oui si les deux pieces sont reliees par une porte ou une ouverture souvent ouverte.")
     connections = []
     for index, first_room in enumerate(rooms):
         for second_room in rooms[index + 1:]:
-            if ask_yes_no(f"{first_room['name']} <-> {second_room['name']}", False):
+            if ask_yes_no(
+                f"Porte ou ouverture souvent ouverte entre {first_room['name']} et {second_room['name']}",
+                False,
+            ):
                 connections.append(
                     {
                         "room_a": first_room["id"],
@@ -887,19 +941,62 @@ def build_experiments(
         return []
 
     experiments = []
-    for season in change["seasons"]:
-        base_id = f"{dwelling['dwelling_id']}_{change['id']}_{season}"
-        before = build_scenario(base_id, dwelling, season, None, room_ids, catalog)
-        after = build_scenario(base_id, dwelling, season, change["id"], room_ids, catalog)
+    for experiment_spec in selected_experiment_specs(change, dwelling, room_ids):
+        base_id = f"{dwelling['dwelling_id']}_{change['id']}_{experiment_spec['id']}"
+        before = build_scenario(
+            base_id,
+            dwelling,
+            experiment_spec,
+            change,
+            False,
+            room_ids,
+            catalog,
+        )
+        after = build_scenario(
+            base_id,
+            dwelling,
+            experiment_spec,
+            change,
+            True,
+            room_ids,
+            catalog,
+        )
         experiments.append(
             {
                 "id": base_id,
-                "season": season,
+                "season": experiment_spec["season"],
+                "role": experiment_spec["role"],
                 "before": before,
                 "after": after,
             },
         )
     return experiments
+
+
+def selected_experiment_specs(
+    change: dict[str, Any],
+    dwelling: dict[str, Any],
+    room_ids: list[str],
+) -> list[dict[str, Any]]:
+    specs = []
+    for experiment_id in change["experiments"]:
+        spec = EXPERIMENT_SPECS[experiment_id]
+        if spec.get("condition") == "exposed_windows" and not has_exposed_windows(
+            dwelling,
+            room_ids,
+        ):
+            continue
+        specs.append(spec)
+    return specs
+
+
+def has_exposed_windows(dwelling: dict[str, Any], room_ids: list[str]) -> bool:
+    rooms = [room for room in dwelling["rooms"] if room["id"] in room_ids]
+    return any(
+        orientation_key(window["azimuth_deg"]) in {"east", "south", "west"}
+        for room in rooms
+        for window in room["windows"]
+    )
 
 
 def change_applies(
@@ -927,16 +1024,27 @@ def change_applies(
 def build_scenario(
     base_id: str,
     dwelling: dict[str, Any],
-    season: str,
-    change_id: str | None,
+    experiment_spec: dict[str, Any],
+    change: dict[str, Any],
+    apply_change: bool,
     room_ids: list[str],
     catalog: dict[str, Any],
 ) -> dict[str, Any]:
+    season = experiment_spec["season"]
     scenario = {
         "schema_version": "0.1",
-        "scenario_id": f"{base_id}_{'after' if change_id else 'before'}",
+        "scenario_id": f"{base_id}_{'after' if apply_change else 'before'}",
         "dwelling_id": dwelling["dwelling_id"],
-        "description": f"Scenario {season} {'apres' if change_id else 'avant'}",
+        "description": f"{experiment_spec['label']} {'apres' if apply_change else 'avant'}",
+        "experiment": {
+            "adaptation_id": change["id"],
+            "adaptation_label": change["label"],
+            "role": experiment_spec["role"],
+            "label": experiment_spec["label"],
+            "season": season,
+            "weather_variant": experiment_spec["weather_variant"],
+            "reason": experiment_spec["reason"],
+        },
         "timestep_h": 1.0,
         "initial_temperatures_c": {
             room["id"]: 26.0 if season == "summer" else 19.0
@@ -947,40 +1055,49 @@ def build_scenario(
             if season == "summer"
             else {"heating_c": 19.0, "cooling_c": 28.0}
         ),
-        "weather": build_weather(season, dwelling["location"]["climate_zone_id"]),
+        "weather": build_weather(experiment_spec, dwelling["location"]["climate_zone_id"]),
         "energy_prices": {"electricity_eur_kwh": 0.25},
         "co2_factors": {"electricity_kg_kwh": 0.06},
     }
     if season == "summer":
-        scenario["controls"] = {"shutters": build_summer_shutter_controls()}
-    if change_id:
-        retrofit = build_retrofit(dwelling, change_id, room_ids, catalog)
+        scenario["controls"] = {
+            "shutters": build_summer_shutter_controls(experiment_spec["duration_days"]),
+        }
+    if apply_change:
+        retrofit = build_retrofit(dwelling, change["id"], room_ids, catalog)
         if retrofit:
             scenario["retrofit"] = retrofit
     return scenario
 
 
-def build_weather(season: str, climate_zone_id: str) -> dict[str, Any]:
-    if season == "summer":
-        duration_days = 3
+def build_weather(experiment_spec: dict[str, Any], climate_zone_id: str) -> dict[str, Any]:
+    weather_variant = experiment_spec["weather_variant"]
+    duration_days = experiment_spec["duration_days"]
+    if weather_variant == "summer_heatwave":
         base_temp, amplitude = summer_temperature_profile(climate_zone_id)
+    elif weather_variant == "summer_long_with_heatwave":
+        base_temp, amplitude = summer_typical_temperature_profile(climate_zone_id)
     else:
-        duration_days = 7
         base_temp, amplitude = winter_temperature_profile(climate_zone_id)
 
     hourly = []
     for hour in range(duration_days * 24):
+        day = hour // 24
         hour_in_day = hour % 24
+        if weather_variant == "summer_long_with_heatwave" and 27 <= day <= 29:
+            base_temp, amplitude = summer_temperature_profile(climate_zone_id)
+        elif weather_variant == "summer_long_with_heatwave":
+            base_temp, amplitude = summer_typical_temperature_profile(climate_zone_id)
         outdoor_temperature_c = base_temp + amplitude * math.sin(
             2.0 * math.pi * (hour_in_day - 8) / 24.0,
         )
         weather_point = {
             "hour": hour,
             "outdoor_temperature_c": round(outdoor_temperature_c, 2),
-            "solar_irradiance_w_m2": solar_profile(season, hour_in_day),
+            "solar_irradiance_w_m2": solar_profile(experiment_spec["season"], hour_in_day),
         }
         hourly.append(weather_point)
-    return {"source": f"generated_{season}_{climate_zone_id}", "hourly": hourly}
+    return {"source": f"generated_{weather_variant}_{climate_zone_id}", "hourly": hourly}
 
 
 def summer_temperature_profile(climate_zone_id: str) -> tuple[float, float]:
@@ -989,6 +1106,14 @@ def summer_temperature_profile(climate_zone_id: str) -> tuple[float, float]:
     if climate_zone_id.startswith("FR_H1"):
         return 26.5, 6.0
     return 29.0, 7.0
+
+
+def summer_typical_temperature_profile(climate_zone_id: str) -> tuple[float, float]:
+    if climate_zone_id == "FR_H3":
+        return 26.0, 6.0
+    if climate_zone_id.startswith("FR_H1"):
+        return 22.5, 5.0
+    return 24.5, 5.5
 
 
 def winter_temperature_profile(climate_zone_id: str) -> tuple[float, float]:
@@ -1020,12 +1145,12 @@ def solar_profile(season: str, hour_in_day: int) -> dict[str, float]:
     }
 
 
-def build_summer_shutter_controls() -> dict[str, Any]:
+def build_summer_shutter_controls(duration_days: int) -> dict[str, Any]:
     return {
         "default_opening_ratio": 1.0,
         "hourly": [
             {"hour": hour, "opening_ratio": 0.25}
-            for hour in range(72)
+            for hour in range(duration_days * 24)
             if 8 <= hour % 24 <= 19
         ],
     }
@@ -1122,6 +1247,12 @@ def write_json(output_path: str | Path, payload: dict[str, Any]) -> None:
         json.dump(payload, file, indent=2, ensure_ascii=False)
 
 
+def write_text(output_path: str | Path, content: str) -> None:
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+
+
 def run_customer_experience(args: argparse.Namespace) -> None:
     catalog = load_reference_catalog(args.reference_dir)
     customer = collect_customer_input(catalog)
@@ -1148,6 +1279,8 @@ def run_customer_experience(args: argparse.Namespace) -> None:
         before_path = output_dir / f"{experiment['id']}_before.json"
         after_path = output_dir / f"{experiment['id']}_after.json"
         comparison_path = output_dir / f"{experiment['id']}_comparison.json"
+        report_path = output_dir / f"{experiment['id']}_comparison_report.json"
+        html_path = output_dir / f"{experiment['id']}_report.html"
         summary_path = output_dir / f"{experiment['id']}_customer_summary.json"
         write_json(before_path, before)
         write_json(after_path, after)
@@ -1160,11 +1293,16 @@ def run_customer_experience(args: argparse.Namespace) -> None:
             args.air_heat_capacity_j_kgk,
         )
         write_json(comparison_path, comparison)
+        report = build_report_model(comparison)
+        write_json(report_path, report)
+        write_text(html_path, render_report_html(report))
         customer_summary = build_customer_summary(experiment["season"], comparison)
         write_json(summary_path, customer_summary)
         print(f"Scenario avant: {before_path}")
         print(f"Scenario apres: {after_path}")
         print(f"Comparaison: {comparison_path}")
+        print(f"Rapport JSON: {report_path}")
+        print(f"Rapport HTML: {html_path}")
         print(f"Resume client: {summary_path}")
         print_customer_summary(customer_summary)
 
@@ -1173,11 +1311,42 @@ def build_customer_summary(season: str, comparison: dict[str, Any]) -> dict[str,
     key_room_id, room = most_improved_room(comparison)
     energy = comparison["summary"]["energy_savings"]
     driver = comparison["summary"]["main_gain_driver"]
+    experiment = comparison["experiment"]
     return {
         "season": season,
         "dwelling_id": comparison["dwelling_id"],
         "before_scenario_id": comparison["before_scenario_id"],
         "after_scenario_id": comparison["after_scenario_id"],
+        "experiment": {
+            "adaptation_id": experiment.get("adaptation_id", "unknown"),
+            "adaptation_label": experiment.get("adaptation_label", ""),
+            "role": experiment.get("role", "primary"),
+            "label": experiment.get("label", ""),
+            "weather_variant": experiment.get("weather_variant", ""),
+            "reason": experiment.get("reason", ""),
+            "duration_hours": round(experiment["duration_hours"], 2),
+            "duration_days": round(experiment["duration_days"], 2),
+            "scope_notice": (
+                "Ces resultats portent uniquement sur une simulation de "
+                f"{experiment['duration_days']:.2f} jours."
+            ),
+            "annual_projection_notice": (
+                "Aucune projection annuelle n'est calculee dans ce rapport."
+            ),
+            "weather_source": experiment["weather_source"],
+            "outdoor_temperature_min_c": round(
+                experiment["weather_summary"]["outdoor_temperature_min_c"],
+                1,
+            ),
+            "outdoor_temperature_max_c": round(
+                experiment["weather_summary"]["outdoor_temperature_max_c"],
+                1,
+            ),
+            "heating_setpoint_c": experiment["setpoints"]["heating_c"],
+            "cooling_setpoint_c": experiment["setpoints"]["cooling_c"],
+            "before_description": experiment["before_description"],
+            "after_description": experiment["after_description"],
+        },
         "headline": {
             "electricity_saved_kwh": round(energy["electricity_saved_kwh"], 2),
             "cost_saved_eur": round(energy["cost_saved_eur"], 2),
@@ -1231,8 +1400,20 @@ def discomfort_explanation(room: dict[str, Any]) -> str:
 
 def print_customer_summary(summary: dict[str, Any]) -> None:
     comfort = summary["comfort"]
+    experiment = summary["experiment"]
     headline = summary["headline"]
     print(f"Lecture {summary['season']}:")
+    role_label = "principale" if experiment["role"] == "primary" else "secondaire"
+    print(
+        "- Experience: "
+        f"{role_label}, {experiment['label'] or summary['season']}, "
+        f"{experiment['duration_days']:.1f} jours "
+        f"({experiment['duration_hours']:.0f} h), "
+        f"meteo {experiment['weather_source']}, "
+        f"{experiment['outdoor_temperature_min_c']:.1f} C -> "
+        f"{experiment['outdoor_temperature_max_c']:.1f} C ext."
+    )
+    print("- Portee: resultats simules sur cette periode, sans projection annuelle.")
     if headline["electricity_saved_kwh"] > 0:
         print(
             "- Energie: "

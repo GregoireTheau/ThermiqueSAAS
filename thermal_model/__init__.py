@@ -25,6 +25,7 @@ from .reference_loader import (
     get_window_reference,
     load_reference_catalog,
 )
+from .reporting import build_report_model, render_report_html
 from .scenario_loader import (
     ScenarioValidationError,
     load_scenario,
@@ -35,6 +36,7 @@ from .static_losses import compute_dwelling_static_losses, compute_room_static_l
 
 __all__ = [
     "apply_scenario_overrides",
+    "build_report_model",
     "compare_scenarios",
     "compute_dwelling_static_losses",
     "compute_room_static_losses",
@@ -59,6 +61,7 @@ __all__ = [
     "load_reference_catalog",
     "load_scenario",
     "resolve_dwelling_references",
+    "render_report_html",
     "simulate_1r1c",
     "validate_scenario",
     "validate_dwelling",

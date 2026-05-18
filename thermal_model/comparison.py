@@ -133,14 +133,104 @@ def compare_scenarios(
     }
 
     return {
-        "comparison_schema_version": "0.2",
+        "comparison_schema_version": "0.3",
         "dwelling_id": dwelling["dwelling_id"],
         "before_scenario_id": before_scenario["scenario_id"],
         "after_scenario_id": after_scenario["scenario_id"],
+        "experiment": _build_experiment_context(before_scenario, after_scenario),
         "summary": _build_summary(before_results, after_results, deltas),
         "before": before_results,
         "after": after_results,
         "deltas": deltas,
+    }
+
+
+def _build_experiment_context(
+    before_scenario: dict[str, Any],
+    after_scenario: dict[str, Any],
+) -> dict[str, Any]:
+    before_weather = before_scenario["weather"]["hourly"]
+    after_weather = after_scenario["weather"]["hourly"]
+    if len(before_weather) != len(after_weather):
+        raise ValueError("before and after scenarios must have the same weather duration")
+    if before_scenario["timestep_h"] != after_scenario["timestep_h"]:
+        raise ValueError("before and after scenarios must have the same timestep")
+
+    duration_hours = len(before_weather) * before_scenario["timestep_h"]
+    outdoor_temperatures = [
+        hour["outdoor_temperature_c"]
+        for hour in before_weather
+    ]
+    experiment = before_scenario.get("experiment", {})
+    return {
+        "adaptation_id": experiment.get("adaptation_id", "unknown"),
+        "adaptation_label": experiment.get("adaptation_label", ""),
+        "role": experiment.get("role", "primary"),
+        "label": experiment.get("label", ""),
+        "season": experiment.get("season", ""),
+        "weather_variant": experiment.get("weather_variant", ""),
+        "reason": experiment.get("reason", ""),
+        "before_description": before_scenario.get("description", ""),
+        "after_description": after_scenario.get("description", ""),
+        "duration_hours": duration_hours,
+        "duration_days": duration_hours / 24.0,
+        "timestep_h": before_scenario["timestep_h"],
+        "weather_source": before_scenario["weather"].get("source", "unknown"),
+        "weather_summary": {
+            "outdoor_temperature_min_c": min(outdoor_temperatures),
+            "outdoor_temperature_max_c": max(outdoor_temperatures),
+        },
+        "setpoints": before_scenario["setpoints"],
+        "initial_temperature_mode": "scenario_initial_temperatures",
+        "intervention": _summarize_retrofit(after_scenario.get("retrofit", {})),
+    }
+
+
+def _summarize_retrofit(retrofit: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "surface_overrides": _summarize_overrides(
+            retrofit.get("surface_overrides", []),
+            "surface_id",
+        ),
+        "window_overrides": _summarize_overrides(
+            retrofit.get("window_overrides", []),
+            "window_id",
+        ),
+        "shutter_overrides": _summarize_overrides(
+            retrofit.get("shutter_overrides", []),
+            "window_id",
+        ),
+        "system_overrides": _summarize_overrides(
+            retrofit.get("system_overrides", []),
+            "system_id",
+        ),
+        "add_systems": _summarize_overrides(
+            retrofit.get("add_systems", []),
+            "id",
+        ),
+    }
+
+
+def _summarize_overrides(
+    overrides: list[dict[str, Any]],
+    target_key: str,
+) -> dict[str, Any]:
+    ignored_keys = {target_key, "category"}
+    changed_fields = sorted({
+        key
+        for override in overrides
+        for key in override
+        if key not in ignored_keys
+    })
+    targets = [
+        override[target_key]
+        for override in overrides
+        if target_key in override
+    ]
+    return {
+        "count": len(overrides),
+        "targets": targets,
+        "changed_fields": changed_fields,
     }
 
 

@@ -29,6 +29,9 @@
     "description": {
       "type": "string"
     },
+    "experiment": {
+      "$ref": "#/$defs/experiment"
+    },
     "timestep_h": {
       "$ref": "#/$defs/positive_number"
     },
@@ -74,6 +77,48 @@
       "type": "number",
       "minimum": 0,
       "maximum": 1
+    },
+    "experiment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adaptation_id",
+        "adaptation_label",
+        "role",
+        "label",
+        "season",
+        "weather_variant",
+        "reason"
+      ],
+      "properties": {
+        "adaptation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "adaptation_label": {
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "primary",
+            "secondary"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "season": {
+          "enum": [
+            "winter",
+            "summer"
+          ]
+        },
+        "weather_variant": {
+          "$ref": "#/$defs/id"
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
     },
     "setpoints": {
       "type": "object",

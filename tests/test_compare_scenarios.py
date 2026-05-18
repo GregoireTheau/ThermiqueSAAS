@@ -35,6 +35,11 @@ def test_compare_heatwave_before_after_reflective_roof():
     assert "delta_ventilation_exchange_kwh" in bedroom_deltas
     assert "delta_heating_thermal_kwh" in bedroom_deltas
     assert "delta_cooling_thermal_kwh" in bedroom_deltas
-    assert comparison["comparison_schema_version"] == "0.2"
+    assert comparison["comparison_schema_version"] == "0.3"
+    assert comparison["experiment"]["duration_hours"] == 24
+    assert comparison["experiment"]["duration_days"] == 1
+    assert comparison["experiment"]["weather_source"] == "synthetic"
+    assert comparison["experiment"]["setpoints"] == {"heating_c": 18.0, "cooling_c": 26.0}
+    assert comparison["experiment"]["intervention"]["surface_overrides"]["count"] == 3
     assert comparison["summary"]["energy_savings"]["electricity_saved_kwh"] == comparison["deltas"]["electricity_kwh"]
     assert comparison["summary"]["main_gain_driver"]["key"] == "solar_gains"

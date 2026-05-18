@@ -309,8 +309,16 @@ def write_json(output_path: str | Path, payload: dict[str, Any]) -> None:
 
 def print_comparison_summary(comparison: dict[str, Any]) -> None:
     summary = comparison["summary"]
+    experiment = comparison["experiment"]
     print()
     print("Resultat comparaison")
+    print(
+        "- Experience: "
+        f"{experiment['duration_days']:.1f} jours "
+        f"({experiment['duration_hours']:.0f} h), "
+        f"meteo {experiment['weather_source']}"
+    )
+    print("- Portee: resultats simules sur cette periode, sans projection annuelle.")
     print(f"- Confort: {summary['comfort_gain']['label']}")
     print(f"- Energie: {summary['energy_savings']['label']}")
     print(f"- Cause principale: {summary['main_gain_driver']['label']}")

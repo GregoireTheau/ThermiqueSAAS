@@ -28,10 +28,20 @@ def print_comparison(comparison: dict[str, Any]) -> None:
     after_totals = comparison["after"]["totals"]
     deltas = comparison["deltas"]
     summary = comparison["summary"]
+    experiment = comparison["experiment"]
 
     print(f"Logement: {comparison['dwelling_id']}")
     print(f"Avant: {comparison['before_scenario_id']}")
     print(f"Apres: {comparison['after_scenario_id']}")
+    print(
+        "Experience: "
+        f"{experiment['duration_days']:.1f} jours "
+        f"({experiment['duration_hours']:.0f} h), "
+        f"meteo {experiment['weather_source']}, "
+        f"{experiment['weather_summary']['outdoor_temperature_min_c']:.1f} C -> "
+        f"{experiment['weather_summary']['outdoor_temperature_max_c']:.1f} C ext."
+    )
+    print("Portee: resultats simules sur cette periode, sans projection annuelle.")
     print()
     print("Lecture commerciale")
     print(f"- Confort gagne: {summary['comfort_gain']['label']}")
