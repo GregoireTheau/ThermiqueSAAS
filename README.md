@@ -73,6 +73,18 @@ Export comparaison JSON :
 python3 scripts/compare_scenarios.py --output-json outputs/compare_heatwave.json
 ```
 
+Generation rapide des rapports HTML sans questionnaire client :
+
+```bash
+python3 scripts/generate_report_fixtures.py
+```
+
+Pour ne regenerer qu'une adaptation :
+
+```bash
+python3 scripts/generate_report_fixtures.py --adaptation better_windows
+```
+
 Validation des entrees :
 
 ```bash

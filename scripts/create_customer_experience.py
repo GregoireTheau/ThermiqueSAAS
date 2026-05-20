@@ -54,30 +54,48 @@ DWELLING_TYPES = [
     {"id": "apartment", "label": "Appartement"},
 ]
 
+DWELLING_POSITIONS = [
+    {"id": "single_storey_house", "label": "Maison de plain-pied"},
+    {"id": "multi_storey_house", "label": "Maison avec etage"},
+    {"id": "apartment_ground_floor", "label": "Appartement en rez-de-chaussee"},
+    {"id": "apartment_middle_floor", "label": "Appartement en etage intermediaire"},
+    {"id": "apartment_top_floor", "label": "Appartement au dernier etage"},
+    {"id": "apartment_ground_top_floor", "label": "Appartement en rez-de-chaussee directement sous toiture"},
+]
+
+ADJACENCY_LEVELS = [
+    {"id": "detached", "label": "Logement isole, facades surtout dehors"},
+    {"id": "one_side", "label": "Mitoyen ou voisin chauffe sur un cote"},
+    {"id": "two_sides", "label": "Mitoyen ou voisin chauffe sur deux cotes"},
+    {"id": "surrounded", "label": "Tres entoure par des logements chauffes"},
+]
+
 WALL_INSULATION_LEVELS = [
-    {"id": "poor", "label": "Murs peu ou pas isoles", "u_factor": 1.25},
-    {"id": "standard", "label": "Murs standard pour l'age du logement", "u_factor": 1.0},
-    {"id": "renovated", "label": "Murs deja renoves/isoles", "u_factor": 0.75},
+    {"id": "poor", "label": "Non, ou probablement pas isoles", "u_factor": 1.25},
+    {"id": "standard", "label": "Je ne sais pas / standard pour l'age du logement", "u_factor": 1.0},
+    {"id": "renovated", "label": "Oui, isolation ajoutee ou renovee", "u_factor": 0.75},
 ]
 
 ROOF_INSULATION_LEVELS = [
-    {"id": "none", "label": "Pas de toiture concernee / ne sait pas", "u_factor": 1.0},
+    {"id": "unknown", "label": "Je ne sais pas", "u_factor": 1.0},
+    {"id": "not_concerned", "label": "Pas de toiture directement concernee", "u_factor": 1.0},
     {"id": "poor", "label": "Toiture ou combles peu isoles", "u_factor": 1.35},
     {"id": "standard", "label": "Isolation toiture standard", "u_factor": 1.0},
     {"id": "renovated", "label": "Toiture bien isolee ou renovee", "u_factor": 0.65},
 ]
 
 FLOOR_INSULATION_LEVELS = [
-    {"id": "none", "label": "Pas de plancher bas concerne / ne sait pas", "u_factor": 1.0},
+    {"id": "unknown", "label": "Je ne sais pas", "u_factor": 1.0},
+    {"id": "not_concerned", "label": "Pas de plancher bas directement concerne", "u_factor": 1.0},
     {"id": "poor", "label": "Plancher bas peu isole", "u_factor": 1.25},
     {"id": "standard", "label": "Plancher bas standard", "u_factor": 1.0},
     {"id": "renovated", "label": "Plancher bas isole/renove", "u_factor": 0.75},
 ]
 
 AIRTIGHTNESS_LEVELS = [
-    {"id": "leaky", "label": "Plutot peu etanche / courants d'air", "ach_factor": 1.2},
-    {"id": "standard", "label": "Etancheite standard / je ne sais pas", "ach_factor": 1.0},
-    {"id": "good", "label": "Logement assez etanche", "ach_factor": 0.85},
+    {"id": "leaky", "label": "Oui, courants d'air sensibles aux fenetres, portes ou prises", "ach_factor": 1.2},
+    {"id": "standard", "label": "Je ne sais pas / rien de particulier", "ach_factor": 1.0},
+    {"id": "good", "label": "Non, logement plutot etanche", "ach_factor": 0.85},
 ]
 
 EXTERIOR_CONTACTS = [
@@ -95,9 +113,9 @@ THERMAL_LAYOUTS = [
 
 WINDOW_SIZES = [
     {"id": "none", "label": "Aucune fenetre", "factor": 0.0},
-    {"id": "small", "label": "Petite surface vitree", "factor": 0.08},
-    {"id": "medium", "label": "Surface vitree moyenne", "factor": 0.14},
-    {"id": "large", "label": "Grande baie / grande surface vitree", "factor": 0.22},
+    {"id": "small", "label": "Petite: une fenetre standard", "factor": 0.08},
+    {"id": "medium", "label": "Moyenne: deux fenetres ou une porte-fenetre", "factor": 0.14},
+    {"id": "large", "label": "Grande: baie vitree ou grande surface vitree", "factor": 0.22},
     {"id": "custom", "label": "Entrer une surface approximative en m2"},
 ]
 
@@ -115,10 +133,39 @@ SHUTTER_LEVELS = [
     {"id": "interior_blind", "label": "Stores interieurs"},
 ]
 
+SOLAR_MASK_LEVELS = [
+    {"id": "none", "label": "Aucun masque, soleil direct", "mask_factor": 1.0},
+    {"id": "light", "label": "Masque leger: arbre clair, garde-corps, petit debord", "mask_factor": 0.85},
+    {"id": "medium", "label": "Masque moyen: balcon, arbre dense, vis-a-vis proche", "mask_factor": 0.65},
+    {"id": "strong", "label": "Masque fort: loggia, immeuble tres proche, ombre frequente", "mask_factor": 0.4},
+]
+
+SHUTTER_USAGE_LEVELS = [
+    {"id": "day_closed", "label": "En ete, fermes en journee quand il fait chaud"},
+    {"id": "partial", "label": "En ete, partiellement fermes ou selon presence"},
+    {"id": "rare", "label": "Rarement fermes en journee"},
+]
+
 HEATING_SYSTEMS = [
     {"id": "electric_radiator", "label": "Radiateurs electriques"},
     {"id": "air_air_heat_pump_standard", "label": "PAC air-air"},
     {"id": "air_water_heat_pump_standard", "label": "PAC air-eau"},
+]
+
+HEAT_PUMP_CURRENT_ENERGIES = [
+    {"id": "electricity", "label": "Electricite"},
+    {"id": "gas", "label": "Gaz"},
+    {"id": "fuel_oil", "label": "Fioul"},
+    {"id": "wood", "label": "Bois"},
+    {"id": "unknown", "label": "Je ne sais pas"},
+]
+
+HEAT_EMITTERS = [
+    {"id": "electric_radiators", "label": "Radiateurs electriques"},
+    {"id": "water_radiators", "label": "Radiateurs a eau"},
+    {"id": "underfloor", "label": "Plancher chauffant"},
+    {"id": "air_units", "label": "Unites murales / soufflage d'air"},
+    {"id": "mixed", "label": "Mixte ou incertain"},
 ]
 
 VENTILATION_SYSTEMS = [
@@ -211,6 +258,26 @@ CLIMATE_ZONES = [
     {"id": "FR_H2b", "label": "Ouest / climat tempere"},
     {"id": "FR_H2c", "label": "Sud-Ouest / tempere chaud"},
     {"id": "FR_H3", "label": "Mediterranee / climat chaud"},
+]
+
+ROOF_TYPES = [
+    {"id": "lost_attic", "label": "Combles perdus"},
+    {"id": "sloped_ceiling", "label": "Rampants / pieces sous pente"},
+    {"id": "flat_roof", "label": "Toit terrasse"},
+    {"id": "unknown", "label": "Je ne sais pas"},
+]
+
+ROOF_COLORS = [
+    {"id": "dark", "label": "Foncee", "albedo": 0.18},
+    {"id": "medium", "label": "Moyenne", "albedo": 0.25},
+    {"id": "light", "label": "Claire", "albedo": 0.4},
+    {"id": "unknown", "label": "Je ne sais pas", "albedo": 0.25},
+]
+
+ATTIC_VENTILATION_LEVELS = [
+    {"id": "ventilated", "label": "Combles ou sous-toiture bien ventiles", "solar_to_room_factor": 0.05},
+    {"id": "limited", "label": "Ventilation limitee ou inconnue", "solar_to_room_factor": 0.06},
+    {"id": "not_ventilated", "label": "Peu ou pas ventiles", "solar_to_room_factor": 0.08},
 ]
 
 
@@ -332,7 +399,7 @@ def get_catalog_item(catalog: dict[str, Any], collection: str, item_id: str) -> 
 
 def collect_customer_input(catalog: dict[str, Any]) -> dict[str, Any]:
     print("Creation d'une experience client ThermalTwin")
-    print("On va decrire le logement, puis le changement a etudier.")
+    print("On commence par le changement a etudier, puis on decrit le logement utile a cette simulation.")
     print("Les scenarios meteo seront choisis automatiquement.")
     print()
 
@@ -344,28 +411,34 @@ def collect_customer_input(catalog: dict[str, Any]) -> dict[str, Any]:
         climate_zone_id = choose_one("Zone climatique approximative", CLIMATE_ZONES)["id"]
 
     dwelling_type = choose_one("Type de logement", DWELLING_TYPES)
+    position = choose_dwelling_position(dwelling_type["id"])
+    adjacency = choose_one("Le logement est-il mitoyen ou entoure par des voisins chauffes ?", ADJACENCY_LEVELS)
+    change = choose_one("Changement a etudier", CHANGES)
+    change_details = collect_change_details(change["id"])
+
     period = choose_one(
-        "Periode de construction / niveau reglementaire",
+        "Quand le logement a-t-il ete construit ou fortement renove ?",
         envelope_period_options(catalog),
     )
-    wall_insulation = choose_one("Isolation des murs exterieurs", WALL_INSULATION_LEVELS)
-    roof_insulation = choose_one("Isolation toiture / combles", ROOF_INSULATION_LEVELS)
-    floor_insulation = choose_one("Isolation plancher bas", FLOOR_INSULATION_LEVELS)
-    airtightness = choose_one("Etancheite ressentie du logement", AIRTIGHTNESS_LEVELS)
+    wall_insulation = choose_one("Les murs donnant dehors sont-ils isoles ?", WALL_INSULATION_LEVELS)
+    roof_insulation = collect_roof_insulation(dwelling_type["id"], position["id"])
+    floor_insulation = collect_floor_insulation(dwelling_type["id"], position["id"])
+    airtightness = choose_one("Ressentez-vous des courants d'air ?", AIRTIGHTNESS_LEVELS)
     ventilation = choose_one("Ventilation principale", VENTILATION_SYSTEMS)
     window_level = choose_one("Type de vitrage principal", WINDOW_LEVELS)
     shutter_level = choose_one("Protections solaires actuelles", SHUTTER_LEVELS)
     heating = choose_one("Chauffage principal", HEATING_SYSTEMS)
     has_cooling = ask_yes_no("Le logement a-t-il deja une climatisation active", False)
+    setpoints = collect_setpoints()
+    shutter_usage = collect_shutter_usage(shutter_level["id"])
 
     room_count = ask_int("Nombre de pieces a modeliser", default=3, minimum=1)
     rooms = []
     for index in range(room_count):
-        rooms.append(collect_room(index + 1, dwelling_type["id"]))
+        rooms.append(collect_room(index + 1, dwelling_type["id"], position["id"], change["id"]))
     ensure_unique_room_ids(rooms)
     thermal_layout = collect_thermal_layout(rooms)
 
-    change = choose_one("Changement a etudier", available_changes(heating["id"]))
     target_scope = choose_one(
         "Zone concernee par le changement",
         [{"id": "all", "label": "Tout le logement"}]
@@ -375,6 +448,8 @@ def collect_customer_input(catalog: dict[str, Any]) -> dict[str, Any]:
     return {
         "project_name": project_name,
         "dwelling_type": dwelling_type["id"],
+        "position": position,
+        "adjacency": adjacency,
         "city": city,
         "postal_code": postal_code,
         "climate_zone_id": climate_zone_id,
@@ -386,23 +461,84 @@ def collect_customer_input(catalog: dict[str, Any]) -> dict[str, Any]:
         "ventilation_id": ventilation["id"],
         "window_ref": window_level["id"],
         "shutter_ref": shutter_level["id"],
+        "shutter_usage": shutter_usage,
         "heating_ref": heating["id"],
         "has_cooling": has_cooling,
+        "setpoints": setpoints,
         "rooms": rooms,
         "thermal_layout": thermal_layout,
         "change": change,
+        "change_details": change_details,
         "target_scope": target_scope["id"],
     }
 
 
-def available_changes(heating_ref: str) -> list[dict[str, Any]]:
-    if "heat_pump" in heating_ref:
-        return [
-            change
-            for change in CHANGES
-            if change["id"] != "heat_pump"
+def choose_dwelling_position(dwelling_type: str) -> dict[str, Any]:
+    if dwelling_type == "house":
+        options = [
+            option
+            for option in DWELLING_POSITIONS
+            if option["id"] in {"single_storey_house", "multi_storey_house"}
         ]
-    return CHANGES
+    else:
+        options = [
+            option
+            for option in DWELLING_POSITIONS
+            if option["id"].startswith("apartment_")
+        ]
+    return choose_one("Position du logement", options)
+
+
+def collect_change_details(change_id: str) -> dict[str, Any]:
+    if change_id in {"reflective_roof", "roof_insulation"}:
+        return {
+            "roof_type": choose_one("Type de toiture concernee", ROOF_TYPES),
+            "roof_color": choose_one("Couleur dominante actuelle de la toiture", ROOF_COLORS),
+            "attic_ventilation": choose_one("Ventilation des combles ou de la sous-toiture", ATTIC_VENTILATION_LEVELS),
+        }
+    if change_id in {"better_windows", "solar_protection"}:
+        return {
+            "window_air_leakage": choose_one(
+                "Ressentez-vous des infiltrations d'air autour des fenetres ?",
+                AIRTIGHTNESS_LEVELS,
+            ),
+        }
+    if change_id == "heat_pump":
+        return {
+            "current_energy": choose_one("Energie actuelle du chauffage", HEAT_PUMP_CURRENT_ENERGIES),
+            "heat_emitters": choose_one("Emetteurs de chauffage actuels", HEAT_EMITTERS),
+        }
+    return {}
+
+
+def collect_setpoints() -> dict[str, float]:
+    print()
+    print("Consignes habituelles")
+    heating_c = ask_float("Temperature de chauffage visee en hiver en C", default=19.0, minimum=5.0)
+    cooling_c = ask_float("Temperature de rafraichissement visee en ete en C", default=26.0, minimum=heating_c)
+    return {"heating_c": heating_c, "cooling_c": cooling_c}
+
+
+def collect_shutter_usage(shutter_ref: str) -> dict[str, Any]:
+    if shutter_ref == "none":
+        return {"id": "none", "label": "Pas de protection solaire actuelle"}
+    return choose_one("En ete, comment les volets/stores sont-ils utilises ?", SHUTTER_USAGE_LEVELS)
+
+
+def collect_roof_insulation(dwelling_type: str, dwelling_position: str) -> dict[str, Any]:
+    if not dwelling_has_roof_contact(dwelling_type, dwelling_position):
+        return option_by_id(ROOF_INSULATION_LEVELS, "not_concerned")
+    return choose_one("La toiture ou les combles sont-ils isoles ?", ROOF_INSULATION_LEVELS)
+
+
+def collect_floor_insulation(dwelling_type: str, dwelling_position: str) -> dict[str, Any]:
+    if not dwelling_has_floor_contact(dwelling_type, dwelling_position):
+        return option_by_id(FLOOR_INSULATION_LEVELS, "not_concerned")
+    return choose_one("Le plancher bas est-il isole ?", FLOOR_INSULATION_LEVELS)
+
+
+def option_by_id(options: list[dict[str, Any]], option_id: str) -> dict[str, Any]:
+    return next(option for option in options if option["id"] == option_id)
 
 
 def infer_climate_zone(catalog: dict[str, Any], postal_code: str) -> str | None:
@@ -420,14 +556,19 @@ def envelope_period_options(catalog: dict[str, Any]) -> list[dict[str, str]]:
     ]
 
 
-def collect_room(index: int, dwelling_type: str) -> dict[str, Any]:
+def collect_room(
+    index: int,
+    dwelling_type: str,
+    dwelling_position: str,
+    change_id: str,
+) -> dict[str, Any]:
     print()
     print(f"Piece {index}")
     name = ask_text("Nom de la piece", f"Piece {index}")
     room_type = choose_one("Type de piece", ROOM_TYPES)
     area_m2 = ask_float("Surface de la piece en m2", minimum=1.0)
     height_m = ask_float("Hauteur sous plafond en m", default=2.5, minimum=1.5)
-    exterior_contact = choose_one("Contact de la piece avec l'exterieur", EXTERIOR_CONTACTS)
+    exterior_contact = choose_one("Cette piece a-t-elle un mur qui donne dehors ?", EXTERIOR_CONTACTS)
     facades = []
     if exterior_contact["id"] == "exterior":
         facade_count = ask_int("Nombre de facades donnant dehors", default=1, minimum=1)
@@ -441,21 +582,41 @@ def collect_room(index: int, dwelling_type: str) -> dict[str, Any]:
                     break
                 print("Cette orientation est deja saisie pour la piece.")
             window_area = choose_window_area(room_type["id"], area_m2, orientation)
+            wall_length_m = ask_float(
+                "Longueur approximative de cette facade en m",
+                default=round(math.sqrt(area_m2), 1),
+                minimum=0.5,
+            )
+            mask = collect_solar_mask(window_area, change_id)
+            window_ref = None
+            if change_id in {"better_windows", "solar_protection"} and window_area > 0:
+                window_ref = choose_one("Type de vitrage sur cette facade", WINDOW_LEVELS)["id"]
             facades.append(
                 {
                     "orientation": orientation,
                     "window_area_m2": window_area,
+                    "wall_length_m": wall_length_m,
+                    "mask_factor": mask["mask_factor"],
+                    "window_ref": window_ref,
                 },
             )
 
-    has_roof = False
-    has_ground_floor = False
-    if dwelling_type == "house":
-        has_roof = ask_yes_no("Cette piece est-elle directement sous toiture/combles", True)
-        has_ground_floor = ask_yes_no("Cette piece est-elle au contact du sol", True)
-    else:
-        has_roof = ask_yes_no("Cette piece est-elle au dernier etage sous toiture", False)
-        has_ground_floor = ask_yes_no("Cette piece est-elle au-dessus d'un local non chauffe/sol", False)
+    has_roof = default_has_roof(dwelling_type, dwelling_position)
+    has_ground_floor = default_has_ground_floor(dwelling_type, dwelling_position)
+    if should_ask_room_roof(dwelling_type, dwelling_position):
+        label = (
+            "Cette piece est-elle directement sous toiture ou combles"
+            if dwelling_type == "house"
+            else "Cette piece est-elle directement sous la toiture"
+        )
+        has_roof = ask_yes_no(label, has_roof)
+    if should_ask_room_ground_floor(dwelling_type, dwelling_position):
+        label = (
+            "Cette piece est-elle au contact du sol"
+            if dwelling_type == "house"
+            else "Cette piece est-elle au-dessus d'un local non chauffe ou du sol"
+        )
+        has_ground_floor = ask_yes_no(label, has_ground_floor)
 
     return {
         "id": slugify(name, f"room_{index}"),
@@ -468,6 +629,46 @@ def collect_room(index: int, dwelling_type: str) -> dict[str, Any]:
         "has_roof": has_roof,
         "has_ground_floor": has_ground_floor,
     }
+
+
+def should_ask_room_roof(dwelling_type: str, dwelling_position: str) -> bool:
+    if dwelling_type == "house":
+        return dwelling_position == "multi_storey_house"
+    return False
+
+
+def should_ask_room_ground_floor(dwelling_type: str, dwelling_position: str) -> bool:
+    if dwelling_type == "house":
+        return dwelling_position == "multi_storey_house"
+    return False
+
+
+def collect_solar_mask(window_area_m2: float, change_id: str) -> dict[str, Any]:
+    if window_area_m2 <= 0:
+        return SOLAR_MASK_LEVELS[0]
+    if change_id not in {"reflective_roof", "better_windows", "solar_protection"}:
+        return SOLAR_MASK_LEVELS[0]
+    return choose_one("Masque solaire devant cette fenetre", SOLAR_MASK_LEVELS)
+
+
+def default_has_roof(dwelling_type: str, dwelling_position: str) -> bool:
+    return dwelling_has_roof_contact(dwelling_type, dwelling_position)
+
+
+def default_has_ground_floor(dwelling_type: str, dwelling_position: str) -> bool:
+    return dwelling_has_floor_contact(dwelling_type, dwelling_position)
+
+
+def dwelling_has_roof_contact(dwelling_type: str, dwelling_position: str) -> bool:
+    if dwelling_type == "house":
+        return True
+    return dwelling_position in {"apartment_top_floor", "apartment_ground_top_floor"}
+
+
+def dwelling_has_floor_contact(dwelling_type: str, dwelling_position: str) -> bool:
+    if dwelling_type == "house":
+        return dwelling_position == "single_storey_house"
+    return dwelling_position in {"apartment_ground_floor", "apartment_ground_top_floor"}
 
 
 def collect_thermal_layout(rooms: list[dict[str, Any]]) -> dict[str, Any]:
@@ -538,7 +739,7 @@ def build_dwelling(customer: dict[str, Any], catalog: dict[str, Any]) -> dict[st
         "dwelling_id": dwelling_id,
         "metadata": {
             "name": customer["project_name"],
-            "description": "Logement cree depuis la CLI client ThermalTwin.",
+            "description": build_dwelling_description(customer),
             "created_by": "create_customer_experience.py",
         },
         "location": {
@@ -579,6 +780,19 @@ def build_dwelling(customer: dict[str, Any], catalog: dict[str, Any]) -> dict[st
             },
         },
     }
+
+
+def build_dwelling_description(customer: dict[str, Any]) -> str:
+    position = customer.get("position", {}).get("label")
+    adjacency = customer.get("adjacency", {}).get("label")
+    details = [
+        value
+        for value in (position, adjacency)
+        if value
+    ]
+    if not details:
+        return "Logement cree depuis la CLI client ThermalTwin."
+    return "Logement cree depuis la CLI client ThermalTwin. " + " / ".join(details)
 
 
 def build_room(
@@ -638,7 +852,8 @@ def build_surfaces(
     for facade in room_input["facades"]:
         orientation_key_name, azimuth_deg, _label = ORIENTATIONS[facade["orientation"]]
         solar_orientation = orientation_key(azimuth_deg)
-        gross_wall_area = side_width_m * height_m
+        wall_length_m = facade.get("wall_length_m", side_width_m)
+        gross_wall_area = wall_length_m * height_m
         net_wall_area = max(1.0, gross_wall_area - window_area_by_orientation[solar_orientation])
         surfaces.append(
             {
@@ -655,7 +870,7 @@ def build_surfaces(
                 "tilt_deg": 90,
                 "albedo": 0.35,
                 "solar_to_room_factor": 0.08,
-                "mask_factor": 1.0,
+                "mask_factor": facade.get("mask_factor", 1.0),
             },
         )
 
@@ -675,6 +890,8 @@ def build_surfaces(
         )
 
     if room_input["has_roof"]:
+        roof_color = customer.get("change_details", {}).get("roof_color", {})
+        attic_ventilation = customer.get("change_details", {}).get("attic_ventilation", {})
         surfaces.append(
             {
                 "id": f"{room_id}_roof",
@@ -688,8 +905,8 @@ def build_surfaces(
                 ),
                 "azimuth_deg": 180,
                 "tilt_deg": 25,
-                "albedo": 0.25,
-                "solar_to_room_factor": 0.06,
+                "albedo": roof_color.get("albedo", 0.25),
+                "solar_to_room_factor": attic_ventilation.get("solar_to_room_factor", 0.06),
                 "mask_factor": 1.0,
             },
         )
@@ -717,22 +934,23 @@ def build_windows(
     customer: dict[str, Any],
     catalog: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    window_ref = get_catalog_item(catalog, "windows", customer["window_ref"])
     shutter_ref = get_catalog_item(catalog, "shutters", customer["shutter_ref"])
     windows = []
     for index, facade in enumerate(room_input["facades"], start=1):
         if facade["window_area_m2"] <= 0:
             continue
         orientation_name, azimuth_deg, _label = ORIENTATIONS[facade["orientation"]]
+        window_ref_id = facade.get("window_ref") or customer["window_ref"]
+        window_ref = get_catalog_item(catalog, "windows", window_ref_id)
         window_data = {
             "id": f"{room_input['id']}_{orientation_name}_window_{index}",
-            "window_ref": customer["window_ref"],
+            "window_ref": window_ref_id,
             "area_m2": round(facade["window_area_m2"], 2),
             "u_value_w_m2k": window_ref["u_value_w_m2k"],
             "g_value": window_ref["g_value"],
             "azimuth_deg": azimuth_deg,
             "tilt_deg": 90,
-            "mask_factor": 1.0,
+            "mask_factor": facade.get("mask_factor", 1.0),
             "shutter_ref": customer["shutter_ref"],
         }
         if customer["shutter_ref"] != "none":
@@ -951,6 +1169,8 @@ def build_experiments(
             False,
             room_ids,
             catalog,
+            customer.get("setpoints"),
+            customer.get("shutter_usage"),
         )
         after = build_scenario(
             base_id,
@@ -960,6 +1180,8 @@ def build_experiments(
             True,
             room_ids,
             catalog,
+            customer.get("setpoints"),
+            customer.get("shutter_usage"),
         )
         experiments.append(
             {
@@ -1029,8 +1251,15 @@ def build_scenario(
     apply_change: bool,
     room_ids: list[str],
     catalog: dict[str, Any],
+    setpoints: dict[str, float] | None = None,
+    shutter_usage: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     season = experiment_spec["season"]
+    scenario_setpoints = setpoints or (
+        {"heating_c": 18.0, "cooling_c": 26.0}
+        if season == "summer"
+        else {"heating_c": 19.0, "cooling_c": 28.0}
+    )
     scenario = {
         "schema_version": "0.1",
         "scenario_id": f"{base_id}_{'after' if apply_change else 'before'}",
@@ -1050,18 +1279,17 @@ def build_scenario(
             room["id"]: 26.0 if season == "summer" else 19.0
             for room in dwelling["rooms"]
         },
-        "setpoints": (
-            {"heating_c": 18.0, "cooling_c": 26.0}
-            if season == "summer"
-            else {"heating_c": 19.0, "cooling_c": 28.0}
-        ),
+        "setpoints": scenario_setpoints,
         "weather": build_weather(experiment_spec, dwelling["location"]["climate_zone_id"]),
         "energy_prices": {"electricity_eur_kwh": 0.25},
         "co2_factors": {"electricity_kg_kwh": 0.06},
     }
     if season == "summer":
         scenario["controls"] = {
-            "shutters": build_summer_shutter_controls(experiment_spec["duration_days"]),
+            "shutters": build_summer_shutter_controls(
+                experiment_spec["duration_days"],
+                shutter_usage,
+            ),
         }
     if apply_change:
         retrofit = build_retrofit(dwelling, change["id"], room_ids, catalog)
@@ -1145,11 +1373,24 @@ def solar_profile(season: str, hour_in_day: int) -> dict[str, float]:
     }
 
 
-def build_summer_shutter_controls(duration_days: int) -> dict[str, Any]:
+def build_summer_shutter_controls(
+    duration_days: int,
+    shutter_usage: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    usage_id = (shutter_usage or {}).get("id", "partial")
+    if usage_id == "none":
+        return {"default_opening_ratio": 1.0, "hourly": []}
+    if usage_id == "day_closed":
+        daytime_opening_ratio = 0.1
+    elif usage_id == "rare":
+        daytime_opening_ratio = 0.75
+    else:
+        daytime_opening_ratio = 0.25
+
     return {
         "default_opening_ratio": 1.0,
         "hourly": [
-            {"hour": hour, "opening_ratio": 0.25}
+            {"hour": hour, "opening_ratio": daytime_opening_ratio}
             for hour in range(duration_days * 24)
             if 8 <= hour % 24 <= 19
         ],

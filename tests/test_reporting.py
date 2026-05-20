@@ -7,6 +7,7 @@ from thermal_model import (
     render_report_html,
     resolve_dwelling_references,
 )
+from thermal_model.reporting import get_comfort_mode, get_room_status
 
 
 def _comparison(before_path, after_path):
@@ -30,15 +31,21 @@ def test_report_model_keeps_traceable_headline_metrics():
 
     report = build_report_model(comparison)
 
-    assert report["report_schema_version"] == "0.1"
+    assert report["report_schema_version"] == "0.3"
     assert report["source"]["dwelling_id"] == comparison["dwelling_id"]
     assert report["experiment"]["duration_hours"] == 24
     assert report["experiment"]["duration_days"] == 1
     assert report["experiment"]["weather_source"] == "synthetic"
     assert report["experiment"]["title"].startswith("Simulation")
-    assert report["experiment"]["scope_notice"].startswith("Ces resultats portent")
-    assert "Aucune projection annuelle" in report["experiment"]["annual_projection_notice"]
-    assert "temperature exterieure varie" in report["experiment"]["context_text"]
+    assert "expérience" in report["narrative"]["context"].lower()
+    assert "scénario après applique" in report["narrative"]["tested_change"]
+    assert "température" in report["narrative"]["conclusion"]
+    assert report["temperature_profiles"]["thresholds"]["primary"] == "hot"
+    assert report["comfort_mode"] == "hot"
+    assert report["experiment"]["scenario_type"] == "unknown"
+    assert report["temperature_profiles"]["rooms"][0]["points"][0]["hour"] == 0
+    assert "before_temperature_c" in report["temperature_profiles"]["rooms"][0]["points"][0]
+    assert "temp_min_before" in report["temperature_profiles"]["rooms"][0]["summary"]
     assert "definition" in report["main_gain_driver"]
     assert report["headline"]["electricity"]["before"] == round(
         comparison["before"]["totals"]["electricity_kwh"],
@@ -68,6 +75,7 @@ def test_report_model_excludes_hourly_traces():
     assert "before" not in report
     assert "after" not in report
     assert report["methodology"]["reported_values"].startswith("Calculees depuis")
+    assert "temperature_profiles" in report
 
 
 def test_report_model_marks_increases_without_calling_them_savings():
@@ -92,13 +100,32 @@ def test_render_report_html_contains_report_sections_without_hourly_traces():
     html = render_report_html(report)
 
     assert "<!doctype html>" in html
-    assert "Simulation toiture reflechissante - confort ete" in html
-    assert "Ce qui a ete compare" in html
-    assert "Resultat principal" in html
-    assert "Lecture des resultats" in html
-    assert "Limites de la simulation" in html
-    assert "Aucune projection annuelle" in html
+    assert "Simulation toiture réfléchissante - confort été" in html
+    assert "Synthèse exécutive" in html
+    assert "Scénario</div>Simulation thermique pendant un épisode de canicule" in html
+    assert "Scénarios" not in html
+    assert "Contexte" in html
+    assert "Graphiques de température" in html
+    assert "Résultats principaux" in html
+    assert "Lecture des résultats" in html
+    assert "Détail par pièce" in html
+    assert "Rapport généré automatiquement" in html
+    assert "Limites de la simulation" not in html
     assert "24 h" in html
-    assert "Tableaux techniques - detail par piece" in html
+    assert "°C" in html
+    assert "€" in html
+    assert ".0 °C" not in html
     assert comparison["dwelling_id"] in html
-    assert '"hourly"' not in html
+
+
+def test_comfort_mode_and_room_status_handle_cold_symmetrically():
+    assert get_comfort_mode({"season": "winter", "scenario_type": "heat_pump"}) == "cold"
+    assert get_comfort_mode({"season": "", "scenario_type": "windows"}) == "mixed"
+    assert get_room_status(
+        {"temp_min_before": 15.5, "cold_dh_reduction_pct": 0},
+        "cold",
+    ) == ("Critique", "status-critical")
+    assert get_room_status(
+        {"temp_min_before": 18.0, "cold_dh_reduction_pct": 35},
+        "cold",
+    ) == ("Amélioré", "status-improved")
