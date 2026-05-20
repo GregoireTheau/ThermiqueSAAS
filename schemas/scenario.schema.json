@@ -100,7 +100,8 @@
         "role": {
           "enum": [
             "primary",
-            "secondary"
+            "secondary",
+            "annual"
           ]
         },
         "label": {
@@ -109,11 +110,38 @@
         "season": {
           "enum": [
             "winter",
-            "summer"
+            "summer",
+            "annual"
           ]
         },
         "weather_variant": {
           "$ref": "#/$defs/id"
+        },
+        "simulation_type": {
+          "enum": [
+            "stress",
+            "seasonal",
+            "annual"
+          ]
+        },
+        "weather_mode": {
+          "enum": [
+            "synthetic",
+            "openmeteo_annual"
+          ]
+        },
+        "requested_city": {
+          "type": "string"
+        },
+        "weather_city": {
+          "type": "string"
+        },
+        "weather_match_mode": {
+          "type": "string"
+        },
+        "weather_year": {
+          "type": "integer",
+          "minimum": 1940
         },
         "reason": {
           "type": "string"

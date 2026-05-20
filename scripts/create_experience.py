@@ -255,7 +255,6 @@ def build_retrofit(
                 {
                     "surface_id": surface["id"],
                     "albedo": 0.75,
-                    "solar_to_room_factor": 0.03,
                 }
                 for surface in roof_surfaces
             ],

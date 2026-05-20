@@ -4,6 +4,7 @@ from thermal_model.weather import (
     build_thermal_weather,
     city_coordinates,
     combine_weather_years,
+    resolve_weather_city,
 )
 
 
@@ -33,6 +34,16 @@ def _weather_frame(year, temperatures):
 
 def test_city_coordinates_accept_supported_city():
     assert city_coordinates("Bordeaux") == (44.8378, -0.5792)
+
+
+def test_resolve_weather_city_uses_exact_department_then_climate_zone():
+    assert resolve_weather_city("Bordeaux", "33000", "FR_H2c") == {
+        "requested_city": "Bordeaux",
+        "weather_city": "Bordeaux",
+        "match_mode": "exact_city",
+    }
+    assert resolve_weather_city("Angers", "49000", "FR_H2b")["weather_city"] == "Nantes"
+    assert resolve_weather_city("Ville inconnue", "", "FR_H2b")["weather_city"] == "Nantes"
 
 
 def test_build_thermal_weather_matches_scenario_weather_shape():

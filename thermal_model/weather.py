@@ -6,6 +6,7 @@ import json
 import math
 from pathlib import Path
 from typing import Any
+import unicodedata
 
 
 FRENCH_KEY_CITIES: dict[str, tuple[float, float]] = {
@@ -37,6 +38,114 @@ OPEN_METEO_HOURLY_VARIABLES = [
     "direct_normal_irradiance",
 ]
 
+DEPARTMENT_WEATHER_CITY = {
+    "01": "Lyon",
+    "02": "Paris",
+    "03": "Lyon",
+    "04": "Marseille",
+    "05": "Marseille",
+    "06": "Nice",
+    "07": "Lyon",
+    "08": "Strasbourg",
+    "09": "Toulouse",
+    "10": "Paris",
+    "11": "Montpellier",
+    "12": "Toulouse",
+    "13": "Marseille",
+    "14": "Rennes",
+    "15": "Lyon",
+    "16": "Bordeaux",
+    "17": "Bordeaux",
+    "18": "Paris",
+    "19": "Bordeaux",
+    "21": "Lyon",
+    "22": "Rennes",
+    "23": "Bordeaux",
+    "24": "Bordeaux",
+    "25": "Strasbourg",
+    "26": "Lyon",
+    "27": "Paris",
+    "28": "Paris",
+    "29": "Rennes",
+    "30": "Montpellier",
+    "31": "Toulouse",
+    "32": "Toulouse",
+    "33": "Bordeaux",
+    "34": "Montpellier",
+    "35": "Rennes",
+    "36": "Paris",
+    "37": "Nantes",
+    "38": "Lyon",
+    "39": "Lyon",
+    "40": "Bordeaux",
+    "41": "Nantes",
+    "42": "Lyon",
+    "43": "Lyon",
+    "44": "Nantes",
+    "45": "Paris",
+    "46": "Toulouse",
+    "47": "Bordeaux",
+    "48": "Montpellier",
+    "49": "Nantes",
+    "50": "Rennes",
+    "51": "Paris",
+    "52": "Strasbourg",
+    "53": "Nantes",
+    "54": "Strasbourg",
+    "55": "Strasbourg",
+    "56": "Rennes",
+    "57": "Strasbourg",
+    "58": "Paris",
+    "59": "Lille",
+    "60": "Paris",
+    "61": "Rennes",
+    "62": "Lille",
+    "63": "Lyon",
+    "64": "Bordeaux",
+    "65": "Toulouse",
+    "66": "Montpellier",
+    "67": "Strasbourg",
+    "68": "Strasbourg",
+    "69": "Lyon",
+    "70": "Strasbourg",
+    "71": "Lyon",
+    "72": "Nantes",
+    "73": "Lyon",
+    "74": "Lyon",
+    "75": "Paris",
+    "76": "Paris",
+    "77": "Paris",
+    "78": "Paris",
+    "79": "Nantes",
+    "80": "Lille",
+    "81": "Toulouse",
+    "82": "Toulouse",
+    "83": "Marseille",
+    "84": "Marseille",
+    "85": "Nantes",
+    "86": "Nantes",
+    "87": "Bordeaux",
+    "88": "Strasbourg",
+    "89": "Paris",
+    "90": "Strasbourg",
+    "91": "Paris",
+    "92": "Paris",
+    "93": "Paris",
+    "94": "Paris",
+    "95": "Paris",
+}
+
+CLIMATE_ZONE_WEATHER_CITY = {
+    "FR_H1a": "Lille",
+    "FR_H1b": "Strasbourg",
+    "FR_H1c": "Lyon",
+    "FR_H2a": "Rennes",
+    "FR_H2b": "Nantes",
+    "FR_H2c": "Bordeaux",
+    "FR_H2d": "Toulouse",
+    "FR_H3": "Marseille",
+}
+
 
 def city_coordinates(city: str) -> tuple[float, float]:
     """Return coordinates for a supported French key city."""
@@ -45,6 +154,92 @@ def city_coordinates(city: str) -> tuple[float, float]:
     except KeyError as exc:
         supported = ", ".join(sorted(FRENCH_KEY_CITIES))
         raise ValueError(f"unknown city '{city}'. Supported cities: {supported}") from exc
+
+
+def city_slug(city: str) -> str:
+    """Return the filename slug used for generated weather assets."""
+    return _normalize_city(city).replace(" ", "_")
+
+
+def resolve_weather_city(
+    city: str | None,
+    postal_code: str | None = None,
+    climate_zone_id: str | None = None,
+) -> dict[str, str]:
+    """Map a user city/postal code/zone to the closest supported weather city."""
+    normalized_city = _normalize_city(city or "")
+    supported_by_normalized = {
+        _normalize_city(supported_city): supported_city
+        for supported_city in FRENCH_KEY_CITIES
+    }
+    if normalized_city in supported_by_normalized:
+        resolved_city = supported_by_normalized[normalized_city]
+        return {
+            "requested_city": city or resolved_city,
+            "weather_city": resolved_city,
+            "match_mode": "exact_city",
+        }
+
+    department_code = _department_code(postal_code or "")
+    if department_code in DEPARTMENT_WEATHER_CITY:
+        return {
+            "requested_city": city or "",
+            "weather_city": DEPARTMENT_WEATHER_CITY[department_code],
+            "match_mode": "department",
+        }
+
+    if climate_zone_id in CLIMATE_ZONE_WEATHER_CITY:
+        return {
+            "requested_city": city or "",
+            "weather_city": CLIMATE_ZONE_WEATHER_CITY[climate_zone_id],
+            "match_mode": "climate_zone",
+        }
+
+    return {
+        "requested_city": city or "",
+        "weather_city": "Paris",
+        "match_mode": "default",
+    }
+
+
+def thermal_weather_ref(
+    city: str,
+    year: int,
+    *,
+    output_dir: str | Path = "data/weather/openmeteo",
+) -> str:
+    """Return the standard ThermalTwin weather JSON path for one city/year."""
+    return str(Path(output_dir) / "thermal" / f"{city_slug(city)}_{year}.weather.json")
+
+
+def ensure_openmeteo_thermal_weather(
+    city: str,
+    year: int,
+    *,
+    output_dir: str | Path = "data/weather/openmeteo",
+    model: str = "era5_seamless",
+    cache_dir: str | Path = ".cache/openmeteo",
+) -> Path:
+    """Create the standard Parquet and ThermalTwin weather files when missing."""
+    weather_path = Path(thermal_weather_ref(city, year, output_dir=output_dir))
+    if weather_path.exists():
+        return weather_path
+
+    dataframe = fetch_open_meteo_year(
+        city,
+        year,
+        model=model,
+        cache_dir=cache_dir,
+    )
+    raw_path = Path(output_dir) / "raw" / f"{city_slug(city)}_{year}.parquet"
+    write_parquet(dataframe, raw_path)
+    annual_dataframe = combine_weather_years([dataframe], "latest")
+    weather = build_thermal_weather(
+        annual_dataframe,
+        source=f"openmeteo_{model}_{city_slug(city)}_{year}",
+    )
+    write_thermal_weather_json(weather, weather_path)
+    return weather_path
 
 
 def fetch_open_meteo_year(
@@ -216,6 +411,19 @@ def _non_negative(value: Any) -> float:
 def _non_leap_year(dataframe: Any) -> Any:
     datetimes = dataframe["datetime"]
     return dataframe.loc[~((datetimes.dt.month == 2) & (datetimes.dt.day == 29))]
+
+
+def _normalize_city(city: str) -> str:
+    ascii_city = unicodedata.normalize("NFKD", city).encode("ascii", "ignore").decode()
+    return " ".join(ascii_city.lower().replace("-", " ").split())
+
+
+def _department_code(postal_code: str) -> str:
+    cleaned = postal_code.strip().upper()
+    if cleaned.startswith(("2A", "2B")):
+        return cleaned[:2]
+    digits = "".join(character for character in cleaned if character.isdigit())
+    return digits[:2]
 
 
 def _weather_dependencies(require_openmeteo: bool = True) -> tuple[Any, Any, Any, Any]:

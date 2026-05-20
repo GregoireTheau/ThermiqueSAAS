@@ -17,9 +17,11 @@ from scripts import create_customer_experience as customer_experience  # noqa: E
 from thermal_model import (  # noqa: E402
     build_report_model,
     compare_scenarios,
+    ensure_openmeteo_thermal_weather,
     load_dwelling,
     load_reference_catalog,
     render_report_html,
+    resolve_scenario_weather_reference,
     resolve_dwelling_references,
     validate_dwelling,
     validate_scenario,
@@ -82,6 +84,39 @@ def parse_args() -> argparse.Namespace:
         default=1005.0,
         help="Air heat capacity used for ventilation losses.",
     )
+    parser.add_argument(
+        "--include-annual",
+        action="store_true",
+        help="Also generate annual Open-Meteo experiments.",
+    )
+    parser.add_argument(
+        "--annual-weather-year",
+        type=int,
+        default=2023,
+        help="Open-Meteo year used for annual fixture simulations.",
+    )
+    parser.add_argument(
+        "--annual-weather-city",
+        help=(
+            "Optional weather city override for annual fixture simulations. "
+            "Defaults to the dwelling city mapping."
+        ),
+    )
+    parser.add_argument(
+        "--annual-weather-dir",
+        default="data/weather/openmeteo",
+        help="Directory containing/generated Open-Meteo weather assets.",
+    )
+    parser.add_argument(
+        "--openmeteo-model",
+        default="era5_seamless",
+        help="Open-Meteo model used when annual weather must be fetched.",
+    )
+    parser.add_argument(
+        "--openmeteo-cache-dir",
+        default=".cache/openmeteo",
+        help="HTTP cache directory for Open-Meteo annual weather fetches.",
+    )
     return parser.parse_args()
 
 
@@ -120,7 +155,12 @@ def generate_report_fixtures(args: argparse.Namespace) -> list[Path]:
         customer = {
             "change": find_change(adaptation_id),
             "target_scope": args.target_scope,
+            "include_annual_experiment": args.include_annual,
+            "annual_weather_year": args.annual_weather_year,
+            "annual_weather_dir": args.annual_weather_dir,
         }
+        if args.annual_weather_city:
+            resolved_dwelling["location"]["city"] = args.annual_weather_city
         experiments = customer_experience.build_experiments(
             customer,
             resolved_dwelling,
@@ -131,6 +171,7 @@ def generate_report_fixtures(args: argparse.Namespace) -> list[Path]:
             continue
 
         for experiment in experiments:
+            prepare_fixture_weather(experiment, args)
             before = experiment["before"]
             after = experiment["after"]
             validate_scenario(before)
@@ -166,6 +207,24 @@ def generate_report_fixtures(args: argparse.Namespace) -> list[Path]:
             print(f"{experiment['id']}: {html_path}")
 
     return output_paths
+
+
+def prepare_fixture_weather(experiment: dict[str, Any], args: argparse.Namespace) -> None:
+    if experiment["role"] != "annual":
+        return
+
+    weather_city = experiment["before"]["experiment"]["weather_city"]
+    weather_year = experiment["before"]["experiment"]["weather_year"]
+    weather_path = ensure_openmeteo_thermal_weather(
+        weather_city,
+        weather_year,
+        output_dir=args.annual_weather_dir,
+        model=args.openmeteo_model,
+        cache_dir=args.openmeteo_cache_dir,
+    )
+    print(f"annual weather: {weather_city} {weather_year} -> {weather_path}")
+    for scenario_key in ("before", "after"):
+        resolve_scenario_weather_reference(experiment[scenario_key], PROJECT_ROOT)
 
 
 def main() -> None:

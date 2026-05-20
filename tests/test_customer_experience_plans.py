@@ -1,3 +1,8 @@
+import json
+from pathlib import Path
+
+from jsonschema import Draft202012Validator
+
 from scripts import create_customer_experience as customer_experience
 from thermal_model import (
     build_report_model,
@@ -33,13 +38,25 @@ def test_reflective_roof_runs_heatwave_and_long_summer():
     assert [experiment["id"] for experiment in experiments] == [
         "house_simple_reflective_roof_summer_heatwave",
         "house_simple_reflective_roof_summer_long",
+        "house_simple_reflective_roof_annual",
     ]
-    assert [experiment["role"] for experiment in experiments] == ["primary", "secondary"]
+    assert [experiment["role"] for experiment in experiments] == [
+        "primary",
+        "secondary",
+        "annual",
+    ]
     assert len(experiments[0]["before"]["weather"]["hourly"]) == 72
     assert len(experiments[1]["before"]["weather"]["hourly"]) == 1440
     assert experiments[1]["before"]["experiment"]["weather_variant"] == (
         "summer_long_with_heatwave"
     )
+    assert experiments[2]["before"]["experiment"]["simulation_type"] == "annual"
+    assert experiments[2]["before"]["experiment"]["weather_city"] == "Bordeaux"
+    assert experiments[2]["before"]["weather"]["weather_ref"] == (
+        "data/weather/openmeteo/thermal/bordeaux_2023.weather.json"
+    )
+    schema = json.loads(Path("schemas/scenario.schema.json").read_text())
+    assert list(Draft202012Validator(schema).iter_errors(experiments[2]["before"])) == []
     validate_scenario(experiments[0]["before"])
     validate_scenario(experiments[1]["after"])
 
@@ -67,10 +84,14 @@ def test_window_summer_experiment_requires_exposed_windows():
         catalog,
     )
 
-    assert [experiment["season"] for experiment in north_window_experiments] == ["winter"]
+    assert [experiment["season"] for experiment in north_window_experiments] == [
+        "winter",
+        "annual",
+    ]
     assert [experiment["season"] for experiment in exposed_window_experiments] == [
         "winter",
         "summer",
+        "annual",
     ]
 
 

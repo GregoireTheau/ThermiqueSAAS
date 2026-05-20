@@ -71,7 +71,7 @@
           "azimuth_deg": 180,
           "tilt_deg": 25,
           "albedo": 0.25,
-          "solar_to_room_factor": 0.06,
+          "solar_to_room_factor": 0.02,
           "mask_factor": 1.0
         },
         {
@@ -168,7 +168,7 @@
           "azimuth_deg": 180,
           "tilt_deg": 25,
           "albedo": 0.25,
-          "solar_to_room_factor": 0.06,
+          "solar_to_room_factor": 0.02,
           "mask_factor": 1.0
         },
         {
@@ -236,7 +236,7 @@
           "azimuth_deg": 180,
           "tilt_deg": 25,
           "albedo": 0.25,
-          "solar_to_room_factor": 0.06,
+          "solar_to_room_factor": 0.02,
           "mask_factor": 1.0
         },
         {

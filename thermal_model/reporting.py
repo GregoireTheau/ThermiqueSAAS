@@ -64,6 +64,12 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
             "role": experiment.get("role", "primary"),
             "label": experiment.get("label", ""),
             "weather_variant": experiment.get("weather_variant", ""),
+            "simulation_type": experiment.get("simulation_type", ""),
+            "weather_mode": experiment.get("weather_mode", ""),
+            "requested_city": experiment.get("requested_city", ""),
+            "weather_city": experiment.get("weather_city", ""),
+            "weather_match_mode": experiment.get("weather_match_mode", ""),
+            "weather_year": experiment.get("weather_year"),
             "reason": experiment.get("reason", ""),
             "context_text": context_text,
             "purpose_text": purpose_text,
@@ -819,7 +825,7 @@ def _scenario_type(experiment: dict[str, Any]) -> str:
 
 
 def _infer_season(experiment: dict[str, Any]) -> str:
-    if experiment.get("season") in {"summer", "winter"}:
+    if experiment.get("season") in {"summer", "winter", "annual"}:
         return experiment["season"]
     text = " ".join(
         [
@@ -973,11 +979,12 @@ def _build_conclusion_text(
 
 
 def _format_experiment_role(experiment: dict[str, Any]) -> str:
-    role_label = (
-        "Expérience principale"
-        if experiment.get("role") == "primary"
-        else "Expérience secondaire"
-    )
+    role_labels = {
+        "primary": "Expérience principale",
+        "secondary": "Expérience secondaire",
+        "annual": "Expérience annuelle",
+    }
+    role_label = role_labels.get(experiment.get("role"), "Expérience")
     label = experiment.get("label") or "simulation"
     reason = experiment.get("reason") or "Aucune justification spécifique renseignée."
     return f"{role_label}: {label}. {reason}"

@@ -127,6 +127,11 @@ Un scenario peut ensuite referencer ce fichier meteo sans embarquer les heures :
 
 `load_scenario()` resout automatiquement cette reference avant la simulation.
 
+Le questionnaire client ajoute aussi une experience annuelle Open-Meteo pour
+chaque changement teste. Si la ville saisie n'est pas dans les villes cles,
+elle est rapprochee d'une ville meteo supportee via le code postal puis la zone
+climatique.
+
 ## Environnement Python
 
 Le code courant fonctionne sans dependance externe pour les scripts principaux.

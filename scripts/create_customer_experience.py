@@ -19,9 +19,13 @@ if str(PROJECT_ROOT) not in sys.path:
 from thermal_model import (  # noqa: E402
     build_report_model,
     compare_scenarios,
+    ensure_openmeteo_thermal_weather,
     load_reference_catalog,
     render_report_html,
+    resolve_scenario_weather_reference,
     resolve_dwelling_references,
+    resolve_weather_city,
+    thermal_weather_ref,
     validate_dwelling,
     validate_scenario,
 )
@@ -209,6 +213,8 @@ EXPERIMENT_SPECS = {
         "id": "winter_cold",
         "season": "winter",
         "weather_variant": "winter_cold",
+        "simulation_type": "stress",
+        "weather_mode": "synthetic",
         "duration_days": 7,
         "role": "primary",
         "label": "Hiver froid",
@@ -218,6 +224,8 @@ EXPERIMENT_SPECS = {
         "id": "summer_heatwave",
         "season": "summer",
         "weather_variant": "summer_heatwave",
+        "simulation_type": "stress",
+        "weather_mode": "synthetic",
         "duration_days": 3,
         "role": "primary",
         "label": "Ete canicule",
@@ -227,6 +235,8 @@ EXPERIMENT_SPECS = {
         "id": "summer_heatwave",
         "season": "summer",
         "weather_variant": "summer_heatwave",
+        "simulation_type": "stress",
+        "weather_mode": "synthetic",
         "duration_days": 3,
         "role": "secondary",
         "label": "Ete canicule",
@@ -236,6 +246,8 @@ EXPERIMENT_SPECS = {
         "id": "summer_heatwave",
         "season": "summer",
         "weather_variant": "summer_heatwave",
+        "simulation_type": "stress",
+        "weather_mode": "synthetic",
         "duration_days": 3,
         "role": "secondary",
         "condition": "exposed_windows",
@@ -246,10 +258,23 @@ EXPERIMENT_SPECS = {
         "id": "summer_long",
         "season": "summer",
         "weather_variant": "summer_long_with_heatwave",
+        "simulation_type": "seasonal",
+        "weather_mode": "synthetic",
         "duration_days": 60,
         "role": "secondary",
         "label": "Ete long avec canicule",
         "reason": "Experience secondaire sur deux mois d'ete type avec un episode de canicule integre.",
+    },
+    "annual_openmeteo": {
+        "id": "annual",
+        "season": "annual",
+        "weather_variant": "openmeteo_annual",
+        "simulation_type": "annual",
+        "weather_mode": "openmeteo_annual",
+        "duration_days": 365,
+        "role": "annual",
+        "label": "Annee complete",
+        "reason": "Experience annuelle pour estimer les besoins et gains sur une meteo representative.",
     },
 }
 
@@ -275,9 +300,9 @@ ROOF_COLORS = [
 ]
 
 ATTIC_VENTILATION_LEVELS = [
-    {"id": "ventilated", "label": "Combles ou sous-toiture bien ventiles", "solar_to_room_factor": 0.05},
-    {"id": "limited", "label": "Ventilation limitee ou inconnue", "solar_to_room_factor": 0.06},
-    {"id": "not_ventilated", "label": "Peu ou pas ventiles", "solar_to_room_factor": 0.08},
+    {"id": "ventilated", "label": "Combles ou sous-toiture bien ventiles", "solar_to_room_factor": 0.015},
+    {"id": "limited", "label": "Ventilation limitee ou inconnue", "solar_to_room_factor": 0.02},
+    {"id": "not_ventilated", "label": "Peu ou pas ventiles", "solar_to_room_factor": 0.03},
 ]
 
 
@@ -306,6 +331,27 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=1005.0,
         help="Air heat capacity used for ventilation losses.",
+    )
+    parser.add_argument(
+        "--annual-weather-year",
+        type=int,
+        default=2023,
+        help="Open-Meteo year used for annual simulations.",
+    )
+    parser.add_argument(
+        "--annual-weather-dir",
+        default="data/weather/openmeteo",
+        help="Directory containing/generated Open-Meteo weather assets.",
+    )
+    parser.add_argument(
+        "--openmeteo-model",
+        default="era5_seamless",
+        help="Open-Meteo model used when annual weather must be fetched.",
+    )
+    parser.add_argument(
+        "--openmeteo-cache-dir",
+        default=".cache/openmeteo",
+        help="HTTP cache directory for Open-Meteo annual weather fetches.",
     )
     return parser.parse_args()
 
@@ -906,7 +952,7 @@ def build_surfaces(
                 "azimuth_deg": 180,
                 "tilt_deg": 25,
                 "albedo": roof_color.get("albedo", 0.25),
-                "solar_to_room_factor": attic_ventilation.get("solar_to_room_factor", 0.06),
+                "solar_to_room_factor": attic_ventilation.get("solar_to_room_factor", 0.02),
                 "mask_factor": 1.0,
             },
         )
@@ -1159,7 +1205,12 @@ def build_experiments(
         return []
 
     experiments = []
-    for experiment_spec in selected_experiment_specs(change, dwelling, room_ids):
+    for experiment_spec in selected_experiment_specs(
+        change,
+        dwelling,
+        room_ids,
+        customer.get("include_annual_experiment", True),
+    ):
         base_id = f"{dwelling['dwelling_id']}_{change['id']}_{experiment_spec['id']}"
         before = build_scenario(
             base_id,
@@ -1171,6 +1222,8 @@ def build_experiments(
             catalog,
             customer.get("setpoints"),
             customer.get("shutter_usage"),
+            customer.get("annual_weather_year", 2023),
+            customer.get("annual_weather_dir", "data/weather/openmeteo"),
         )
         after = build_scenario(
             base_id,
@@ -1182,6 +1235,8 @@ def build_experiments(
             catalog,
             customer.get("setpoints"),
             customer.get("shutter_usage"),
+            customer.get("annual_weather_year", 2023),
+            customer.get("annual_weather_dir", "data/weather/openmeteo"),
         )
         experiments.append(
             {
@@ -1199,6 +1254,7 @@ def selected_experiment_specs(
     change: dict[str, Any],
     dwelling: dict[str, Any],
     room_ids: list[str],
+    include_annual_experiment: bool = True,
 ) -> list[dict[str, Any]]:
     specs = []
     for experiment_id in change["experiments"]:
@@ -1209,6 +1265,8 @@ def selected_experiment_specs(
         ):
             continue
         specs.append(spec)
+    if include_annual_experiment:
+        specs.append(EXPERIMENT_SPECS["annual_openmeteo"])
     return specs
 
 
@@ -1253,13 +1311,18 @@ def build_scenario(
     catalog: dict[str, Any],
     setpoints: dict[str, float] | None = None,
     shutter_usage: dict[str, Any] | None = None,
+    annual_weather_year: int = 2023,
+    annual_weather_dir: str | Path = "data/weather/openmeteo",
 ) -> dict[str, Any]:
     season = experiment_spec["season"]
-    scenario_setpoints = setpoints or (
-        {"heating_c": 18.0, "cooling_c": 26.0}
-        if season == "summer"
-        else {"heating_c": 19.0, "cooling_c": 28.0}
-    )
+    scenario_setpoints = setpoints or default_setpoints_for_experiment(experiment_spec)
+    weather_city = {}
+    if experiment_spec["weather_mode"] == "openmeteo_annual":
+        weather_city = resolve_weather_city(
+            dwelling["location"].get("city"),
+            dwelling["location"].get("postal_code"),
+            dwelling["location"].get("climate_zone_id"),
+        )
     scenario = {
         "schema_version": "0.1",
         "scenario_id": f"{base_id}_{'after' if apply_change else 'before'}",
@@ -1272,19 +1335,36 @@ def build_scenario(
             "label": experiment_spec["label"],
             "season": season,
             "weather_variant": experiment_spec["weather_variant"],
+            "simulation_type": experiment_spec["simulation_type"],
+            "weather_mode": experiment_spec["weather_mode"],
             "reason": experiment_spec["reason"],
         },
         "timestep_h": 1.0,
         "initial_temperatures_c": {
-            room["id"]: 26.0 if season == "summer" else 19.0
+            room["id"]: initial_temperature_for_experiment(experiment_spec)
             for room in dwelling["rooms"]
         },
         "setpoints": scenario_setpoints,
-        "weather": build_weather(experiment_spec, dwelling["location"]["climate_zone_id"]),
+        "weather": build_scenario_weather(
+            experiment_spec,
+            dwelling,
+            weather_city,
+            annual_weather_year,
+            annual_weather_dir,
+        ),
         "energy_prices": {"electricity_eur_kwh": 0.25},
         "co2_factors": {"electricity_kg_kwh": 0.06},
     }
-    if season == "summer":
+    if weather_city:
+        scenario["experiment"].update(
+            {
+                "requested_city": weather_city["requested_city"],
+                "weather_city": weather_city["weather_city"],
+                "weather_match_mode": weather_city["match_mode"],
+                "weather_year": annual_weather_year,
+            },
+        )
+    if season in {"summer", "annual"}:
         scenario["controls"] = {
             "shutters": build_summer_shutter_controls(
                 experiment_spec["duration_days"],
@@ -1296,6 +1376,42 @@ def build_scenario(
         if retrofit:
             scenario["retrofit"] = retrofit
     return scenario
+
+
+def default_setpoints_for_experiment(experiment_spec: dict[str, Any]) -> dict[str, float]:
+    if experiment_spec["season"] == "summer":
+        return {"heating_c": 18.0, "cooling_c": 26.0}
+    if experiment_spec["season"] == "annual":
+        return {"heating_c": 19.0, "cooling_c": 26.0}
+    return {"heating_c": 19.0, "cooling_c": 28.0}
+
+
+def initial_temperature_for_experiment(experiment_spec: dict[str, Any]) -> float:
+    if experiment_spec["season"] == "summer":
+        return 26.0
+    if experiment_spec["season"] == "annual":
+        return 20.0
+    return 19.0
+
+
+def build_scenario_weather(
+    experiment_spec: dict[str, Any],
+    dwelling: dict[str, Any],
+    weather_city: dict[str, str],
+    annual_weather_year: int,
+    annual_weather_dir: str | Path,
+) -> dict[str, Any]:
+    if experiment_spec["weather_mode"] == "openmeteo_annual":
+        city = weather_city["weather_city"]
+        return {
+            "source": f"openmeteo_{city}_{annual_weather_year}",
+            "weather_ref": thermal_weather_ref(
+                city,
+                annual_weather_year,
+                output_dir=annual_weather_dir,
+            ),
+        }
+    return build_weather(experiment_spec, dwelling["location"]["climate_zone_id"])
 
 
 def build_weather(experiment_spec: dict[str, Any], climate_zone_id: str) -> dict[str, Any]:
@@ -1419,7 +1535,6 @@ def build_retrofit(
                 {
                     "surface_id": surface["id"],
                     "albedo": 0.75,
-                    "solar_to_room_factor": 0.03,
                 }
                 for room in rooms
                 for surface in room["surfaces"]
@@ -1497,6 +1612,8 @@ def write_text(output_path: str | Path, content: str) -> None:
 def run_customer_experience(args: argparse.Namespace) -> None:
     catalog = load_reference_catalog(args.reference_dir)
     customer = collect_customer_input(catalog)
+    customer["annual_weather_year"] = args.annual_weather_year
+    customer["annual_weather_dir"] = args.annual_weather_dir
     dwelling = build_dwelling(customer, catalog)
     validate_dwelling(dwelling)
     resolved_dwelling = resolve_dwelling_references(dwelling, catalog)
@@ -1513,6 +1630,7 @@ def run_customer_experience(args: argparse.Namespace) -> None:
         return
 
     for experiment in experiments:
+        prepare_experiment_weather(experiment, args)
         before = experiment["before"]
         after = experiment["after"]
         validate_scenario(before)
@@ -1548,6 +1666,26 @@ def run_customer_experience(args: argparse.Namespace) -> None:
         print_customer_summary(customer_summary)
 
 
+def prepare_experiment_weather(experiment: dict[str, Any], args: argparse.Namespace) -> None:
+    """Ensure external annual weather exists and resolve it before simulation."""
+    if experiment["role"] != "annual":
+        return
+
+    weather_city = experiment["before"]["experiment"]["weather_city"]
+    weather_year = experiment["before"]["experiment"]["weather_year"]
+    weather_path = ensure_openmeteo_thermal_weather(
+        weather_city,
+        weather_year,
+        output_dir=args.annual_weather_dir,
+        model=args.openmeteo_model,
+        cache_dir=args.openmeteo_cache_dir,
+    )
+    print(f"Meteo annuelle Open-Meteo: {weather_city} {weather_year} -> {weather_path}")
+
+    for scenario_key in ("before", "after"):
+        resolve_scenario_weather_reference(experiment[scenario_key], Path.cwd())
+
+
 def build_customer_summary(season: str, comparison: dict[str, Any]) -> dict[str, Any]:
     key_room_id, room = most_improved_room(comparison)
     energy = comparison["summary"]["energy_savings"]
@@ -1564,6 +1702,12 @@ def build_customer_summary(season: str, comparison: dict[str, Any]) -> dict[str,
             "role": experiment.get("role", "primary"),
             "label": experiment.get("label", ""),
             "weather_variant": experiment.get("weather_variant", ""),
+            "simulation_type": experiment.get("simulation_type", ""),
+            "weather_mode": experiment.get("weather_mode", ""),
+            "requested_city": experiment.get("requested_city", ""),
+            "weather_city": experiment.get("weather_city", ""),
+            "weather_match_mode": experiment.get("weather_match_mode", ""),
+            "weather_year": experiment.get("weather_year"),
             "reason": experiment.get("reason", ""),
             "duration_hours": round(experiment["duration_hours"], 2),
             "duration_days": round(experiment["duration_days"], 2),
@@ -1572,7 +1716,9 @@ def build_customer_summary(season: str, comparison: dict[str, Any]) -> dict[str,
                 f"{experiment['duration_days']:.2f} jours."
             ),
             "annual_projection_notice": (
-                "Aucune projection annuelle n'est calculee dans ce rapport."
+                "Cette experience est une simulation annuelle."
+                if experiment.get("simulation_type") == "annual"
+                else "Aucune projection annuelle n'est calculee dans ce rapport."
             ),
             "weather_source": experiment["weather_source"],
             "outdoor_temperature_min_c": round(
@@ -1644,7 +1790,12 @@ def print_customer_summary(summary: dict[str, Any]) -> None:
     experiment = summary["experiment"]
     headline = summary["headline"]
     print(f"Lecture {summary['season']}:")
-    role_label = "principale" if experiment["role"] == "primary" else "secondaire"
+    role_labels = {
+        "primary": "principale",
+        "secondary": "secondaire",
+        "annual": "annuelle",
+    }
+    role_label = role_labels.get(experiment["role"], "simulation")
     print(
         "- Experience: "
         f"{role_label}, {experiment['label'] or summary['season']}, "
@@ -1654,7 +1805,10 @@ def print_customer_summary(summary: dict[str, Any]) -> None:
         f"{experiment['outdoor_temperature_min_c']:.1f} C -> "
         f"{experiment['outdoor_temperature_max_c']:.1f} C ext."
     )
-    print("- Portee: resultats simules sur cette periode, sans projection annuelle.")
+    if experiment.get("simulation_type") == "annual":
+        print("- Portee: resultats simules sur une annee meteo complete.")
+    else:
+        print("- Portee: resultats simules sur cette periode, sans projection annuelle.")
     if headline["electricity_saved_kwh"] > 0:
         print(
             "- Energie: "
