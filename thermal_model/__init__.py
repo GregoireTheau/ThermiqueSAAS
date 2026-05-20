@@ -29,10 +29,21 @@ from .reporting import build_report_model, render_report_html
 from .scenario_loader import (
     ScenarioValidationError,
     load_scenario,
+    resolve_scenario_weather_reference,
     validate_scenario,
 )
 from .simulation import apply_scenario_overrides, simulate_1r1c
 from .static_losses import compute_dwelling_static_losses, compute_room_static_losses
+from .weather import (
+    FRENCH_KEY_CITIES,
+    build_thermal_weather,
+    city_coordinates,
+    combine_weather_years,
+    fetch_open_meteo_year,
+    read_parquet,
+    write_parquet,
+    write_thermal_weather_json,
+)
 
 __all__ = [
     "apply_scenario_overrides",
@@ -41,8 +52,13 @@ __all__ = [
     "compute_dwelling_static_losses",
     "compute_room_static_losses",
     "DwellingValidationError",
+    "FRENCH_KEY_CITIES",
     "ReferenceDataError",
     "ScenarioValidationError",
+    "build_thermal_weather",
+    "city_coordinates",
+    "combine_weather_years",
+    "fetch_open_meteo_year",
     "get_climate_zone_for_department",
     "get_climate_zone_reference",
     "get_cooling_system_reference",
@@ -60,9 +76,13 @@ __all__ = [
     "load_dwelling",
     "load_reference_catalog",
     "load_scenario",
+    "read_parquet",
     "resolve_dwelling_references",
+    "resolve_scenario_weather_reference",
     "render_report_html",
     "simulate_1r1c",
     "validate_scenario",
     "validate_dwelling",
+    "write_parquet",
+    "write_thermal_weather_json",
 ]

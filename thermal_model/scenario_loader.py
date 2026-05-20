@@ -15,13 +15,47 @@ class ScenarioValidationError(ValueError):
 
 
 def load_scenario(path: str | Path, validate: bool = True) -> Scenario:
-    """Load a scenario JSON file and optionally validate it."""
-    with Path(path).open(encoding="utf-8") as file:
+    """Load a scenario JSON file, resolve external weather, and optionally validate it."""
+    scenario_path = Path(path)
+    with scenario_path.open(encoding="utf-8") as file:
         scenario = json.load(file)
+
+    resolve_scenario_weather_reference(scenario, scenario_path.parent)
 
     if validate:
         validate_scenario(scenario)
 
+    return scenario
+
+
+def resolve_scenario_weather_reference(
+    scenario: Scenario,
+    base_dir: str | Path = ".",
+) -> Scenario:
+    """Resolve scenario.weather.weather_ref in place when present."""
+    weather = scenario.get("weather", {})
+    weather_ref = weather.get("weather_ref")
+    if not weather_ref or "hourly" in weather:
+        return scenario
+
+    weather_path = Path(weather_ref)
+    if not weather_path.is_absolute():
+        weather_path = Path(base_dir) / weather_path
+        if not weather_path.exists():
+            weather_path = Path(weather_ref)
+    with weather_path.open(encoding="utf-8") as file:
+        referenced_weather = json.load(file)
+
+    if "hourly" not in referenced_weather:
+        raise ScenarioValidationError(
+            f"weather reference must contain hourly data: {weather_path}"
+        )
+
+    weather["hourly"] = referenced_weather["hourly"]
+    weather["source"] = weather.get(
+        "source",
+        referenced_weather.get("source", str(weather_ref)),
+    )
     return scenario
 
 
@@ -52,7 +86,12 @@ def validate_scenario(scenario: Mapping[str, Any]) -> None:
         raise ScenarioValidationError("heating_c cannot be greater than cooling_c")
 
     weather = scenario["weather"]
-    _require_keys(weather, ("hourly",), "scenario.weather")
+    if "hourly" not in weather:
+        if "weather_ref" in weather:
+            raise ScenarioValidationError(
+                "scenario.weather.weather_ref must be resolved before validation"
+            )
+        _require_keys(weather, ("hourly",), "scenario.weather")
     if not weather["hourly"]:
         raise ScenarioValidationError("scenario.weather.hourly cannot be empty")
 

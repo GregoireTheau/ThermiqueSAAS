@@ -16,6 +16,8 @@ env/
 
 # Local outputs
 outputs/
+.cache/
+data/weather/openmeteo/
 *.log
 
 # OS / editor

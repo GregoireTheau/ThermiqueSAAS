@@ -5,12 +5,14 @@ from pathlib import Path
 from jsonschema import Draft202012Validator
 
 from thermal_model import (
+    ScenarioValidationError,
     get_climate_zone_for_department,
     get_window_reference,
     load_dwelling,
     load_reference_catalog,
     load_scenario,
     resolve_dwelling_references,
+    validate_scenario,
 )
 
 
@@ -47,6 +49,80 @@ def test_load_scenario_heatwave_before():
 
     assert scenario["scenario_id"] == "scenario_heatwave_before_roof"
     assert len(scenario["weather"]["hourly"]) == 24
+
+
+def test_load_scenario_resolves_relative_weather_ref(tmp_path):
+    weather_dir = tmp_path / "weather"
+    weather_dir.mkdir()
+    weather_path = weather_dir / "bordeaux_2023.weather.json"
+    weather_path.write_text(
+        json.dumps(
+            {
+                "source": "openmeteo_test",
+                "hourly": [
+                    {
+                        "hour": 0,
+                        "outdoor_temperature_c": 7.0,
+                        "solar_irradiance_w_m2": {
+                            "north": 0.0,
+                            "east": 0.0,
+                            "south": 0.0,
+                            "west": 0.0,
+                            "roof": 0.0,
+                        },
+                    },
+                    {
+                        "hour": 1,
+                        "outdoor_temperature_c": 6.5,
+                    },
+                ],
+            },
+        ),
+        encoding="utf-8",
+    )
+    scenario_path = tmp_path / "scenario.json"
+    scenario_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "0.1",
+                "scenario_id": "weather_ref_scenario",
+                "dwelling_id": "house_simple",
+                "timestep_h": 1.0,
+                "setpoints": {
+                    "heating_c": 19.0,
+                    "cooling_c": 26.0,
+                },
+                "weather": {
+                    "weather_ref": "weather/bordeaux_2023.weather.json",
+                },
+                "energy_prices": {
+                    "electricity_eur_kwh": 0.25,
+                },
+                "co2_factors": {
+                    "electricity_kg_kwh": 0.06,
+                },
+            },
+        ),
+        encoding="utf-8",
+    )
+
+    scenario = load_scenario(scenario_path)
+
+    assert scenario["weather"]["source"] == "openmeteo_test"
+    assert scenario["weather"]["hourly"][0]["outdoor_temperature_c"] == 7.0
+    assert len(scenario["weather"]["hourly"]) == 2
+
+
+def test_validate_scenario_requires_resolved_weather_ref():
+    scenario = deepcopy(load_scenario("data/examples/scenario_simple.json"))
+    scenario["weather"] = {"weather_ref": "weather/bordeaux_2023.weather.json"}
+
+    try:
+        validate_scenario(scenario)
+    except ScenarioValidationError as exc:
+        assert "must be resolved" in str(exc)
+    else:
+        raise AssertionError("validate_scenario accepted an unresolved weather_ref")
 
 
 def test_scenario_schema_accepts_retrofit_equipment_overrides():
@@ -93,6 +169,18 @@ def test_scenario_schema_accepts_retrofit_equipment_overrides():
                 },
             }
         ],
+    }
+
+    errors = list(Draft202012Validator(schema).iter_errors(scenario))
+
+    assert errors == []
+
+
+def test_scenario_schema_accepts_weather_ref():
+    schema = json.loads(Path("schemas/scenario.schema.json").read_text())
+    scenario = deepcopy(load_scenario("data/examples/scenario_simple.json"))
+    scenario["weather"] = {
+        "weather_ref": "data/weather/openmeteo/thermal/bordeaux_2023.weather.json",
     }
 
     errors = list(Draft202012Validator(schema).iter_errors(scenario))

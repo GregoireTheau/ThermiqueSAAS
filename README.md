@@ -94,6 +94,39 @@ python3 scripts/validate_inputs.py \
   --scenario data/examples/scenario_heatwave.json
 ```
 
+Recuperation meteo annuelle Open-Meteo pour une ville :
+
+```bash
+python3 scripts/fetch_openmeteo_weather.py --city Bordeaux --year 2023
+```
+
+Recuperation de toutes les villes cles avec moyenne de plusieurs annees :
+
+```bash
+python3 scripts/fetch_openmeteo_weather.py \
+  --city all \
+  --year 2021 \
+  --year 2022 \
+  --year 2023 \
+  --mode mean
+```
+
+Le script ecrit les donnees brutes en Parquet et une meteo JSON compatible avec
+les scenarios ThermalTwin dans `data/weather/openmeteo/`. Ces fichiers sont des
+artefacts locaux ignores par Git.
+
+Un scenario peut ensuite referencer ce fichier meteo sans embarquer les heures :
+
+```json
+{
+  "weather": {
+    "weather_ref": "data/weather/openmeteo/thermal/bordeaux_2023.weather.json"
+  }
+}
+```
+
+`load_scenario()` resout automatiquement cette reference avant la simulation.
+
 ## Environnement Python
 
 Le code courant fonctionne sans dependance externe pour les scripts principaux.

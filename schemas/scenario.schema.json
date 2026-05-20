@@ -427,12 +427,25 @@
     "weather": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "hourly"
+      "anyOf": [
+        {
+          "required": [
+            "hourly"
+          ]
+        },
+        {
+          "required": [
+            "weather_ref"
+          ]
+        }
       ],
       "properties": {
         "source": {
           "type": "string"
+        },
+        "weather_ref": {
+          "type": "string",
+          "minLength": 1
         },
         "hourly": {
           "type": "array",
