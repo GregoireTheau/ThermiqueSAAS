@@ -1,0 +1,93 @@
+{
+  "id": "window_seller",
+  "label": "Vendeur de fenetres",
+  "description": "Parcours specialise pour qualifier les vitrages existants et simuler le remplacement par du double vitrage performant.",
+  "allowed_adaptations": ["better_windows"],
+  "default_adaptation": "better_windows",
+  "include_annual_experiment": false,
+  "questionnaire": {
+    "version": "0.1",
+    "sections": [
+      {
+        "id": "project",
+        "label": "Projet",
+        "questions": [
+          {"id": "project_name", "type": "text", "label": "Nom du projet", "required": true},
+          {"id": "city", "type": "text", "label": "Ville", "required": true},
+          {"id": "postal_code", "type": "text", "label": "Code postal", "required": true}
+        ]
+      },
+      {
+        "id": "dwelling",
+        "label": "Logement",
+        "questions": [
+          {
+            "id": "dwelling_type",
+            "type": "select",
+            "label": "Type de logement",
+            "required": true,
+            "options": [
+              {"id": "house", "label": "Maison"},
+              {"id": "apartment", "label": "Appartement"}
+            ]
+          },
+          {
+            "id": "position_id",
+            "type": "select",
+            "label": "Position du logement",
+            "required": true,
+            "options": [
+              {"id": "single_storey_house", "label": "Maison de plain-pied"},
+              {"id": "multi_storey_house", "label": "Maison avec etage"},
+              {"id": "apartment_ground_floor", "label": "Appartement en rez-de-chaussee"},
+              {"id": "apartment_middle_floor", "label": "Appartement en etage intermediaire"},
+              {"id": "apartment_top_floor", "label": "Appartement au dernier etage"}
+            ]
+          },
+          {
+            "id": "period_id",
+            "type": "select",
+            "label": "Periode de construction ou renovation",
+            "required": true,
+            "options_ref": "envelope_defaults"
+          }
+        ]
+      },
+      {
+        "id": "windows",
+        "label": "Vitrages actuels",
+        "questions": [
+          {
+            "id": "window_ref",
+            "type": "select",
+            "label": "Type de vitrage principal",
+            "required": true,
+            "options": [
+              {"id": "single_glazing_old", "label": "Simple vitrage"},
+              {"id": "double_glazing_old", "label": "Double vitrage ancien"},
+              {"id": "double_glazing_standard", "label": "Double vitrage recent standard"}
+            ]
+          },
+          {
+            "id": "window_air_leakage_id",
+            "type": "select",
+            "label": "Infiltrations d'air autour des fenetres",
+            "required": true,
+            "options": [
+              {"id": "leaky", "label": "Oui, courants d'air sensibles"},
+              {"id": "standard", "label": "Je ne sais pas / rien de particulier"},
+              {"id": "good", "label": "Non, logement plutot etanche"}
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rooms",
+        "label": "Pieces et vitrages",
+        "questions": [
+          {"id": "rooms", "type": "room_list", "label": "Pieces a modeliser avec orientations et surfaces vitrees", "required": true}
+        ]
+      }
+    ]
+  }
+}

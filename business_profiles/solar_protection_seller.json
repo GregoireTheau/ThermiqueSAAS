@@ -1,0 +1,96 @@
+{
+  "id": "solar_protection_seller",
+  "label": "Vendeur de protections solaires",
+  "description": "Parcours specialise pour qualifier les vitrages exposes et simuler l'ajout de volets ou protections solaires.",
+  "allowed_adaptations": ["solar_protection"],
+  "default_adaptation": "solar_protection",
+  "include_annual_experiment": false,
+  "questionnaire": {
+    "version": "0.1",
+    "sections": [
+      {
+        "id": "project",
+        "label": "Projet",
+        "questions": [
+          {"id": "project_name", "type": "text", "label": "Nom du projet", "required": true},
+          {"id": "city", "type": "text", "label": "Ville", "required": true},
+          {"id": "postal_code", "type": "text", "label": "Code postal", "required": true}
+        ]
+      },
+      {
+        "id": "dwelling",
+        "label": "Logement",
+        "questions": [
+          {
+            "id": "dwelling_type",
+            "type": "select",
+            "label": "Type de logement",
+            "required": true,
+            "options": [
+              {"id": "house", "label": "Maison"},
+              {"id": "apartment", "label": "Appartement"}
+            ]
+          },
+          {
+            "id": "position_id",
+            "type": "select",
+            "label": "Position du logement",
+            "required": true,
+            "options": [
+              {"id": "single_storey_house", "label": "Maison de plain-pied"},
+              {"id": "multi_storey_house", "label": "Maison avec etage"},
+              {"id": "apartment_ground_floor", "label": "Appartement en rez-de-chaussee"},
+              {"id": "apartment_middle_floor", "label": "Appartement en etage intermediaire"},
+              {"id": "apartment_top_floor", "label": "Appartement au dernier etage"}
+            ]
+          },
+          {
+            "id": "period_id",
+            "type": "select",
+            "label": "Periode de construction ou renovation",
+            "required": true,
+            "options_ref": "envelope_defaults"
+          }
+        ]
+      },
+      {
+        "id": "summer_comfort",
+        "label": "Confort d'ete",
+        "questions": [
+          {
+            "id": "window_ref",
+            "type": "select",
+            "label": "Type de vitrage principal",
+            "required": true,
+            "options": [
+              {"id": "single_glazing_old", "label": "Simple vitrage"},
+              {"id": "double_glazing_old", "label": "Double vitrage ancien"},
+              {"id": "double_glazing_standard", "label": "Double vitrage recent standard"},
+              {"id": "double_glazing_low_e", "label": "Double vitrage performant"}
+            ]
+          },
+          {
+            "id": "shutter_ref",
+            "type": "select",
+            "label": "Protection solaire actuelle",
+            "required": true,
+            "options": [
+              {"id": "none", "label": "Pas de volet/protection"},
+              {"id": "roller_shutter_standard", "label": "Volets roulants ou battants"},
+              {"id": "external_blind", "label": "Stores exterieurs"},
+              {"id": "interior_blind", "label": "Stores interieurs"}
+            ]
+          },
+          {"id": "cooling_setpoint_c", "type": "number", "label": "Temperature de confort ete visee", "required": true, "default": 26.0}
+        ]
+      },
+      {
+        "id": "rooms",
+        "label": "Pieces et vitrages exposes",
+        "questions": [
+          {"id": "rooms", "type": "room_list", "label": "Pieces a modeliser avec orientations et surfaces vitrees", "required": true}
+        ]
+      }
+    ]
+  }
+}

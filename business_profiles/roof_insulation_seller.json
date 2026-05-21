@@ -1,0 +1,120 @@
+{
+  "id": "roof_insulation_seller",
+  "label": "Vendeur isolation toiture",
+  "description": "Parcours specialise pour qualifier une toiture ou des combles et simuler l'isolation ou un revetement reflechissant.",
+  "allowed_adaptations": ["roof_insulation", "reflective_roof"],
+  "default_adaptation": "roof_insulation",
+  "include_annual_experiment": false,
+  "questionnaire": {
+    "version": "0.1",
+    "sections": [
+      {
+        "id": "project",
+        "label": "Projet",
+        "questions": [
+          {"id": "project_name", "type": "text", "label": "Nom du projet", "required": true},
+          {"id": "city", "type": "text", "label": "Ville", "required": true},
+          {"id": "postal_code", "type": "text", "label": "Code postal", "required": true}
+        ]
+      },
+      {
+        "id": "adaptation",
+        "label": "Adaptation toiture",
+        "questions": [
+          {
+            "id": "adaptation_id",
+            "type": "select",
+            "label": "Changement a simuler",
+            "required": true,
+            "options": [
+              {"id": "roof_insulation", "label": "Ameliorer l'isolation de la toiture / des combles"},
+              {"id": "reflective_roof", "label": "Ajouter un revetement reflechissant sur la toiture"}
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dwelling",
+        "label": "Logement",
+        "questions": [
+          {
+            "id": "dwelling_type",
+            "type": "select",
+            "label": "Type de logement",
+            "required": true,
+            "options": [
+              {"id": "house", "label": "Maison"},
+              {"id": "apartment", "label": "Appartement"}
+            ]
+          },
+          {
+            "id": "position_id",
+            "type": "select",
+            "label": "Position du logement",
+            "required": true,
+            "options": [
+              {"id": "single_storey_house", "label": "Maison de plain-pied"},
+              {"id": "multi_storey_house", "label": "Maison avec etage"},
+              {"id": "apartment_top_floor", "label": "Appartement au dernier etage"}
+            ]
+          },
+          {
+            "id": "period_id",
+            "type": "select",
+            "label": "Periode de construction ou renovation",
+            "required": true,
+            "options_ref": "envelope_defaults"
+          }
+        ]
+      },
+      {
+        "id": "roof",
+        "label": "Toiture",
+        "questions": [
+          {
+            "id": "roof_insulation_id",
+            "type": "select",
+            "label": "Niveau d'isolation toiture actuel",
+            "required": true,
+            "options": [
+              {"id": "poor", "label": "Toiture ou combles peu isoles"},
+              {"id": "standard", "label": "Isolation toiture standard"},
+              {"id": "renovated", "label": "Toiture bien isolee ou renovee"},
+              {"id": "unknown", "label": "Je ne sais pas"}
+            ]
+          },
+          {
+            "id": "roof_color_id",
+            "type": "select",
+            "label": "Couleur dominante actuelle de la toiture",
+            "required": true,
+            "options": [
+              {"id": "dark", "label": "Foncee"},
+              {"id": "medium", "label": "Moyenne"},
+              {"id": "light", "label": "Claire"},
+              {"id": "unknown", "label": "Je ne sais pas"}
+            ]
+          },
+          {
+            "id": "attic_ventilation_id",
+            "type": "select",
+            "label": "Ventilation des combles ou de la sous-toiture",
+            "required": true,
+            "options": [
+              {"id": "ventilated", "label": "Combles ou sous-toiture bien ventiles"},
+              {"id": "limited", "label": "Ventilation limitee ou inconnue"},
+              {"id": "not_ventilated", "label": "Peu ou pas ventiles"}
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rooms",
+        "label": "Pieces sous toiture",
+        "questions": [
+          {"id": "rooms", "type": "room_list", "label": "Pieces a modeliser, avec contact toiture", "required": true}
+        ]
+      }
+    ]
+  }
+}
