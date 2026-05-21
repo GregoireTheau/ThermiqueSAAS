@@ -29,9 +29,12 @@
 ## Sorties & rapport
 - [ ] Coder la visualisation des déperditions par pièce (carte thermique 2D)
 - [x] Coder le comparateur de scénarios (avant / après, side by side)
-- [x] Générer le rapport PDF white-label (WeasyPrint)
+- [x] Générer le rapport html
+- [ ] Ajouter au rapport un schéma du logement
+- [ ] Générer le rapport PDF
 
 ## SaaS & mise en ligne
+- [ ] Mini-Interface 
 - [ ] Auth revendeur (login, comptes)
 - [ ] Historique des simulations par client
 - [ ] Compteur d'usage et gestion des quotas
