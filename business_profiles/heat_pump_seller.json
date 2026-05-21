@@ -4,7 +4,7 @@
   "description": "Parcours specialise pour qualifier un logement et simuler le remplacement du chauffage actuel par une PAC.",
   "allowed_adaptations": ["heat_pump"],
   "default_adaptation": "heat_pump",
-  "include_annual_experiment": false,
+  "include_annual_experiment": true,
   "questionnaire": {
     "version": "0.1",
     "sections": [

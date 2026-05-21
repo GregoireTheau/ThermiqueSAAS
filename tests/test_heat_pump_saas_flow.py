@@ -50,10 +50,18 @@ def test_heat_pump_flow_runs_winter_experience_and_returns_report_html():
     assert result["business_profile_id"] == "heat_pump_seller"
     assert result["adaptation_id"] == "heat_pump"
     assert result["dwelling"]["dwelling_id"] == "maison_pac_test"
-    assert [run["season"] for run in result["simulation_runs"]] == ["winter"]
+    assert [run["season"] for run in result["simulation_runs"]] == ["winter", "annual"]
 
     run = result["simulation_runs"][0]
     assert run["before_scenario"]["experiment"]["adaptation_id"] == "heat_pump"
     assert run["after_scenario"]["retrofit"]["system_overrides"]
     assert run["comparison"]["experiment"]["adaptation_id"] == "heat_pump"
     assert "<!doctype html>" in run["report_html"]
+
+    annual_run = result["simulation_runs"][1]
+    assert annual_run["role"] == "annual"
+    assert annual_run["before_scenario"]["experiment"]["weather_year"] == 2023
+    assert annual_run["before_scenario"]["weather"]["weather_ref"] == (
+        "data/weather/openmeteo/thermal/bordeaux_2023.weather.json"
+    )
+    assert "<!doctype html>" in annual_run["report_html"]

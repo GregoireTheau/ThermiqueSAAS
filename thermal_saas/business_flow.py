@@ -3,17 +3,26 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from pathlib import Path
 from typing import Any
 
 from scripts import create_customer_experience as customer_experience
 from thermal_model import (
     build_report_model,
+    build_thermal_weather,
+    city_slug,
+    combine_weather_years,
     compare_scenarios,
+    ensure_openmeteo_thermal_weather,
     load_reference_catalog,
+    read_parquet,
     render_report_html,
     resolve_dwelling_references,
+    resolve_scenario_weather_reference,
+    thermal_weather_ref,
     validate_dwelling,
     validate_scenario,
+    write_thermal_weather_json,
 )
 
 from .business_profiles import build_questionnaire, load_business_profile
@@ -57,6 +66,7 @@ def run_profile_experience(
 
     simulation_runs = []
     for experiment in experiments:
+        prepare_experiment_weather(experiment)
         before = experiment["before"]
         after = experiment["after"]
         validate_scenario(before)
@@ -178,10 +188,64 @@ def build_customer(
         "include_annual_experiment": bool(
             answers.get(
                 "include_annual_experiment",
-                profile.get("include_annual_experiment", False),
+                profile.get("include_annual_experiment", True),
             ),
         ),
+        "annual_weather_year": int(answers.get("annual_weather_year", 2023)),
+        "annual_weather_dir": answers.get("annual_weather_dir", "data/weather/openmeteo"),
     }
+
+
+def prepare_experiment_weather(experiment: dict[str, Any]) -> None:
+    """Ensure annual weather exists locally and resolve weather_ref scenarios."""
+    if experiment["role"] != "annual":
+        return
+
+    weather_city = experiment["before"]["experiment"]["weather_city"]
+    weather_year = experiment["before"]["experiment"]["weather_year"]
+    weather_dir = _weather_dir_from_scenario(experiment["before"])
+    try:
+        ensure_annual_weather(weather_city, weather_year, weather_dir)
+    except Exception as exc:
+        raise BusinessFlowError(
+            f"Météo annuelle {weather_year} indisponible pour {weather_city}.",
+        ) from exc
+
+    for scenario_key in ("before", "after"):
+        resolve_scenario_weather_reference(experiment[scenario_key], Path.cwd())
+
+
+def ensure_annual_weather(
+    city: str,
+    year: int,
+    weather_dir: str | Path = "data/weather/openmeteo",
+) -> Path:
+    """Return a 2023 annual weather asset, creating it from local raw data if needed."""
+    weather_path = Path(thermal_weather_ref(city, year, output_dir=weather_dir))
+    if weather_path.exists():
+        return weather_path
+
+    raw_path = Path(weather_dir) / "raw" / f"{city_slug(city)}_{year}.parquet"
+    if raw_path.exists():
+        dataframe = read_parquet(raw_path)
+        annual_dataframe = combine_weather_years([dataframe], "latest")
+        weather = build_thermal_weather(
+            annual_dataframe,
+            source=f"openmeteo_local_{city_slug(city)}_{year}",
+        )
+        return write_thermal_weather_json(weather, weather_path)
+
+    return ensure_openmeteo_thermal_weather(city, year, output_dir=weather_dir)
+
+
+def _weather_dir_from_scenario(scenario: dict[str, Any]) -> str:
+    weather_ref = scenario.get("weather", {}).get("weather_ref", "")
+    if not weather_ref:
+        return "data/weather/openmeteo"
+    path = Path(weather_ref)
+    if path.name.endswith(".weather.json") and path.parent.name == "thermal":
+        return str(path.parent.parent)
+    return "data/weather/openmeteo"
 
 
 def _change_details(adaptation_id: str, answers: dict[str, Any]) -> dict[str, Any]:

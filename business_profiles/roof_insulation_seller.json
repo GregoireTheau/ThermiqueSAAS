@@ -4,7 +4,7 @@
   "description": "Parcours specialise pour qualifier une toiture ou des combles et simuler l'amelioration de l'isolation.",
   "allowed_adaptations": ["roof_insulation"],
   "default_adaptation": "roof_insulation",
-  "include_annual_experiment": false,
+  "include_annual_experiment": true,
   "questionnaire": {
     "version": "0.1",
     "sections": [

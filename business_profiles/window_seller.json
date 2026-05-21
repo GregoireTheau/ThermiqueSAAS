@@ -4,7 +4,7 @@
   "description": "Parcours specialise pour qualifier les vitrages existants et simuler le remplacement par du double vitrage performant.",
   "allowed_adaptations": ["better_windows"],
   "default_adaptation": "better_windows",
-  "include_annual_experiment": false,
+  "include_annual_experiment": true,
   "questionnaire": {
     "version": "0.1",
     "sections": [

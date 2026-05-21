@@ -143,14 +143,26 @@ def test_persistent_project_api_runs_and_exposes_report(tmp_path, monkeypatch):
     assert answers_response.status_code == 200
     assert simulation_response.status_code == 200
     simulation_runs = history_response.json()["simulation_runs"]
-    assert [run["season"] for run in simulation_runs] == ["winter", "summer"]
+    assert [run["season"] for run in simulation_runs] == ["winter", "summer", "annual"]
+    assert simulation_runs[-1]["role"] == "annual"
 
     report_response = client.get(
         f"/simulation-runs/{simulation_runs[0]['id']}/report-html",
         headers=headers,
     )
+    annual_report_response = client.get(
+        f"/simulation-runs/{simulation_runs[-1]['id']}/report-html",
+        headers=headers,
+    )
+    annual_run_response = client.get(
+        f"/simulation-runs/{simulation_runs[-1]['id']}",
+        headers=headers,
+    )
     assert report_response.status_code == 200
     assert "<!doctype html>" in report_response.text
+    assert annual_report_response.status_code == 200
+    assert "<!doctype html>" in annual_report_response.text
+    assert annual_run_response.json()["result"]["comparison"]["experiment"]["weather_year"] == 2023
 
 
 def test_project_api_requires_authentication(tmp_path, monkeypatch):

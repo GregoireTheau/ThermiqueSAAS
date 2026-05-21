@@ -4,7 +4,7 @@
   "description": "Parcours specialise pour qualifier les vitrages exposes et simuler l'ajout de volets ou protections solaires.",
   "allowed_adaptations": ["solar_protection"],
   "default_adaptation": "solar_protection",
-  "include_annual_experiment": false,
+  "include_annual_experiment": true,
   "questionnaire": {
     "version": "0.1",
     "sections": [

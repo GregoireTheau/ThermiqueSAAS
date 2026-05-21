@@ -50,10 +50,14 @@ def test_storage_persists_project_answers_and_simulation_runs(tmp_path):
     assert answers["version"] == 1
     assert latest_answers["answers"]["project_name"] == "Projet stocke"
     assert simulation_batch["adaptation_id"] == "better_windows"
-    assert [run["season"] for run in simulation_runs] == ["winter", "summer"]
+    assert [run["season"] for run in simulation_runs] == ["winter", "summer", "annual"]
+    assert simulation_runs[-1]["role"] == "annual"
 
     persisted_run = get_simulation_run(simulation_runs[0]["id"], db_path)
     assert persisted_run["result"]["comparison"]["experiment"]["adaptation_id"] == (
         "better_windows"
     )
     assert "<!doctype html>" in get_simulation_report_html(simulation_runs[0]["id"], db_path)
+    persisted_annual_run = get_simulation_run(simulation_runs[-1]["id"], db_path)
+    assert persisted_annual_run["result"]["comparison"]["experiment"]["weather_year"] == 2023
+    assert "<!doctype html>" in get_simulation_report_html(simulation_runs[-1]["id"], db_path)
