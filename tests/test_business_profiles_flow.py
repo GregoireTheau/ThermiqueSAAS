@@ -35,6 +35,7 @@ def test_all_business_profiles_are_listed():
 
     assert profile_ids == {
         "heat_pump_seller",
+        "reflective_roof_seller",
         "roof_insulation_seller",
         "solar_protection_seller",
         "window_seller",
@@ -73,9 +74,9 @@ def test_roof_insulation_profile_runs_roof_insulation_experiences():
 
 
 def test_roof_profile_can_run_reflective_roof_variant():
-    answers = _base_answers() | {"adaptation_id": "reflective_roof"}
+    answers = _base_answers()
 
-    result = run_profile_experience("roof_insulation_seller", answers)
+    result = run_profile_experience("reflective_roof_seller", answers)
 
     assert result["adaptation_id"] == "reflective_roof"
     assert [run["season"] for run in result["simulation_runs"]] == ["summer", "summer"]

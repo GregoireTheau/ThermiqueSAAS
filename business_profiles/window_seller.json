@@ -50,6 +50,28 @@
             "label": "Periode de construction ou renovation",
             "required": true,
             "options_ref": "envelope_defaults"
+          },
+          {
+            "id": "wall_insulation_id",
+            "type": "select",
+            "label": "Isolation des murs donnant dehors",
+            "required": true,
+            "options": [
+              {"id": "poor", "label": "Non, ou probablement pas isoles"},
+              {"id": "standard", "label": "Je ne sais pas / standard pour l'age du logement"},
+              {"id": "renovated", "label": "Oui, isolation ajoutee ou renovee"}
+            ]
+          },
+          {
+            "id": "airtightness_id",
+            "type": "select",
+            "label": "Etancheite globale du logement",
+            "required": true,
+            "options": [
+              {"id": "leaky", "label": "Courants d'air sensibles"},
+              {"id": "standard", "label": "Je ne sais pas / rien de particulier"},
+              {"id": "good", "label": "Logement plutot etanche"}
+            ]
           }
         ]
       },

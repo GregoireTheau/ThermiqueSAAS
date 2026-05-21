@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from pathlib import Path
 
 from .business_flow import BusinessFlowError, run_profile_experience
 from .business_profiles import (
@@ -11,21 +12,33 @@ from .business_profiles import (
     load_business_profile,
 )
 from .storage import (
+    AuthError,
     StorageError,
     create_organization,
     create_project,
     create_simulation_runs,
     get_latest_project_answers,
+    get_organization_by_name,
     get_project,
     get_simulation_report_html,
     get_simulation_run,
+    get_user_by_token,
+    list_organizations as load_organizations,
+    list_projects as load_projects,
     list_project_simulation_runs,
+    login_user,
+    project_belongs_to_organization,
+    register_user_with_organization,
+    revoke_session,
     save_project_answers,
+    simulation_belongs_to_organization,
 )
 from thermal_model import load_reference_catalog
 
 try:
-    from fastapi import FastAPI, HTTPException, Response
+    from fastapi import Depends, FastAPI, Header, HTTPException, Response
+    from fastapi.responses import FileResponse, RedirectResponse
+    from fastapi.staticfiles import StaticFiles
 except ModuleNotFoundError as exc:  # pragma: no cover - depends on optional runtime deps
     raise RuntimeError(
         "FastAPI is not installed. Install requirements.txt before running the API.",
@@ -33,6 +46,38 @@ except ModuleNotFoundError as exc:  # pragma: no cover - depends on optional run
 
 
 app = FastAPI(title="ThermalTwin SaaS API", version="0.1")
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.get("/")
+def redirect_to_app() -> RedirectResponse:
+    return RedirectResponse(url="/app")
+
+
+@app.get("/app")
+def get_app() -> FileResponse:
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+def current_user(authorization: str | None = Header(default=None)) -> dict[str, Any]:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    token = authorization.removeprefix("Bearer ").strip()
+    try:
+        return get_user_by_token(token)
+    except AuthError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+
+
+def require_project_access(project_id: str, user: dict[str, Any]) -> None:
+    if not project_belongs_to_organization(project_id, user["organization_id"]):
+        raise HTTPException(status_code=404, detail="Unknown project.")
+
+
+def require_simulation_access(simulation_run_id: str, user: dict[str, Any]) -> None:
+    if not simulation_belongs_to_organization(simulation_run_id, user["organization_id"]):
+        raise HTTPException(status_code=404, detail="Unknown simulation run.")
 
 
 @app.get("/business-profiles")
@@ -59,6 +104,70 @@ def get_questionnaire(profile_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+@app.post("/auth/register")
+def register_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        return register_user_with_organization(
+            email=payload["email"],
+            password=payload["password"],
+            organization_name=payload["organization_name"],
+            business_profile_id=payload["business_profile_id"],
+            name=payload.get("name"),
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=400, detail=f"Missing field: {exc.args[0]}") from exc
+    except AuthError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/auth/login")
+def login_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        return login_user(
+            payload["email"],
+            payload["password"],
+            organization_name=payload.get("organization_name"),
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=400, detail=f"Missing field: {exc.args[0]}") from exc
+    except AuthError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+
+
+@app.get("/organizations/lookup")
+def lookup_organization_endpoint(name: str) -> dict[str, Any]:
+    organization = get_organization_by_name(name)
+    if not organization:
+        return {"exists": False, "organization": None}
+    profile = load_business_profile(organization["business_profile_id"])
+    return {
+        "exists": True,
+        "organization": {
+            "id": organization["id"],
+            "name": organization["name"],
+            "business_profile_id": organization["business_profile_id"],
+            "business_profile_label": profile["label"],
+        },
+    }
+
+
+@app.get("/auth/me")
+def me_endpoint(user: dict[str, Any] = Depends(current_user)) -> dict[str, Any]:
+    return {"user": user}
+
+
+@app.post("/auth/logout")
+def logout_endpoint(
+    authorization: str | None = Header(default=None),
+    user: dict[str, Any] = Depends(current_user),
+) -> dict[str, Any]:
+    token = authorization.removeprefix("Bearer ").strip()
+    revoke_session(token)
+    return {"status": "logged_out", "user_id": user["id"]}
+
+
 @app.post("/business-profiles/{profile_id}/experiences")
 def create_profile_experience(profile_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     try:
@@ -70,7 +179,12 @@ def create_profile_experience(profile_id: str, payload: dict[str, Any]) -> dict[
 
 
 @app.post("/organizations")
-def create_organization_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+def create_organization_endpoint(
+    payload: dict[str, Any],
+    user: dict[str, Any] = Depends(current_user),
+) -> dict[str, Any]:
+    if user["organization_id"]:
+        raise HTTPException(status_code=403, detail="Use /auth/register to create an organization.")
     try:
         return create_organization(
             name=payload["name"],
@@ -82,11 +196,27 @@ def create_organization_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@app.get("/organizations")
+def list_organizations_endpoint(user: dict[str, Any] = Depends(current_user)) -> dict[str, Any]:
+    organizations = [
+        organization
+        for organization in load_organizations()
+        if organization["id"] == user["organization_id"]
+    ]
+    return {"organizations": organizations}
+
+
 @app.post("/projects")
-def create_project_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+def create_project_endpoint(
+    payload: dict[str, Any],
+    user: dict[str, Any] = Depends(current_user),
+) -> dict[str, Any]:
     try:
+        organization_id = payload.get("organization_id", user["organization_id"])
+        if organization_id != user["organization_id"]:
+            raise HTTPException(status_code=403, detail="Cannot create project for this organization.")
         return create_project(
-            organization_id=payload["organization_id"],
+            organization_id=organization_id,
             name=payload["name"],
             customer_name=payload.get("customer_name"),
         )
@@ -96,9 +226,27 @@ def create_project_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
-@app.get("/projects/{project_id}")
-def get_project_endpoint(project_id: str) -> dict[str, Any]:
+@app.get("/projects")
+def list_projects_endpoint(
+    organization_id: str | None = None,
+    user: dict[str, Any] = Depends(current_user),
+) -> dict[str, Any]:
     try:
+        scoped_organization_id = organization_id or user["organization_id"]
+        if scoped_organization_id != user["organization_id"]:
+            raise HTTPException(status_code=403, detail="Cannot list projects for this organization.")
+        return {"projects": load_projects(scoped_organization_id)}
+    except StorageError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.get("/projects/{project_id}")
+def get_project_endpoint(
+    project_id: str,
+    user: dict[str, Any] = Depends(current_user),
+) -> dict[str, Any]:
+    try:
+        require_project_access(project_id, user)
         project = get_project(project_id)
         latest_answers = None
         try:
@@ -115,8 +263,13 @@ def get_project_endpoint(project_id: str) -> dict[str, Any]:
 
 
 @app.post("/projects/{project_id}/answers")
-def save_project_answers_endpoint(project_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+def save_project_answers_endpoint(
+    project_id: str,
+    payload: dict[str, Any],
+    user: dict[str, Any] = Depends(current_user),
+) -> dict[str, Any]:
     try:
+        require_project_access(project_id, user)
         answers = payload.get("answers", payload)
         return save_project_answers(project_id, answers)
     except StorageError as exc:
@@ -124,8 +277,12 @@ def save_project_answers_endpoint(project_id: str, payload: dict[str, Any]) -> d
 
 
 @app.post("/projects/{project_id}/simulations")
-def create_project_simulations_endpoint(project_id: str) -> dict[str, Any]:
+def create_project_simulations_endpoint(
+    project_id: str,
+    user: dict[str, Any] = Depends(current_user),
+) -> dict[str, Any]:
     try:
+        require_project_access(project_id, user)
         return create_simulation_runs(project_id)
     except BusinessFlowError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -134,8 +291,12 @@ def create_project_simulations_endpoint(project_id: str) -> dict[str, Any]:
 
 
 @app.get("/projects/{project_id}/simulations")
-def list_project_simulations_endpoint(project_id: str) -> dict[str, Any]:
+def list_project_simulations_endpoint(
+    project_id: str,
+    user: dict[str, Any] = Depends(current_user),
+) -> dict[str, Any]:
     try:
+        require_project_access(project_id, user)
         get_project(project_id)
         return {"simulation_runs": list_project_simulation_runs(project_id)}
     except StorageError as exc:
@@ -143,16 +304,24 @@ def list_project_simulations_endpoint(project_id: str) -> dict[str, Any]:
 
 
 @app.get("/simulation-runs/{simulation_run_id}")
-def get_simulation_run_endpoint(simulation_run_id: str) -> dict[str, Any]:
+def get_simulation_run_endpoint(
+    simulation_run_id: str,
+    user: dict[str, Any] = Depends(current_user),
+) -> dict[str, Any]:
     try:
+        require_simulation_access(simulation_run_id, user)
         return get_simulation_run(simulation_run_id)
     except StorageError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @app.get("/simulation-runs/{simulation_run_id}/report-html")
-def get_simulation_report_html_endpoint(simulation_run_id: str) -> Response:
+def get_simulation_report_html_endpoint(
+    simulation_run_id: str,
+    user: dict[str, Any] = Depends(current_user),
+) -> Response:
     try:
+        require_simulation_access(simulation_run_id, user)
         return Response(
             content=get_simulation_report_html(simulation_run_id),
             media_type="text/html",

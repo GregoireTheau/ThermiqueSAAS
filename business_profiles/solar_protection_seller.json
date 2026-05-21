@@ -50,6 +50,17 @@
             "label": "Periode de construction ou renovation",
             "required": true,
             "options_ref": "envelope_defaults"
+          },
+          {
+            "id": "wall_insulation_id",
+            "type": "select",
+            "label": "Isolation des murs donnant dehors",
+            "required": true,
+            "options": [
+              {"id": "poor", "label": "Non, ou probablement pas isoles"},
+              {"id": "standard", "label": "Je ne sais pas / standard pour l'age du logement"},
+              {"id": "renovated", "label": "Oui, isolation ajoutee ou renovee"}
+            ]
           }
         ]
       },
@@ -79,6 +90,17 @@
               {"id": "roller_shutter_standard", "label": "Volets roulants ou battants"},
               {"id": "external_blind", "label": "Stores exterieurs"},
               {"id": "interior_blind", "label": "Stores interieurs"}
+            ]
+          },
+          {
+            "id": "shutter_usage_id",
+            "type": "select",
+            "label": "Usage actuel des volets/stores en ete",
+            "required": true,
+            "options": [
+              {"id": "day_closed", "label": "Fermes en journee quand il fait chaud"},
+              {"id": "partial", "label": "Partiellement fermes ou selon presence"},
+              {"id": "rare", "label": "Rarement fermes en journee"}
             ]
           },
           {"id": "cooling_setpoint_c", "type": "number", "label": "Temperature de confort ete visee", "required": true, "default": 26.0}

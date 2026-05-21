@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import json
 import os
+import hashlib
+import hmac
+import secrets
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,6 +24,10 @@ class StorageError(ValueError):
     """Raised when stored SaaS data is missing or inconsistent."""
 
 
+class AuthError(ValueError):
+    """Raised when authentication fails."""
+
+
 def default_db_path() -> Path:
     """Return the configured SQLite path."""
     return Path(os.environ.get("THERMAL_SAAS_DB_PATH", DEFAULT_DB_PATH))
@@ -36,6 +43,7 @@ def init_db(db_path: str | Path | None = None) -> None:
             create table if not exists organizations (
                 id text primary key,
                 name text not null,
+                normalized_name text unique,
                 business_profile_id text not null,
                 created_at text not null
             );
@@ -74,7 +82,145 @@ def init_db(db_path: str | Path | None = None) -> None:
                 foreign key (project_id) references projects(id),
                 foreign key (answers_id) references project_answers(id)
             );
+
+            create table if not exists users (
+                id text primary key,
+                organization_id text not null,
+                email text not null unique,
+                name text not null,
+                password_hash text not null,
+                created_at text not null,
+                foreign key (organization_id) references organizations(id)
+            );
+
+            create table if not exists sessions (
+                id text primary key,
+                user_id text not null,
+                token_hash text not null unique,
+                created_at text not null,
+                revoked_at text,
+                foreign key (user_id) references users(id)
+            );
             """
+        )
+        _ensure_column(connection, "organizations", "normalized_name", "text")
+        connection.execute(
+            """
+            update organizations
+            set normalized_name = lower(trim(name))
+            where normalized_name is null
+            """,
+        )
+
+
+def register_user_with_organization(
+    email: str,
+    password: str,
+    organization_name: str,
+    business_profile_id: str,
+    name: str | None = None,
+    db_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Create or join an organization, then create a user and session."""
+    if len(password) < 8:
+        raise AuthError("Password must contain at least 8 characters.")
+    init_db(db_path)
+    organization = get_organization_by_name(organization_name, db_path)
+    if organization is None:
+        organization = create_organization(organization_name, business_profile_id, db_path)
+    elif organization["business_profile_id"] != business_profile_id:
+        raise AuthError("Organization already exists with a different business profile.")
+    email = email.strip().lower()
+    user = {
+        "id": _new_id("usr"),
+        "organization_id": organization["id"],
+        "email": email,
+        "name": name or email,
+        "password_hash": _hash_password(password),
+        "created_at": _now(),
+    }
+    try:
+        with _connect(db_path or default_db_path()) as connection:
+            connection.execute(
+                """
+                insert into users
+                    (id, organization_id, email, name, password_hash, created_at)
+                values
+                    (:id, :organization_id, :email, :name, :password_hash, :created_at)
+                """,
+                user,
+            )
+    except sqlite3.IntegrityError as exc:
+        raise AuthError("A user with this email already exists.") from exc
+    return _auth_payload(_user_record_to_api(user), organization, db_path)
+
+
+def login_user(
+    email: str,
+    password: str,
+    organization_name: str | None = None,
+    db_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Authenticate a user and create a session token."""
+    init_db(db_path)
+    with _connect(db_path or default_db_path()) as connection:
+        row = connection.execute(
+            "select * from users where email = ?",
+            (email.strip().lower(),),
+        ).fetchone()
+    if row is None:
+        raise AuthError("Invalid email or password.")
+    user = dict(row)
+    if not _verify_password(password, user["password_hash"]):
+        raise AuthError("Invalid email or password.")
+    organization = get_organization(user["organization_id"], db_path)
+    if organization_name and organization["normalized_name"] != _normalize_organization_name(
+        organization_name,
+    ):
+        raise AuthError("This user does not belong to the selected organization.")
+    return _auth_payload(_user_record_to_api(user), organization, db_path)
+
+
+def get_user_by_token(
+    token: str,
+    db_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Return the authenticated user for a bearer token."""
+    init_db(db_path)
+    token_hash = _hash_token(token)
+    with _connect(db_path or default_db_path()) as connection:
+        row = connection.execute(
+            """
+            select
+                users.*,
+                organizations.business_profile_id as business_profile_id
+            from sessions
+            join users on users.id = sessions.user_id
+            join organizations on organizations.id = users.organization_id
+            where sessions.token_hash = ?
+              and sessions.revoked_at is null
+            """,
+            (token_hash,),
+        ).fetchone()
+    if row is None:
+        raise AuthError("Invalid or expired session.")
+    return _user_record_to_api(dict(row))
+
+
+def revoke_session(
+    token: str,
+    db_path: str | Path | None = None,
+) -> None:
+    """Revoke a bearer token."""
+    init_db(db_path)
+    with _connect(db_path or default_db_path()) as connection:
+        connection.execute(
+            """
+            update sessions
+            set revoked_at = ?
+            where token_hash = ? and revoked_at is null
+            """,
+            (_now(), _hash_token(token)),
         )
 
 
@@ -88,19 +234,34 @@ def create_organization(
     init_db(db_path)
     organization = {
         "id": _new_id("org"),
-        "name": name,
+        "name": name.strip(),
+        "normalized_name": _normalize_organization_name(name),
         "business_profile_id": business_profile_id,
         "created_at": _now(),
     }
     with _connect(db_path or default_db_path()) as connection:
         connection.execute(
             """
-            insert into organizations (id, name, business_profile_id, created_at)
-            values (:id, :name, :business_profile_id, :created_at)
+            insert into organizations (id, name, normalized_name, business_profile_id, created_at)
+            values (:id, :name, :normalized_name, :business_profile_id, :created_at)
             """,
             organization,
         )
     return organization
+
+
+def get_organization_by_name(
+    name: str,
+    db_path: str | Path | None = None,
+) -> dict[str, Any] | None:
+    """Return an organization by normalized name, if it exists."""
+    init_db(db_path)
+    with _connect(db_path or default_db_path()) as connection:
+        row = connection.execute(
+            "select * from organizations where normalized_name = ?",
+            (_normalize_organization_name(name),),
+        ).fetchone()
+    return dict(row) if row else None
 
 
 def create_project(
@@ -129,6 +290,49 @@ def create_project(
             project,
         )
     return project
+
+
+def list_organizations(db_path: str | Path | None = None) -> list[dict[str, Any]]:
+    """List organizations ordered by creation date."""
+    init_db(db_path)
+    with _connect(db_path or default_db_path()) as connection:
+        rows = connection.execute(
+            "select * from organizations order by created_at desc",
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def list_projects(
+    organization_id: str | None = None,
+    db_path: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    """List projects, optionally scoped to one organization."""
+    init_db(db_path)
+    if organization_id:
+        get_organization(organization_id, db_path)
+        query = """
+            select
+                projects.*,
+                organizations.business_profile_id as business_profile_id
+            from projects
+            join organizations on organizations.id = projects.organization_id
+            where projects.organization_id = ?
+            order by projects.created_at desc
+        """
+        params = (organization_id,)
+    else:
+        query = """
+            select
+                projects.*,
+                organizations.business_profile_id as business_profile_id
+            from projects
+            join organizations on organizations.id = projects.organization_id
+            order by projects.created_at desc
+        """
+        params = ()
+    with _connect(db_path or default_db_path()) as connection:
+        rows = connection.execute(query, params).fetchall()
+    return [dict(row) for row in rows]
 
 
 def get_organization(
@@ -324,11 +528,54 @@ def get_simulation_report_html(
     return get_simulation_run(simulation_run_id, db_path)["report_html"]
 
 
+def project_belongs_to_organization(
+    project_id: str,
+    organization_id: str,
+    db_path: str | Path | None = None,
+) -> bool:
+    """Return whether a project belongs to an organization."""
+    try:
+        project = get_project(project_id, db_path)
+    except StorageError:
+        return False
+    return project["organization_id"] == organization_id
+
+
+def simulation_belongs_to_organization(
+    simulation_run_id: str,
+    organization_id: str,
+    db_path: str | Path | None = None,
+) -> bool:
+    """Return whether a simulation run belongs to an organization."""
+    try:
+        simulation = get_simulation_run(simulation_run_id, db_path)
+        project = get_project(simulation["project_id"], db_path)
+    except StorageError:
+        return False
+    return project["organization_id"] == organization_id
+
+
 def _connect(db_path: str | Path) -> sqlite3.Connection:
     connection = sqlite3.connect(db_path)
     connection.row_factory = sqlite3.Row
     connection.execute("pragma foreign_keys = on")
     return connection
+
+
+def _ensure_column(
+    connection: sqlite3.Connection,
+    table_name: str,
+    column_name: str,
+    column_definition: str,
+) -> None:
+    columns = {
+        row["name"]
+        for row in connection.execute(f"pragma table_info({table_name})").fetchall()
+    }
+    if column_name not in columns:
+        connection.execute(
+            f"alter table {table_name} add column {column_name} {column_definition}",
+        )
 
 
 def _answers_record_to_api(record: dict[str, Any]) -> dict[str, Any]:
@@ -361,6 +608,62 @@ def _simulation_record_to_api(record: dict[str, Any]) -> dict[str, Any]:
     payload["result"] = json.loads(record["result_json"])
     payload["report_html"] = record["report_html"]
     return payload
+
+
+def _auth_payload(
+    user: dict[str, Any],
+    organization: dict[str, Any],
+    db_path: str | Path | None,
+) -> dict[str, Any]:
+    token = secrets.token_urlsafe(32)
+    session = {
+        "id": _new_id("ses"),
+        "user_id": user["id"],
+        "token_hash": _hash_token(token),
+        "created_at": _now(),
+    }
+    with _connect(db_path or default_db_path()) as connection:
+        connection.execute(
+            """
+            insert into sessions (id, user_id, token_hash, created_at)
+            values (:id, :user_id, :token_hash, :created_at)
+            """,
+            session,
+        )
+    return {"access_token": token, "token_type": "bearer", "user": user, "organization": organization}
+
+
+def _user_record_to_api(record: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": record["id"],
+        "organization_id": record["organization_id"],
+        "email": record["email"],
+        "name": record["name"],
+        "business_profile_id": record.get("business_profile_id"),
+        "created_at": record["created_at"],
+    }
+
+
+def _hash_password(password: str) -> str:
+    salt = secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 120_000)
+    return f"pbkdf2_sha256${salt}${digest.hex()}"
+
+
+def _verify_password(password: str, stored_hash: str) -> bool:
+    algorithm, salt, expected = stored_hash.split("$", 2)
+    if algorithm != "pbkdf2_sha256":
+        return False
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 120_000)
+    return hmac.compare_digest(digest.hex(), expected)
+
+
+def _hash_token(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def _normalize_organization_name(name: str) -> str:
+    return " ".join(name.strip().lower().split())
 
 
 def _new_id(prefix: str) -> str:

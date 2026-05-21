@@ -1,9 +1,9 @@
 {
-  "id": "roof_insulation_seller",
-  "label": "Vendeur isolation toiture",
-  "description": "Parcours specialise pour qualifier une toiture ou des combles et simuler l'amelioration de l'isolation.",
-  "allowed_adaptations": ["roof_insulation"],
-  "default_adaptation": "roof_insulation",
+  "id": "reflective_roof_seller",
+  "label": "Vendeur peinture réflective toiture",
+  "description": "Parcours specialise pour qualifier une toiture exposee et simuler l'ajout d'un revetement reflechissant contre la chaleur.",
+  "allowed_adaptations": ["reflective_roof"],
+  "default_adaptation": "reflective_roof",
   "include_annual_experiment": false,
   "questionnaire": {
     "version": "0.1",
@@ -41,17 +41,6 @@
               {"id": "multi_storey_house", "label": "Maison avec etage"},
               {"id": "apartment_top_floor", "label": "Appartement au dernier etage"},
               {"id": "apartment_ground_top_floor", "label": "Appartement en rez-de-chaussee directement sous toiture"}
-            ]
-          },
-          {
-            "id": "wall_insulation_id",
-            "type": "select",
-            "label": "Isolation des murs donnant dehors",
-            "required": true,
-            "options": [
-              {"id": "poor", "label": "Non, ou probablement pas isoles"},
-              {"id": "standard", "label": "Je ne sais pas / standard pour l'age du logement"},
-              {"id": "renovated", "label": "Oui, isolation ajoutee ou renovee"}
             ]
           },
           {

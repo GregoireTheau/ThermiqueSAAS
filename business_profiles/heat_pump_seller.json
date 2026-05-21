@@ -50,6 +50,41 @@
             "label": "Periode de construction ou renovation",
             "required": true,
             "options_ref": "envelope_defaults"
+          },
+          {
+            "id": "wall_insulation_id",
+            "type": "select",
+            "label": "Isolation des murs donnant dehors",
+            "required": true,
+            "options": [
+              {"id": "poor", "label": "Non, ou probablement pas isoles"},
+              {"id": "standard", "label": "Je ne sais pas / standard pour l'age du logement"},
+              {"id": "renovated", "label": "Oui, isolation ajoutee ou renovee"}
+            ]
+          },
+          {
+            "id": "airtightness_id",
+            "type": "select",
+            "label": "Ressentez-vous des courants d'air ?",
+            "required": true,
+            "options": [
+              {"id": "leaky", "label": "Oui, courants d'air sensibles aux fenetres, portes ou prises"},
+              {"id": "standard", "label": "Je ne sais pas / rien de particulier"},
+              {"id": "good", "label": "Non, logement plutot etanche"}
+            ]
+          },
+          {
+            "id": "ventilation_id",
+            "type": "select",
+            "label": "Ventilation principale",
+            "required": true,
+            "options": [
+              {"id": "natural_leaky_old", "label": "Ventilation naturelle logement ancien"},
+              {"id": "natural_average", "label": "Ventilation naturelle moyenne"},
+              {"id": "simple_flow", "label": "VMC simple flux"},
+              {"id": "double_flow_standard", "label": "VMC double flux"},
+              {"id": "airtight_recent", "label": "Logement recent etanche"}
+            ]
           }
         ]
       },
@@ -71,20 +106,9 @@
             ]
           },
           {
-            "id": "heating_ref",
-            "type": "select",
-            "label": "Systeme de chauffage actuel",
-            "required": true,
-            "options": [
-              {"id": "electric_radiator", "label": "Radiateurs electriques"},
-              {"id": "air_air_heat_pump_standard", "label": "PAC air-air"},
-              {"id": "air_water_heat_pump_standard", "label": "PAC air-eau"}
-            ]
-          },
-          {
             "id": "heat_emitters_id",
             "type": "select",
-            "label": "Emetteurs de chauffage actuels",
+            "label": "Diffusion de chaleur actuelle",
             "required": true,
             "options": [
               {"id": "electric_radiators", "label": "Radiateurs electriques"},
