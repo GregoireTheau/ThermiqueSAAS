@@ -48,6 +48,7 @@ def run_profile_experience(
     answers: dict[str, Any],
     *,
     include_report_html: bool = True,
+    report_branding: dict[str, Any] | None = None,
     air_density_kg_m3: float = DEFAULT_AIR_DENSITY_KG_M3,
     air_heat_capacity_j_kgk: float = DEFAULT_AIR_HEAT_CAPACITY_J_KGK,
 ) -> dict[str, Any]:
@@ -89,7 +90,7 @@ def run_profile_experience(
             "report": report,
         }
         if include_report_html:
-            run["report_html"] = render_report_html(report)
+            run["report_html"] = render_report_html(report, branding=report_branding)
         simulation_runs.append(run)
 
     return {

@@ -113,7 +113,8 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   min-height: 38px;
   border: 1px solid var(--border);
@@ -123,6 +124,76 @@ select {
   color: var(--text);
   font: inherit;
   font-weight: 400;
+}
+
+textarea {
+  resize: vertical;
+}
+
+summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.colorControl {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 8px;
+}
+
+.colorControl input[type="color"] {
+  padding: 3px;
+}
+
+.logoPreview {
+  min-height: 44px;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.logoPreview img {
+  max-width: 120px;
+  max-height: 40px;
+  object-fit: contain;
+}
+
+.brandingSummaryRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.brandingIdentity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.brandingIdentity span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brandingSwatch {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  flex: 0 0 auto;
+}
+
+.brandingSummaryRow button {
+  width: auto;
+  min-height: 32px;
+  margin-top: 0;
+  padding: 6px 10px;
 }
 
 button {
@@ -308,6 +379,30 @@ button:disabled {
   width: auto;
 }
 
+.projectSummaryReports {
+  display: grid;
+  gap: 8px;
+}
+
+.reportAction {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.reportAction span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.reportAction button {
+  width: auto;
+  min-height: 32px;
+  padding: 6px 10px;
+}
+
 .projectCreateFields[hidden] {
   display: none;
 }
@@ -475,6 +570,13 @@ button:disabled {
 
 .run strong {
   display: block;
+}
+
+.runActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .run a {

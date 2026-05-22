@@ -101,6 +101,30 @@ def init_db(db_path: str | Path | None = None) -> None:
                 revoked_at text,
                 foreign key (user_id) references users(id)
             );
+
+            create table if not exists organization_branding (
+                id text primary key,
+                organization_id text not null unique,
+                logo_url text,
+                primary_color text,
+                phone text,
+                email_contact text,
+                website text,
+                legal_mention text,
+                created_at text not null,
+                updated_at text not null,
+                foreign key (organization_id) references organizations(id) on delete cascade
+            );
+
+            create trigger if not exists organization_branding_updated_at
+            after update on organization_branding
+            for each row
+            when new.updated_at = old.updated_at
+            begin
+                update organization_branding
+                set updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                where id = old.id;
+            end;
             """
         )
         _ensure_column(connection, "organizations", "normalized_name", "text")
@@ -436,10 +460,13 @@ def create_simulation_runs(
     """Run the latest project answers and persist each generated simulation."""
     project = get_project(project_id, db_path)
     answers_record = get_latest_project_answers(project_id, db_path)
+    organization = get_organization(project["organization_id"], db_path)
+    branding = get_organization_branding(project["organization_id"], db_path)
     result = run_profile_experience(
         project["business_profile_id"],
         answers_record["answers"],
         include_report_html=True,
+        report_branding=_report_branding_payload(organization, branding),
     )
 
     created_runs = []
@@ -526,6 +553,72 @@ def get_simulation_report_html(
 ) -> str:
     """Return the stored HTML report for a simulation run."""
     return get_simulation_run(simulation_run_id, db_path)["report_html"]
+
+
+def get_organization_branding(
+    organization_id: str,
+    db_path: str | Path | None = None,
+) -> dict[str, Any] | None:
+    """Return report branding for an organization, if configured."""
+    init_db(db_path)
+    get_organization(organization_id, db_path)
+    with _connect(db_path or default_db_path()) as connection:
+        row = connection.execute(
+            "select * from organization_branding where organization_id = ?",
+            (organization_id,),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def upsert_organization_branding(
+    organization_id: str,
+    payload: dict[str, Any],
+    db_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Create or update nullable report branding fields for an organization."""
+    init_db(db_path)
+    get_organization(organization_id, db_path)
+    now = _now()
+    record = {
+        "id": _new_id("brd"),
+        "organization_id": organization_id,
+        "logo_url": _blank_to_none(payload.get("logo_url")),
+        "primary_color": _blank_to_none(payload.get("primary_color")),
+        "phone": _blank_to_none(payload.get("phone")),
+        "email_contact": _blank_to_none(payload.get("email_contact")),
+        "website": _blank_to_none(payload.get("website")),
+        "legal_mention": _blank_to_none(payload.get("legal_mention")),
+        "created_at": now,
+        "updated_at": now,
+    }
+    with _connect(db_path or default_db_path()) as connection:
+        connection.execute(
+            """
+            insert into organization_branding
+                (
+                    id, organization_id, logo_url, primary_color, phone,
+                    email_contact, website, legal_mention, created_at, updated_at
+                )
+            values
+                (
+                    :id, :organization_id, :logo_url, :primary_color, :phone,
+                    :email_contact, :website, :legal_mention, :created_at, :updated_at
+                )
+            on conflict(organization_id) do update set
+                logo_url = excluded.logo_url,
+                primary_color = excluded.primary_color,
+                phone = excluded.phone,
+                email_contact = excluded.email_contact,
+                website = excluded.website,
+                legal_mention = excluded.legal_mention,
+                updated_at = excluded.updated_at
+            """,
+            record,
+        )
+    branding = get_organization_branding(organization_id, db_path)
+    if branding is None:
+        raise StorageError("Unable to save organization branding.")
+    return branding
 
 
 def project_belongs_to_organization(
@@ -631,6 +724,42 @@ def _auth_payload(
             session,
         )
     return {"access_token": token, "token_type": "bearer", "user": user, "organization": organization}
+
+
+def _report_branding_payload(
+    organization: dict[str, Any],
+    branding: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if branding is None:
+        return None
+    if not any(
+        branding.get(field)
+        for field in (
+            "logo_url",
+            "primary_color",
+            "phone",
+            "email_contact",
+            "website",
+            "legal_mention",
+        )
+    ):
+        return None
+    return {
+        "organization_name": organization["name"],
+        "logo_url": branding.get("logo_url"),
+        "primary_color": branding.get("primary_color"),
+        "phone": branding.get("phone"),
+        "email_contact": branding.get("email_contact"),
+        "website": branding.get("website"),
+        "legal_mention": branding.get("legal_mention"),
+    }
+
+
+def _blank_to_none(value: Any) -> Any:
+    if isinstance(value, str):
+        value = value.strip()
+        return value or None
+    return value
 
 
 def _user_record_to_api(record: dict[str, Any]) -> dict[str, Any]:

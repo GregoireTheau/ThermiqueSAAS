@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 from pathlib import Path
+import re
 
 from .business_flow import BusinessFlowError, run_profile_experience
 from .business_profiles import (
@@ -19,6 +20,7 @@ from .storage import (
     create_simulation_runs,
     get_latest_project_answers,
     get_organization_by_name,
+    get_organization_branding,
     get_project,
     get_simulation_report_html,
     get_simulation_run,
@@ -32,8 +34,10 @@ from .storage import (
     revoke_session,
     save_project_answers,
     simulation_belongs_to_organization,
+    upsert_organization_branding,
 )
 from thermal_model import load_reference_catalog
+from .pdf_export import PdfExportError, render_pdf_from_html
 
 try:
     from fastapi import Depends, FastAPI, Header, HTTPException, Response
@@ -48,6 +52,8 @@ except ModuleNotFoundError as exc:  # pragma: no cover - depends on optional run
 app = FastAPI(title="ThermalTwin SaaS API", version="0.1")
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
 @app.get("/")
@@ -206,6 +212,28 @@ def list_organizations_endpoint(user: dict[str, Any] = Depends(current_user)) ->
     return {"organizations": organizations}
 
 
+@app.get("/organization-branding")
+def get_organization_branding_endpoint(
+    user: dict[str, Any] = Depends(current_user),
+) -> dict[str, Any]:
+    branding = get_organization_branding(user["organization_id"])
+    return {"branding": branding}
+
+
+@app.put("/organization-branding")
+def upsert_organization_branding_endpoint(
+    payload: dict[str, Any],
+    user: dict[str, Any] = Depends(current_user),
+) -> dict[str, Any]:
+    _validate_branding_payload(payload)
+    return {
+        "branding": upsert_organization_branding(
+            user["organization_id"],
+            payload,
+        ),
+    }
+
+
 @app.post("/projects")
 def create_project_endpoint(
     payload: dict[str, Any],
@@ -328,3 +356,44 @@ def get_simulation_report_html_endpoint(
         )
     except StorageError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.get("/simulation-runs/{simulation_run_id}/report-pdf")
+def get_simulation_report_pdf_endpoint(
+    simulation_run_id: str,
+    user: dict[str, Any] = Depends(current_user),
+) -> Response:
+    try:
+        require_simulation_access(simulation_run_id, user)
+        pdf_content = render_pdf_from_html(get_simulation_report_html(simulation_run_id))
+        filename = f"thermal-report-{simulation_run_id}.pdf"
+        return Response(
+            content=pdf_content,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    except StorageError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except PdfExportError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+def _validate_branding_payload(payload: dict[str, Any]) -> None:
+    primary_color = payload.get("primary_color")
+    if primary_color and not HEX_COLOR_RE.match(primary_color):
+        raise HTTPException(status_code=400, detail="primary_color must be a hex color.")
+    logo_url = payload.get("logo_url")
+    if logo_url:
+        if not isinstance(logo_url, str) or not logo_url.startswith("data:image/"):
+            raise HTTPException(status_code=400, detail="logo_url must be an image data URL.")
+        if len(logo_url) > 500_000:
+            raise HTTPException(status_code=400, detail="logo_url is too large.")
+    for field_name, max_length in {
+        "phone": 30,
+        "email_contact": 120,
+        "website": 200,
+        "legal_mention": 1000,
+    }.items():
+        value = payload.get(field_name)
+        if value and len(str(value)) > max_length:
+            raise HTTPException(status_code=400, detail=f"{field_name} is too long.")

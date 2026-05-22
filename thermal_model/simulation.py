@@ -25,6 +25,10 @@ from .dwelling_loader import get_rooms_by_id
 from .static_losses import compute_room_static_losses
 
 
+DISCOMFORT_COLD_THRESHOLD_C = 19.0
+DISCOMFORT_HOT_THRESHOLD_C = 26.0
+
+
 def simulate_1r1c(
     dwelling: dict[str, Any],
     scenario: dict[str, Any],
@@ -187,8 +191,8 @@ def simulate_1r1c(
             hourly_results,
             rooms,
             timestep_h,
-            heating_setpoint_c,
-            cooling_setpoint_c,
+            DISCOMFORT_COLD_THRESHOLD_C,
+            DISCOMFORT_HOT_THRESHOLD_C,
         ),
         "totals": totals,
     }

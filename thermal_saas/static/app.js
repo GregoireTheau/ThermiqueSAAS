@@ -10,6 +10,7 @@ const state = {
   authStep: "organization",
   selectedOrganization: null,
   answersSaved: false,
+  latestAnswers: null,
   simulationRuns: [],
   latestReportId: null,
   simulationStatus: "idle",
@@ -17,6 +18,10 @@ const state = {
   lastSimulationError: "",
   projectDraftOpen: false,
   authSubmitting: "",
+  branding: null,
+  brandingLogoUrl: "",
+  pendingBranding: null,
+  brandingEditorOpen: false,
 };
 
 const els = {
@@ -33,9 +38,12 @@ const els = {
   connectedProfile: document.querySelector("#connectedProfile"),
   organizationStep: document.querySelector("#organizationStep"),
   credentialsStep: document.querySelector("#credentialsStep"),
+  brandingStep: document.querySelector("#brandingStep"),
   continueToCredentials: document.querySelector("#continueToCredentials"),
   backToOrganization: document.querySelector("#backToOrganization"),
+  backToOrganizationFromBranding: document.querySelector("#backToOrganizationFromBranding"),
   selectedOrganizationSummary: document.querySelector("#selectedOrganizationSummary"),
+  brandingOrganizationSummary: document.querySelector("#brandingOrganizationSummary"),
   organizationLookupStatus: document.querySelector("#organizationLookupStatus"),
   demoSelect: document.querySelector("#demoSelect"),
   profileChoice: document.querySelector("#profileChoice"),
@@ -66,6 +74,20 @@ const els = {
   simulationState: document.querySelector("#simulationState"),
   simulationRuns: document.querySelector("#simulationRuns"),
   resultSummary: document.querySelector("#resultSummary"),
+  brandingSection: document.querySelector("#brandingSection"),
+  brandingSummary: document.querySelector("#brandingSummary"),
+  brandingForm: document.querySelector("#brandingForm"),
+  brandingLogo: document.querySelector("#brandingLogo"),
+  brandingLogoPreview: document.querySelector("#brandingLogoPreview"),
+  brandingColorPicker: document.querySelector("#brandingColorPicker"),
+  brandingPrimaryColor: document.querySelector("#brandingPrimaryColor"),
+  brandingPhone: document.querySelector("#brandingPhone"),
+  brandingEmail: document.querySelector("#brandingEmail"),
+  brandingWebsite: document.querySelector("#brandingWebsite"),
+  brandingLegalMention: document.querySelector("#brandingLegalMention"),
+  saveBranding: document.querySelector("#saveBranding"),
+  skipBranding: document.querySelector("#skipBranding"),
+  brandingStatus: document.querySelector("#brandingStatus"),
 };
 
 const hiddenQuestionIds = new Set(["project_name", "rooms"]);
@@ -102,6 +124,9 @@ function toFrenchError(message) {
     "No answers saved for project": "Aucune réponse sauvegardée pour ce projet.",
     "Organization already exists with a different business profile.": "Cette organisation existe déjà avec un autre profil métier. Revenez à l'étape organisation pour utiliser le profil verrouillé, ou choisissez un autre nom d'organisation.",
     "Unknown business profile.": "Profil métier inconnu.",
+    "primary_color must be a hex color.": "La couleur doit être au format hexadécimal, par exemple #1a5c3a.",
+    "logo_url must be an image data URL.": "Le logo doit être une image PNG, JPG ou SVG.",
+    "logo_url is too large.": "Le logo est trop volumineux.",
   };
   for (const [source, target] of Object.entries(known)) {
     if (text.includes(source)) return target;
@@ -117,10 +142,21 @@ function updateUiState() {
   els.connectedOrganization.textContent = state.organization ? state.organization.name : "";
   els.connectedProfile.textContent = state.organization ? selectedProfile().label : "";
   els.logout.disabled = !isLoggedIn;
+  els.brandingSection.hidden = !isLoggedIn && state.authStep !== "branding";
+  els.saveBranding.disabled = !isLoggedIn;
+  if (state.authStep === "branding") {
+    els.saveBranding.disabled = false;
+    els.saveBranding.textContent = "Enregistrer →";
+  } else {
+    els.saveBranding.textContent = "Sauvegarder";
+  }
   els.register.disabled = isLoggedIn || state.authSubmitting === "register";
   els.login.disabled = isLoggedIn || state.authSubmitting === "login";
   els.organizationStep.hidden = isLoggedIn || state.authStep !== "organization";
+  els.brandingStep.hidden = isLoggedIn || state.authStep !== "branding";
   els.credentialsStep.hidden = isLoggedIn || state.authStep !== "credentials";
+  els.brandingForm.hidden = !(state.authStep === "branding" || state.brandingEditorOpen);
+  els.skipBranding.hidden = isLoggedIn && state.authStep !== "branding";
 
   if (!isLoggedIn) {
     els.projectSelect.hidden = true;
@@ -140,11 +176,14 @@ function updateUiState() {
   els.selectedOrganizationSummary.textContent = state.selectedOrganization
     ? `${state.selectedOrganization.name} · ${selectedProfile().label}`
     : "";
+  els.brandingOrganizationSummary.textContent = state.selectedOrganization
+    ? `${state.selectedOrganization.name} · ${selectedProfile().label}`
+    : "";
 
   els.projectCreateFields.hidden = !state.projectDraftOpen;
   els.createProject.disabled = !state.organization || !state.projectDraftOpen;
   els.saveAnswers.disabled = !state.project;
-  els.runSimulation.disabled = !state.project || !state.answersSaved || state.simulationStatus === "loading";
+  els.runSimulation.disabled = !state.project || !state.answersSaved || state.simulationStatus === "loading" || hasCurrentReports();
   els.newProject.disabled = !state.organization;
   els.addRoomMenuButton.disabled = !state.project;
   if (!state.project) els.roomTypeMenu.hidden = true;
@@ -154,6 +193,7 @@ function updateUiState() {
   renderProgress();
   renderProjectSummary();
   renderSimulationState();
+  renderBrandingSummary();
 }
 
 async function loadProfiles() {
@@ -169,6 +209,160 @@ async function loadProfiles() {
     await loadQuestionnaire();
   }
   updateUiState();
+}
+
+async function loadBranding() {
+  if (!state.user) return;
+  const payload = await api("/organization-branding");
+  applyBranding(payload.branding || {});
+}
+
+function applyBranding(branding) {
+  state.branding = branding;
+  state.brandingLogoUrl = branding.logo_url || "";
+  els.brandingPrimaryColor.value = branding.primary_color || "#1a5c3a";
+  els.brandingColorPicker.value = /^#[0-9a-fA-F]{6}$/.test(els.brandingPrimaryColor.value)
+    ? els.brandingPrimaryColor.value
+    : "#1a5c3a";
+  els.brandingPhone.value = branding.phone || "";
+  els.brandingEmail.value = branding.email_contact || "";
+  els.brandingWebsite.value = branding.website || "";
+  els.brandingLegalMention.value = branding.legal_mention || "";
+  renderLogoPreview();
+  renderBrandingSummary();
+}
+
+function collectBranding() {
+  return {
+    logo_url: state.brandingLogoUrl || null,
+    primary_color: els.brandingPrimaryColor.value.trim() || null,
+    phone: els.brandingPhone.value.trim() || null,
+    email_contact: els.brandingEmail.value.trim() || null,
+    website: els.brandingWebsite.value.trim() || null,
+    legal_mention: els.brandingLegalMention.value.trim() || null,
+  };
+}
+
+async function saveBranding() {
+  els.saveBranding.disabled = true;
+  try {
+    const branding = collectBranding();
+    if (!state.user) {
+      state.pendingBranding = branding;
+      state.authStep = "credentials";
+      setStatus(els.brandingStatus, "");
+      updateUiState();
+      return;
+    }
+    const payload = await api("/organization-branding", {
+      method: "PUT",
+      body: JSON.stringify(branding),
+    });
+    applyBranding(payload.branding);
+    state.brandingEditorOpen = false;
+    setStatus(els.brandingStatus, "✓ Sauvegardé");
+    window.setTimeout(() => setStatus(els.brandingStatus, ""), 2000);
+  } catch (error) {
+    setStatus(els.brandingStatus, error.message, true);
+  } finally {
+    updateUiState();
+  }
+}
+
+function skipBranding() {
+  state.pendingBranding = null;
+  if (!state.user && state.authStep === "branding") {
+    state.authStep = "credentials";
+  } else {
+    state.brandingEditorOpen = false;
+  }
+  setStatus(els.brandingStatus, "");
+  updateUiState();
+}
+
+function openBrandingEditor() {
+  state.brandingEditorOpen = true;
+  setStatus(els.brandingStatus, "");
+  updateUiState();
+}
+
+function renderBrandingSummary() {
+  if (!els.brandingSummary) return;
+  if (!state.user && state.authStep === "branding") {
+    els.brandingSummary.innerHTML = "";
+    return;
+  }
+  const branding = state.branding || {};
+  const organizationName = state.organization?.name || state.selectedOrganization?.name || "";
+  const configured = Boolean(
+    branding.logo_url
+    || branding.primary_color
+    || branding.phone
+    || branding.email_contact
+    || branding.website
+    || branding.legal_mention
+  );
+  const color = branding.primary_color || "#d7dde5";
+  els.brandingSummary.innerHTML = `
+    <div class="brandingSummaryRow">
+      <div class="brandingIdentity">
+        <span class="brandingSwatch" style="background:${color}"></span>
+        <span>${configured ? organizationName : "Non personnalisé"}</span>
+        ${configured ? "<strong>✓</strong>" : ""}
+      </div>
+      <button type="button" data-open-branding>${configured ? "Modifier" : "Configurer"}</button>
+    </div>
+  `;
+}
+
+async function handleLogoUpload(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    state.brandingLogoUrl = await logoDataUrl(file);
+    renderLogoPreview();
+    setStatus(els.brandingStatus, "");
+  } catch (error) {
+    setStatus(els.brandingStatus, error.message, true);
+  }
+}
+
+function logoDataUrl(file) {
+  if (!["image/png", "image/jpeg", "image/svg+xml"].includes(file.type)) {
+    throw new Error("Logo PNG, JPG ou SVG uniquement.");
+  }
+  if (file.type === "image/svg+xml") return readFileAsDataUrl(file);
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const scale = Math.min(1, 300 / image.width);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      const context = canvas.getContext("2d");
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL(file.type, 0.9));
+    };
+    image.onerror = () => reject(new Error("Logo illisible."));
+    readFileAsDataUrl(file).then((dataUrl) => {
+      image.src = dataUrl;
+    }).catch(reject);
+  });
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Impossible de lire le logo."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderLogoPreview() {
+  els.brandingLogoPreview.innerHTML = state.brandingLogoUrl
+    ? `<img src="${state.brandingLogoUrl}" alt="Logo">`
+    : "";
 }
 
 async function refreshSession() {
@@ -198,6 +392,7 @@ async function loadQuestionnaire() {
   state.project = null;
   state.rooms = [defaultRoom()];
   state.answersSaved = false;
+  state.latestAnswers = null;
   state.simulationRuns = [];
   state.latestReportId = null;
   state.simulationStatus = "idle";
@@ -278,7 +473,7 @@ async function lookupOrganization() {
 async function continueToCredentials() {
   await lookupOrganization();
   if (!state.selectedOrganization) return;
-  state.authStep = "credentials";
+  state.authStep = state.selectedOrganization.exists ? "credentials" : "branding";
   updateUiState();
 }
 
@@ -517,6 +712,7 @@ async function register() {
   updateUiState();
   try {
     if (!state.selectedOrganization) await continueToCredentials();
+    const brandingToSave = state.pendingBranding;
     const payload = await api("/auth/register", {
       method: "POST",
       body: JSON.stringify({
@@ -528,6 +724,14 @@ async function register() {
     });
     setSession(payload);
     await setOrganizationFromUser(payload.organization);
+    if (brandingToSave) {
+      const brandingPayload = await api("/organization-branding", {
+        method: "PUT",
+        body: JSON.stringify(brandingToSave),
+      });
+      applyBranding(brandingPayload.branding);
+      state.pendingBranding = null;
+    }
   } catch (error) {
     setStatus(els.authStatus, error.message, true);
   } finally {
@@ -573,6 +777,15 @@ async function logout() {
   state.selectedOrganization = null;
   state.authStep = "organization";
   state.authSubmitting = "";
+  state.answersSaved = false;
+  state.latestAnswers = null;
+  state.simulationRuns = [];
+  state.latestReportId = null;
+  state.simulationStatus = "idle";
+  state.branding = null;
+  state.brandingLogoUrl = "";
+  state.pendingBranding = null;
+  state.brandingEditorOpen = false;
   localStorage.removeItem("thermal_saas_token");
   els.logout.disabled = true;
   els.createProject.disabled = true;
@@ -582,6 +795,8 @@ async function logout() {
   els.simulationRuns.innerHTML = "";
   els.resultSummary.innerHTML = "";
   setStatus(els.authStatus, "Déconnecté");
+  setStatus(els.brandingStatus, "");
+  applyBranding({});
   updateUiState();
 }
 
@@ -623,6 +838,7 @@ async function setOrganizationFromUser(organization = null) {
   renderRooms();
   els.createProject.disabled = false;
   await refreshProjects();
+  await loadBranding();
   setStatus(els.authStatus, `Connecté : ${state.user.email}`);
   updateUiState();
 }
@@ -639,6 +855,7 @@ async function createProject() {
       }),
     });
     state.answersSaved = false;
+    state.latestAnswers = null;
     state.simulationRuns = [];
     state.latestReportId = null;
     state.simulationStatus = "idle";
@@ -661,6 +878,7 @@ async function createProject() {
 function startNewProject() {
   state.project = null;
   state.answersSaved = false;
+  state.latestAnswers = null;
   state.simulationRuns = [];
   state.latestReportId = null;
   state.simulationStatus = "idle";
@@ -685,17 +903,24 @@ async function loadProject() {
   els.projectName.value = state.project.name;
   els.customerName.value = state.project.customer_name || "";
   els.saveAnswers.disabled = false;
-  state.answersSaved = Boolean(payload.latest_answers);
+  state.latestAnswers = payload.latest_answers || null;
+  state.answersSaved = Boolean(state.latestAnswers);
   state.simulationRuns = payload.simulation_runs;
-  state.latestReportId = payload.simulation_runs.length ? payload.simulation_runs[payload.simulation_runs.length - 1].id : null;
-  state.simulationStatus = payload.simulation_runs.length ? "success" : "idle";
+  state.latestReportId = latestUsefulReportId();
+  state.simulationStatus = usefulReportRuns().length ? "success" : "idle";
   els.runSimulation.disabled = !state.answersSaved;
-  if (payload.latest_answers) {
-    applyAnswers(payload.latest_answers.answers);
-    setStatus(els.answersStatus, `Dernières réponses : version ${payload.latest_answers.version}`);
+  if (state.latestAnswers) {
+    applyAnswers(state.latestAnswers.answers);
+    const reportCount = usefulReportRuns().length;
+    setStatus(
+      els.answersStatus,
+      reportCount
+        ? `Dernières réponses : version ${state.latestAnswers.version}. Simulation déjà faite, rapports disponibles.`
+        : `Dernières réponses : version ${state.latestAnswers.version}`,
+    );
   }
-  renderSimulationRuns(payload.simulation_runs);
-  await renderLatestSummary(payload.simulation_runs);
+  renderSimulationRuns();
+  await renderLatestSummary();
   setStatus(els.projectStatus, `Projet chargé : ${state.project.id}`);
   updateUiState();
 }
@@ -726,12 +951,26 @@ function applyAnswers(answers) {
 async function saveAnswers() {
   els.saveAnswers.disabled = true;
   try {
+    const answers = collectAnswers();
+    if (state.latestAnswers && sameAnswers(answers, state.latestAnswers.answers)) {
+      state.answersSaved = true;
+      state.simulationStatus = usefulReportRuns().length ? "success" : "idle";
+      setStatus(
+        els.answersStatus,
+        usefulReportRuns().length
+          ? `Réponses inchangées : simulation déjà faite, rapports disponibles.`
+          : `Réponses inchangées : version ${state.latestAnswers.version}`,
+      );
+      updateUiState();
+      return;
+    }
     const saved = await api(`/projects/${state.project.id}/answers`, {
       method: "POST",
-      body: JSON.stringify({answers: collectAnswers()}),
+      body: JSON.stringify({answers}),
     });
+    state.latestAnswers = saved;
     state.answersSaved = true;
-    state.simulationStatus = state.simulationRuns.length ? "success" : "idle";
+    state.simulationStatus = usefulReportRuns().length ? "success" : "idle";
     state.lastSimulationError = "";
     setStatus(els.answersStatus, `Réponses sauvegardées : version ${saved.version}`);
     updateUiState();
@@ -745,14 +984,20 @@ async function saveAnswers() {
 
 async function runSimulation() {
   try {
+    if (hasCurrentReports()) {
+      state.simulationStatus = "success";
+      setStatus(els.answersStatus, "Simulation déjà faite pour ces réponses. Rapports disponibles.");
+      updateUiState();
+      return;
+    }
     state.simulationStatus = "loading";
     updateUiState();
     const batch = await api(`/projects/${state.project.id}/simulations`, {method: "POST"});
     state.simulationRuns = batch.simulation_runs;
-    state.latestReportId = batch.simulation_runs.length ? batch.simulation_runs[batch.simulation_runs.length - 1].id : null;
+    state.latestReportId = latestUsefulReportId();
     state.simulationStatus = "success";
-    renderSimulationRuns(batch.simulation_runs);
-    await renderLatestSummary(batch.simulation_runs);
+    renderSimulationRuns();
+    await renderLatestSummary();
     setStatus(els.answersStatus, "Simulation terminée");
   } catch (error) {
     state.simulationStatus = "error";
@@ -763,21 +1008,35 @@ async function runSimulation() {
   }
 }
 
-function renderSimulationRuns(runs) {
+function renderSimulationRuns(runs = state.simulationRuns) {
   state.simulationRuns = runs;
+  const visibleRuns = usefulReportRuns();
   if (!runs.length) {
     els.simulationRuns.innerHTML = "";
     return;
   }
-  els.simulationRuns.innerHTML = runs.map((run) => `
+  if (!visibleRuns.length) {
+    els.simulationRuns.innerHTML = `
+      <div class="stateBox">Des simulations existent pour d'anciennes réponses. Sauvegardez puis relancez pour générer les rapports des données affichées.</div>
+    `;
+    return;
+  }
+  const hiddenCount = runs.length - visibleRuns.length;
+  els.simulationRuns.innerHTML = `
+    ${hiddenCount > 0 ? `<div class="stateBox success">Affichage des ${visibleRuns.length} rapports utiles. ${hiddenCount} ancienne${hiddenCount > 1 ? "s" : ""} simulation${hiddenCount > 1 ? "s" : ""} masquée${hiddenCount > 1 ? "s" : ""}.</div>` : ""}
+    ${visibleRuns.map((run) => `
     <div class="run">
       <div>
         <strong>${run.adaptation_id} · ${run.season} · ${run.role}</strong>
         <p>${run.status} · ${run.id}</p>
       </div>
-      <button type="button" data-open-report="${run.id}">Rapport HTML</button>
+      <div class="runActions">
+        <button type="button" data-open-report="${run.id}">Rapport HTML</button>
+        <button type="button" data-download-report="${run.id}">PDF</button>
+      </div>
     </div>
-  `).join("");
+  `).join("")}
+  `;
 }
 
 async function openReport(simulationRunId) {
@@ -799,7 +1058,26 @@ async function openReport(simulationRunId) {
   reportWindow.document.close();
 }
 
-async function renderLatestSummary(runs) {
+async function downloadReportPdf(simulationRunId) {
+  const response = await fetch(`/simulation-runs/${simulationRunId}/report-pdf`, {
+    headers: {Authorization: `Bearer ${state.token}`},
+  });
+  if (!response.ok) {
+    throw new Error("PDF inaccessible.");
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `rapport-${simulationRunId}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function renderLatestSummary() {
+  const runs = usefulReportRuns();
   if (!runs.length) {
     els.resultSummary.innerHTML = "";
     return;
@@ -824,13 +1102,51 @@ function formatNumber(value) {
   return Number(value || 0).toLocaleString("fr-FR", {maximumFractionDigits: 2});
 }
 
+function usefulReportRuns(runs = state.simulationRuns) {
+  const answersId = state.latestAnswers?.id || runs[runs.length - 1]?.answers_id;
+  const scopedRuns = answersId ? runs.filter((run) => run.answers_id === answersId) : runs;
+  const latestByScenario = new Map();
+  for (const run of scopedRuns) {
+    latestByScenario.set(`${run.season}:${run.role}`, run);
+  }
+  return [...latestByScenario.values()];
+}
+
+function latestUsefulReportId() {
+  const reports = usefulReportRuns();
+  return reports.length ? reports[reports.length - 1].id : null;
+}
+
+function hasCurrentReports() {
+  return Boolean(
+    state.latestAnswers
+    && state.answersSaved
+    && sameAnswers(collectAnswers(), state.latestAnswers.answers)
+    && usefulReportRuns().length,
+  );
+}
+
+function sameAnswers(left, right) {
+  return stableStringify(left) === stableStringify(right);
+}
+
+function stableStringify(value) {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(",")}]`;
+  }
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
 function renderProgress() {
   const completed = {
     account: Boolean(state.user),
     organization: Boolean(state.organization),
     project: Boolean(state.project),
     dwelling: Boolean(state.answersSaved),
-    simulation: state.simulationRuns.length > 0,
+    simulation: usefulReportRuns().length > 0,
   };
   const order = ["account", "organization", "project", "dwelling", "simulation"];
   const active = order.find((key) => !completed[key]) || "simulation";
@@ -848,9 +1164,12 @@ function renderProjectSummary() {
     els.projectSummary.innerHTML = "";
     return;
   }
-  const latest = state.simulationRuns.length
-    ? `Dernière simulation : ${formatDate(state.simulationRuns[state.simulationRuns.length - 1].created_at)} ✓`
-    : "Dernière simulation : aucune";
+  const reports = usefulReportRuns();
+  const latest = reports.length
+    ? `Dernière simulation utile : ${formatDate(reports[reports.length - 1].created_at)} ✓`
+    : state.simulationRuns.length
+      ? "Dernière simulation : ancienne version de réponses"
+      : "Dernière simulation : aucune";
   const city = getField("city", "Bordeaux");
   const postalCode = getField("postal_code", "33000");
   els.projectSummary.hidden = false;
@@ -858,8 +1177,19 @@ function renderProjectSummary() {
     <div class="projectSummaryTitle">📁 ${state.project.name} — ${state.project.customer_name || "Sans client"}</div>
     <div class="projectSummaryMeta">Profil : ${selectedProfile().label} | ${state.rooms.length} pièce${state.rooms.length > 1 ? "s" : ""} | ${postalCode} ${city}</div>
     <div class="projectSummaryMeta">${latest}</div>
-    <div class="projectSummaryActions">
-      <button type="button" ${state.latestReportId ? `data-open-report="${state.latestReportId}"` : "disabled"}>Voir le rapport HTML</button>
+    <div class="projectSummaryReports">
+      ${reports.length ? reports.map((run) => `
+        <div class="reportAction">
+          <span>${run.season} · ${run.role}</span>
+          <button type="button" data-open-report="${run.id}">HTML</button>
+          <button type="button" data-download-report="${run.id}">PDF</button>
+        </div>
+      `).join("") : `
+        <div class="projectSummaryActions">
+          <button type="button" disabled>Voir le rapport HTML</button>
+          <button type="button" disabled>Télécharger PDF</button>
+        </div>
+      `}
     </div>
   `;
 }
@@ -867,14 +1197,19 @@ function renderProjectSummary() {
 function renderSimulationState() {
   els.runSimulation.textContent = state.simulationStatus === "loading"
     ? "⏳ Simulation en cours…"
+    : hasCurrentReports()
+      ? "Simulation déjà faite"
     : "Lancer simulation";
   if (state.simulationStatus === "loading") {
     els.simulationState.className = "stateBox";
     els.simulationState.textContent = "⏳ Simulation en cours…";
   } else if (state.simulationStatus === "success" && state.simulationRuns.length) {
-    const latestRun = state.simulationRuns[state.simulationRuns.length - 1];
+    const reports = usefulReportRuns();
+    const latestRun = reports[reports.length - 1] || state.simulationRuns[state.simulationRuns.length - 1];
     els.simulationState.className = "stateBox success";
-    els.simulationState.textContent = `✓ Simulation terminée le ${formatDate(latestRun.created_at)} — voir la synthèse`;
+    els.simulationState.textContent = hasCurrentReports()
+      ? `✓ Simulation déjà faite pour ces réponses — rapports disponibles`
+      : `✓ Simulation terminée le ${formatDate(latestRun.created_at)} — voir la synthèse`;
   } else if (state.simulationStatus === "error") {
     els.simulationState.className = "stateBox error";
     els.simulationState.innerHTML = `${state.lastSimulationError || "Erreur de simulation."} <strong>Corrigez les informations puis cliquez sur Réessayer.</strong>`;
@@ -1005,6 +1340,20 @@ els.refreshProfiles.addEventListener("click", loadProfiles);
 els.register.addEventListener("click", register);
 els.login.addEventListener("click", login);
 els.logout.addEventListener("click", logout);
+els.saveBranding.addEventListener("click", saveBranding);
+els.skipBranding.addEventListener("click", skipBranding);
+els.brandingSummary.addEventListener("click", (event) => {
+  if (event.target.dataset.openBranding !== undefined) openBrandingEditor();
+});
+els.brandingLogo.addEventListener("change", handleLogoUpload);
+els.brandingColorPicker.addEventListener("input", () => {
+  els.brandingPrimaryColor.value = els.brandingColorPicker.value;
+});
+els.brandingPrimaryColor.addEventListener("input", () => {
+  if (/^#[0-9a-fA-F]{6}$/.test(els.brandingPrimaryColor.value)) {
+    els.brandingColorPicker.value = els.brandingPrimaryColor.value;
+  }
+});
 els.profileSelect.addEventListener("change", () => {
   state.profileId = els.profileSelect.value;
   if (state.selectedOrganization && !state.selectedOrganization.exists) {
@@ -1016,6 +1365,7 @@ els.organizationName.addEventListener("input", scheduleOrganizationLookup);
 els.organizationName.addEventListener("focus", scheduleOrganizationLookup);
 els.continueToCredentials.addEventListener("click", () => continueToCredentials().catch((error) => setStatus(els.organizationLookupStatus, error.message, true)));
 els.backToOrganization.addEventListener("click", backToOrganization);
+els.backToOrganizationFromBranding.addEventListener("click", backToOrganization);
 els.demoSelect.addEventListener("change", (event) => applyDemo(event.target.value));
 els.createProject.addEventListener("click", createProject);
 els.newProject.addEventListener("click", startNewProject);
@@ -1051,14 +1401,24 @@ els.rooms.addEventListener("click", (event) => {
   renderRooms();
 });
 els.simulationRuns.addEventListener("click", (event) => {
-  const simulationRunId = event.target.dataset.openReport;
-  if (!simulationRunId) return;
-  openReport(simulationRunId).catch((error) => setStatus(els.answersStatus, error.message, true));
+  const openReportId = event.target.dataset.openReport;
+  const downloadReportId = event.target.dataset.downloadReport;
+  if (openReportId) {
+    openReport(openReportId).catch((error) => setStatus(els.answersStatus, error.message, true));
+  }
+  if (downloadReportId) {
+    downloadReportPdf(downloadReportId).catch((error) => setStatus(els.answersStatus, error.message, true));
+  }
 });
 els.projectSummary.addEventListener("click", (event) => {
-  const simulationRunId = event.target.dataset.openReport;
-  if (!simulationRunId) return;
-  openReport(simulationRunId).catch((error) => setStatus(els.answersStatus, error.message, true));
+  const openReportId = event.target.dataset.openReport;
+  const downloadReportId = event.target.dataset.downloadReport;
+  if (openReportId) {
+    openReport(openReportId).catch((error) => setStatus(els.answersStatus, error.message, true));
+  }
+  if (downloadReportId) {
+    downloadReportPdf(downloadReportId).catch((error) => setStatus(els.answersStatus, error.message, true));
+  }
 });
 
 loadProfiles().catch((error) => setStatus(els.authStatus, error.message, true));

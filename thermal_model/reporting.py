@@ -7,6 +7,10 @@ from html import escape
 from typing import Any
 
 
+DISCOMFORT_COLD_THRESHOLD_C = 19.0
+DISCOMFORT_HOT_THRESHOLD_C = 26.0
+
+
 def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
     """Build a compact, client-facing report model from a comparison payload."""
     before_totals = comparison["before"]["totals"]
@@ -52,6 +56,8 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
         "source": {
             "comparison_schema_version": comparison["comparison_schema_version"],
             "dwelling_id": comparison["dwelling_id"],
+            "dwelling_name": comparison.get("dwelling_name", comparison["dwelling_id"]),
+            "location": comparison.get("location", {}),
             "before_scenario_id": comparison["before_scenario_id"],
             "after_scenario_id": comparison["after_scenario_id"],
         },
@@ -157,8 +163,8 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
         "temperature_profiles": _build_temperature_profiles(
             comparison,
             rooms,
-            experiment["setpoints"],
             comfort_mode,
+            season,
         ),
         "energy_breakdown": {
             "heating_thermal": _metric(
@@ -197,7 +203,10 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def render_report_html(report: dict[str, Any]) -> str:
+def render_report_html(
+    report: dict[str, Any],
+    branding: dict[str, Any] | None = None,
+) -> str:
     """Render a report model as a standalone HTML document."""
     source = report["source"]
     experiment = report["experiment"]
@@ -205,6 +214,7 @@ def render_report_html(report: dict[str, Any]) -> str:
     headline = report["headline"]
     energy = report["energy_breakdown"]
     generated_date = date.today().strftime("%d/%m/%Y")
+    branding = _normalize_branding(branding)
     profiles_by_room = {
         profile["room_id"]: profile
         for profile in report["temperature_profiles"]["rooms"]
@@ -226,6 +236,9 @@ def render_report_html(report: dict[str, Any]) -> str:
     context_params_html = _render_context_params(experiment, report["temperature_profiles"])
     windows_note_html = _render_windows_note(experiment)
     results_sections_html = _render_results_sections(report)
+    header_html = _render_report_header(source, experiment, generated_date, branding)
+    footer_html = _render_report_footer(branding)
+    custom_color_css = _render_branding_css(branding)
 
     return f"""<!doctype html>
 <html lang="fr">
@@ -250,6 +263,7 @@ def render_report_html(report: dict[str, Any]) -> str:
       --c-loss-light: #fee2e2;
       --c-neutral: #475569;
       --c-hot-zone: #fef3c7;
+      {custom_color_css}
     }}
     * {{ box-sizing: border-box; }}
     body {{
@@ -289,6 +303,42 @@ def render_report_html(report: dict[str, Any]) -> str:
       font-weight: 700;
       letter-spacing: .04em;
     }}
+    .brand-block {{
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: center;
+      min-width: 0;
+    }}
+    .brand-logo-img {{
+      max-width: 126px;
+      max-height: 42px;
+      object-fit: contain;
+    }}
+    .brand-name {{
+      font-size: 1.4rem;
+      font-weight: 750;
+      color: var(--c-text);
+    }}
+    .brand-contact {{
+      color: var(--c-muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }}
+    .header-center {{
+      text-align: center;
+    }}
+    .header-divider {{
+      width: 70%;
+      height: 1px;
+      background: var(--c-border);
+      margin: 12px auto;
+    }}
+    .legal-mention {{
+      margin-top: 6px;
+      color: var(--c-muted);
+      font-size: 10px;
+    }}
     h1, h2, h3 {{ margin: 0; line-height: 1.15; }}
     h1 {{
       font-size: 26px;
@@ -299,6 +349,7 @@ def render_report_html(report: dict[str, Any]) -> str:
       font-size: 26px;
       margin: 0 0 14px;
       font-weight: 720;
+      color: var(--c-accent);
     }}
     h3 {{
       font-size: 20px;
@@ -541,23 +592,7 @@ def render_report_html(report: dict[str, Any]) -> str:
 </head>
 <body>
   <main>
-    <header class="report-header">
-      <div class="header-top">
-        <div class="logo">THERMAL</div>
-        <h1>{escape(experiment["title"])}</h1>
-        <div class="ref-box">
-          <div><strong>Référence</strong></div>
-          <div>{escape(source["dwelling_id"])}</div>
-          <div>{escape(generated_date)}</div>
-        </div>
-      </div>
-      <div class="header-meta">
-        <div><div class="label">Logement</div>{escape(source["dwelling_id"])}</div>
-        <div><div class="label">Scénario</div>{escape(_format_scenario_summary(experiment))}</div>
-        <div><div class="label">Durée</div>{_format_duration(experiment)}</div>
-      </div>
-      <div class="print-action"><button type="button" onclick="printReport()">Imprimer / PDF</button></div>
-    </header>
+    {header_html}
 
     {alert_html}
 
@@ -600,7 +635,7 @@ def render_report_html(report: dict[str, Any]) -> str:
       {rooms_html}
     </section>
 
-    <footer class="footer">Rapport généré automatiquement · Simulation non contractuelle · ThermalTwin</footer>
+    {footer_html}
   </main>
   <script>
     function printReport() {{
@@ -610,6 +645,133 @@ def render_report_html(report: dict[str, Any]) -> str:
 </body>
 </html>
 """
+
+
+def _normalize_branding(branding: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not branding:
+        return None
+    cleaned = {
+        key: value.strip() if isinstance(value, str) else value
+        for key, value in branding.items()
+    }
+    return cleaned if any(cleaned.values()) else None
+
+
+def _render_branding_css(branding: dict[str, Any] | None) -> str:
+    if not branding:
+        return ""
+    primary_color = branding.get("primary_color")
+    if not primary_color:
+        return ""
+    return f"""
+      --c-accent: {escape(primary_color)};
+      --c-gain: {escape(primary_color)};
+    """
+
+
+def _render_report_header(
+    source: dict[str, Any],
+    experiment: dict[str, Any],
+    generated_date: str,
+    branding: dict[str, Any] | None,
+) -> str:
+    if not branding:
+        return f"""
+    <header class="report-header">
+      <div class="header-top">
+        <div class="logo">THERMAL</div>
+        <h1>{escape(experiment["title"])}</h1>
+        <div class="ref-box">
+          <div><strong>Référence</strong></div>
+          <div>{escape(source["dwelling_id"])}</div>
+          <div>{escape(generated_date)}</div>
+        </div>
+      </div>
+      <div class="header-meta">
+        <div><div class="label">Logement</div>{escape(source["dwelling_id"])}</div>
+        <div><div class="label">Scénario</div>{escape(_format_scenario_summary(experiment))}</div>
+        <div><div class="label">Durée</div>{_format_duration(experiment)}</div>
+      </div>
+      <div class="print-action"><button type="button" onclick="printReport()">Imprimer / PDF</button></div>
+    </header>
+"""
+
+    organization_name = branding.get("organization_name") or "ThermalTwin"
+    contact = _join_non_empty(
+        branding.get("phone"),
+        branding.get("email_contact"),
+        branding.get("website"),
+    )
+    logo_url = branding.get("logo_url")
+    logo_html = (
+        f'<img class="brand-logo-img" src="{escape(logo_url)}" alt="Logo">'
+        if logo_url
+        else f'<div class="brand-name">{escape(organization_name)}</div>'
+    )
+    location = source.get("location", {})
+    location_text = _join_non_empty(
+        experiment.get("requested_city") or location.get("city") or experiment.get("weather_city"),
+        location.get("postal_code"),
+    )
+    project_name = source.get("dwelling_name") or source["dwelling_id"]
+    scenario_label = experiment.get("adaptation_label") or _scenario_intervention_label(experiment)
+    return f"""
+    <header class="report-header">
+      <div class="header-top">
+        <div class="brand-block">
+          {logo_html}
+          <div>
+            <div class="brand-contact">{escape(contact)}</div>
+          </div>
+        </div>
+        <div class="header-center">
+          <div class="header-divider"></div>
+          <h1>Étude thermique — {escape(project_name)}</h1>
+          <p>Scénario : {escape(scenario_label)}</p>
+        </div>
+        <div class="ref-box">
+          <div>{escape(location_text)}</div>
+          <div>{escape(generated_date)}</div>
+          <div><strong>Référence</strong> {escape(source["dwelling_id"])}</div>
+        </div>
+      </div>
+      <div class="header-meta">
+        <div><div class="label">Logement</div>{escape(source["dwelling_id"])}</div>
+        <div><div class="label">Rapport préparé par</div>{escape(organization_name)}</div>
+        <div><div class="label">Durée</div>{_format_duration(experiment)}</div>
+      </div>
+      <div class="print-action"><button type="button" onclick="printReport()">Imprimer / PDF</button></div>
+    </header>
+"""
+
+
+def _render_report_footer(branding: dict[str, Any] | None) -> str:
+    if not branding:
+        return '<footer class="footer">Rapport généré automatiquement · Simulation non contractuelle · ThermalTwin</footer>'
+    parts = [
+        branding.get("organization_name"),
+        branding.get("phone"),
+        branding.get("email_contact"),
+        branding.get("website"),
+        "Rapport non contractuel",
+        "ThermalTwin",
+    ]
+    legal = branding.get("legal_mention")
+    legal_html = (
+        f'<div class="legal-mention">{escape(legal)}</div>'
+        if legal
+        else ""
+    )
+    return f"""
+    <footer class="footer">
+      {escape(_join_non_empty(*parts))}
+      {legal_html}
+    </footer>
+"""
+
+
+def _join_non_empty(*values: Any) -> str:
+    return " · ".join(str(value).strip() for value in values if str(value or "").strip())
 
 
 def _build_room_report(room_id: str, room_delta: dict[str, Any]) -> dict[str, Any]:
@@ -667,11 +829,11 @@ def _build_room_report(room_id: str, room_delta: dict[str, Any]) -> dict[str, An
 def _build_temperature_profiles(
     comparison: dict[str, Any],
     rooms: list[dict[str, Any]],
-    setpoints: dict[str, float],
     comfort_mode: str,
+    season: str,
 ) -> dict[str, Any]:
-    hot_threshold_c = setpoints["cooling_c"]
-    cold_threshold_c = setpoints["heating_c"]
+    hot_threshold_c = DISCOMFORT_HOT_THRESHOLD_C
+    cold_threshold_c = DISCOMFORT_COLD_THRESHOLD_C
     threshold_key = "cold" if comfort_mode in {"cold", "mixed"} else "hot"
     room_names = {room["room_id"]: room["room_name"] for room in rooms}
     before_hourly = comparison["before"]["hourly"]
@@ -702,6 +864,7 @@ def _build_temperature_profiles(
                 hot_threshold_c,
                 cold_threshold_c,
                 threshold_key,
+                season,
             )
             for room_id, room_name in room_names.items()
         ],
@@ -716,6 +879,7 @@ def _build_room_temperature_profile(
     hot_threshold_c: float,
     cold_threshold_c: float,
     primary_discomfort: str,
+    season: str,
 ) -> dict[str, Any]:
     points = []
     for before_hour, after_hour in zip(before_hourly, after_hourly, strict=True):
@@ -731,50 +895,229 @@ def _build_room_temperature_profile(
                 "after_hot_excess_c": round(max(0.0, after_temperature - hot_threshold_c), 2),
                 "before_cold_excess_c": round(max(0.0, cold_threshold_c - before_temperature), 2),
                 "after_cold_excess_c": round(max(0.0, cold_threshold_c - after_temperature), 2),
+                "duration_h": 1.0,
             },
         )
+    raw_points = points
+    summary = _temperature_profile_summary(raw_points)
+    critical_markers = []
+    if season == "annual" and len(points) > 1000:
+        points = _daily_average_temperature_points(raw_points)
+        critical_markers = _daily_critical_markers(raw_points)
 
     return {
         "room_id": room_id,
         "room_name": room_name,
         "primary_discomfort": primary_discomfort,
+        "x_axis": _temperature_x_axis(points, season),
+        "critical_markers": critical_markers,
         "points": points,
-        "summary": {
-            "temp_max_before": round(
-                max(point["before_temperature_c"] for point in points),
-                2,
+        "summary": summary,
+    }
+
+
+def _temperature_profile_summary(points: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "temp_max_before": round(
+            max(point["before_temperature_c"] for point in points),
+            2,
+        ),
+        "temp_max_after": round(
+            max(point["after_temperature_c"] for point in points),
+            2,
+        ),
+        "temp_min_before": round(
+            min(point["before_temperature_c"] for point in points),
+            2,
+        ),
+        "temp_min_after": round(
+            min(point["after_temperature_c"] for point in points),
+            2,
+        ),
+        "before_hot_hours": sum(1 for point in points if point["before_hot_excess_c"] > 0),
+        "after_hot_hours": sum(1 for point in points if point["after_hot_excess_c"] > 0),
+        "before_hot_degree_hours": round(
+            sum(
+                point["before_hot_excess_c"] * point.get("duration_h", 1.0)
+                for point in points
             ),
-            "temp_max_after": round(
-                max(point["after_temperature_c"] for point in points),
-                2,
+            2,
+        ),
+        "after_hot_degree_hours": round(
+            sum(
+                point["after_hot_excess_c"] * point.get("duration_h", 1.0)
+                for point in points
             ),
-            "temp_min_before": round(
-                min(point["before_temperature_c"] for point in points),
-                2,
+            2,
+        ),
+        "before_cold_degree_hours": round(
+            sum(
+                point["before_cold_excess_c"] * point.get("duration_h", 1.0)
+                for point in points
             ),
-            "temp_min_after": round(
-                min(point["after_temperature_c"] for point in points),
-                2,
+            2,
+        ),
+        "after_cold_degree_hours": round(
+            sum(
+                point["after_cold_excess_c"] * point.get("duration_h", 1.0)
+                for point in points
             ),
-            "before_hot_hours": sum(1 for point in points if point["before_hot_excess_c"] > 0),
-            "after_hot_hours": sum(1 for point in points if point["after_hot_excess_c"] > 0),
-            "before_hot_degree_hours": round(
-                sum(point["before_hot_excess_c"] for point in points),
-                2,
-            ),
-            "after_hot_degree_hours": round(
-                sum(point["after_hot_excess_c"] for point in points),
-                2,
-            ),
-            "before_cold_degree_hours": round(
-                sum(point["before_cold_excess_c"] for point in points),
-                2,
-            ),
-            "after_cold_degree_hours": round(
-                sum(point["after_cold_excess_c"] for point in points),
-                2,
-            ),
-        },
+            2,
+        ),
+    }
+
+
+def _daily_average_temperature_points(
+    hourly_points: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    daily_points = []
+    for index in range(0, len(hourly_points), 24):
+        day_points = hourly_points[index:index + 24]
+        if not day_points:
+            continue
+        duration_h = sum(point.get("duration_h", 1.0) for point in day_points)
+        outdoor = _average(point["outdoor_temperature_c"] for point in day_points)
+        before = _average(point["before_temperature_c"] for point in day_points)
+        after = _average(point["after_temperature_c"] for point in day_points)
+        before_min = min(point["before_temperature_c"] for point in day_points)
+        before_max = max(point["before_temperature_c"] for point in day_points)
+        after_min = min(point["after_temperature_c"] for point in day_points)
+        after_max = max(point["after_temperature_c"] for point in day_points)
+        daily_points.append(
+            {
+                "hour": day_points[0]["hour"],
+                "outdoor_temperature_c": round(outdoor, 2),
+                "before_temperature_c": round(before, 2),
+                "after_temperature_c": round(after, 2),
+                "before_min_temperature_c": round(before_min, 2),
+                "before_max_temperature_c": round(before_max, 2),
+                "after_min_temperature_c": round(after_min, 2),
+                "after_max_temperature_c": round(after_max, 2),
+                "before_hot_excess_c": round(
+                    max(0.0, before - DISCOMFORT_HOT_THRESHOLD_C),
+                    2,
+                ),
+                "after_hot_excess_c": round(
+                    max(0.0, after - DISCOMFORT_HOT_THRESHOLD_C),
+                    2,
+                ),
+                "before_cold_excess_c": round(
+                    max(0.0, DISCOMFORT_COLD_THRESHOLD_C - before),
+                    2,
+                ),
+                "after_cold_excess_c": round(
+                    max(0.0, DISCOMFORT_COLD_THRESHOLD_C - after),
+                    2,
+                ),
+                "duration_h": duration_h,
+            },
+        )
+    return daily_points
+
+
+def _daily_critical_markers(hourly_points: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    markers = []
+    for index in range(0, len(hourly_points), 24):
+        day_points = hourly_points[index:index + 24]
+        if not day_points:
+            continue
+        for series in ("before", "after"):
+            temperatures = [point[f"{series}_temperature_c"] for point in day_points]
+            max_temperature = max(temperatures)
+            min_temperature = min(temperatures)
+            hour = day_points[0]["hour"] + 12
+            if max_temperature > 35.0:
+                markers.append(
+                    {
+                        "hour": hour,
+                        "series": series,
+                        "type": "hot",
+                        "value": round(max_temperature, 2),
+                        "tooltip": (
+                            f"{_format_day_month(day_points[0]['hour'])} — "
+                            f"max {_format_temperature(max_temperature)}"
+                        ),
+                    },
+                )
+            if min_temperature < 16.0:
+                markers.append(
+                    {
+                        "hour": hour,
+                        "series": series,
+                        "type": "cold",
+                        "value": round(min_temperature, 2),
+                        "tooltip": (
+                            f"{_format_day_month(day_points[0]['hour'])} — "
+                            f"min {_format_temperature(min_temperature)}"
+                        ),
+                    },
+                )
+    return markers
+
+
+def _format_day_month(hour: float) -> str:
+    day_of_year = int(hour // 24)
+    month_days = [
+        ("jan", 31),
+        ("fév", 28),
+        ("mar", 31),
+        ("avr", 30),
+        ("mai", 31),
+        ("jun", 30),
+        ("jul", 31),
+        ("aoû", 31),
+        ("sep", 30),
+        ("oct", 31),
+        ("nov", 30),
+        ("déc", 31),
+    ]
+    day = day_of_year
+    for month, days in month_days:
+        if day < days:
+            return f"{day + 1} {month}"
+        day -= days
+    return "31 déc"
+
+
+def _average(values: Any) -> float:
+    items = list(values)
+    return sum(items) / len(items)
+
+
+def _temperature_x_axis(points: list[dict[str, Any]], season: str) -> dict[str, Any]:
+    if season == "annual":
+        return {
+            "type": "annual",
+            "min_hour": 0,
+            "max_hour": 8760,
+            "labels": [
+                ("Jan", 0),
+                ("Fév", 744),
+                ("Mar", 1416),
+                ("Avr", 2160),
+                ("Mai", 2880),
+                ("Jun", 3624),
+                ("Jul", 4344),
+                ("Aoû", 5088),
+                ("Sep", 5832),
+                ("Oct", 6552),
+                ("Nov", 7296),
+                ("Déc", 8016),
+            ],
+            "zones": [
+                {"label": "Été", "start_hour": 3624, "end_hour": 5832},
+            ],
+        }
+    if not points:
+        return {"type": "hours", "min_hour": 0, "max_hour": 1, "labels": [], "zones": []}
+    min_hour = points[0]["hour"]
+    max_hour = points[-1]["hour"] + points[-1].get("duration_h", 1.0)
+    return {
+        "type": "hours",
+        "min_hour": min_hour,
+        "max_hour": max_hour,
+        "labels": [],
+        "zones": [],
     }
 
 
@@ -1008,19 +1351,19 @@ def get_comfort_mode(experiment_data: dict) -> str:
     "cold"  → épisode froid, seuil inconfort = 18°C
     "mixed" → hybride (ex: fenêtres avec expériences été + hiver)
     """
+    total_hot = experiment_data.get("total_hot_discomfort_before", 0)
+    total_cold = experiment_data.get("total_cold_discomfort_before", 0)
+    if total_hot > 0 or total_cold > 0:
+        return "hot" if total_hot >= total_cold else "cold"
+
     season = experiment_data.get("season", "")
-    scenario_type = experiment_data.get("scenario_type", "")
 
     if season in ("summer", "summer_heatwave"):
         return "hot"
     if season in ("winter", "winter_cold"):
         return "cold"
-    if scenario_type == "windows":
-        return "mixed"
 
-    total_hot = experiment_data.get("total_hot_discomfort_before", 0)
-    total_cold = experiment_data.get("total_cold_discomfort_before", 0)
-    return "hot" if total_hot >= total_cold else "cold"
+    return "hot"
 
 
 def get_room_status(room_data: dict, comfort_mode: str) -> tuple[str, str]:
@@ -1109,22 +1452,20 @@ def get_alert_banner(rooms: list[dict], comfort_mode: str) -> str | None:
     Retourne le HTML du bandeau d'alerte, ou None si pas d'alerte.
     Conserve la logique chaud existante, ajoute la logique froid.
     """
-    if comfort_mode == "hot":
-        critical = [room for room in rooms if room.get("temp_max_before", 0) > 35]
-        if critical:
-            room = critical[0]
-            return f"""
+    hot_critical = [room for room in rooms if room.get("temp_max_before", 0) > 35]
+    if hot_critical:
+        room = hot_critical[0]
+        return f"""
     <section class="alert alert-hot">
       <strong>Alerte confort thermique.</strong>
       La pièce <strong>{escape(room['name'])}</strong> dépasse 35 °C dans la simulation, avec un maximum à {_format_temperature(room['temp_max_before'])}.
     </section>
 """
 
-    elif comfort_mode in ("cold", "mixed"):
-        critical = [room for room in rooms if room.get("temp_min_before", 99) < 16]
-        if critical:
-            room = critical[0]
-            return f"""
+    cold_critical = [room for room in rooms if room.get("temp_min_before", 99) < 16]
+    if cold_critical:
+        room = cold_critical[0]
+        return f"""
     <section class="alert alert-cold">
       <strong>Alerte confort thermique.</strong>
       La pièce <strong>{escape(room['name'])}</strong> descend sous 16 °C dans la simulation, avec un minimum à {_format_temperature(room['temp_min_before'])}.
@@ -1287,7 +1628,9 @@ def _render_room_html(
 def _render_temperature_profile_html(profile: dict[str, Any], comfort_mode: str) -> str:
     summary = profile["summary"]
     status_label, status_class = _room_status(profile, comfort_mode)
-    if comfort_mode == "hot":
+    if profile.get("x_axis", {}).get("type") == "annual":
+        discomfort_note = "La zone ombrée représente l'amplitude min/max journalière."
+    elif comfort_mode == "hot":
         before_value = summary["before_hot_degree_hours"]
         after_value = summary["after_hot_degree_hours"]
         discomfort_note = (
@@ -1319,6 +1662,7 @@ def _render_temperature_profile_html(profile: dict[str, Any], comfort_mode: str)
 
 def _render_temperature_svg(profile: dict[str, Any], comfort_mode: str) -> str:
     points = profile["points"]
+    x_axis = profile.get("x_axis", {})
     width = 1040
     height = 330
     left = 54
@@ -1334,6 +1678,10 @@ def _render_temperature_svg(profile: dict[str, Any], comfort_mode: str) -> str:
             point["outdoor_temperature_c"],
             point["before_temperature_c"],
             point["after_temperature_c"],
+            point.get("before_min_temperature_c", point["before_temperature_c"]),
+            point.get("before_max_temperature_c", point["before_temperature_c"]),
+            point.get("after_min_temperature_c", point["after_temperature_c"]),
+            point.get("after_max_temperature_c", point["after_temperature_c"]),
         )
     ]
     y_min = min(values) - 1.0
@@ -1341,59 +1689,68 @@ def _render_temperature_svg(profile: dict[str, Any], comfort_mode: str) -> str:
     if y_max == y_min:
         y_max += 1.0
 
-    def x_at(index: int) -> float:
-        if len(points) == 1:
+    min_hour = x_axis.get("min_hour", points[0]["hour"] if points else 0)
+    max_hour = x_axis.get("max_hour", points[-1]["hour"] if points else 1)
+
+    def x_at_hour(hour: float) -> float:
+        if max_hour == min_hour:
             return left
-        return left + index / (len(points) - 1) * plot_width
+        return left + (hour - min_hour) / (max_hour - min_hour) * plot_width
 
     def y_at(value: float) -> float:
         return top + (y_max - value) / (y_max - y_min) * plot_height
 
     outdoor_line = _svg_polyline(
-        (x_at(index), y_at(point["outdoor_temperature_c"]))
-        for index, point in enumerate(points)
+        (x_at_hour(point["hour"]), y_at(point["outdoor_temperature_c"]))
+        for point in points
     )
     before_line = _svg_polyline(
-        (x_at(index), y_at(point["before_temperature_c"]))
-        for index, point in enumerate(points)
+        (x_at_hour(point["hour"]), y_at(point["before_temperature_c"]))
+        for point in points
     )
     after_line = _svg_polyline(
-        (x_at(index), y_at(point["after_temperature_c"]))
-        for index, point in enumerate(points)
+        (x_at_hour(point["hour"]), y_at(point["after_temperature_c"]))
+        for point in points
     )
+    range_bands = _svg_daily_range_bands(points, x_at_hour, y_at)
     before_peak_index, before_peak = _peak(points, "before_temperature_c", comfort_mode)
     after_peak_index, after_peak = _peak(points, "after_temperature_c", comfort_mode)
     discomfort_rects = _svg_discomfort_rects(
         points,
         profile["primary_discomfort"],
-        x_at,
+        x_at_hour,
         top,
         plot_height,
     )
+    season_zones = _svg_season_zones(x_axis, x_at_hour, top, plot_height)
     grid = _svg_grid_lines(y_min, y_max, left, top, plot_width, plot_height)
-    x_labels = _svg_x_labels(points, x_at, height, bottom)
+    x_labels = _svg_x_labels(points, x_axis, x_at_hour, height, bottom)
     legend = _svg_legend(left + 18, top + 10, profile["primary_discomfort"])
     annotations = get_svg_annotation(
-        x_at(before_peak_index),
+        x_at_hour(points[before_peak_index]["hour"]),
         y_at(before_peak),
         before_peak,
-        x_at(after_peak_index),
+        x_at_hour(points[after_peak_index]["hour"]),
         y_at(after_peak),
         after_peak,
         width,
         comfort_mode,
     )
+    critical_markers = _svg_critical_markers(profile, x_at_hour, y_at)
 
     return f"""
           <svg class="chart" viewBox="0 0 {width} {height}" role="img" aria-label="Courbes de température - {escape(profile["room_name"])}">
             <rect x="0" y="0" width="{width}" height="{height}" fill="#ffffff"></rect>
+            {season_zones}
             {discomfort_rects}
             {grid}
+            {range_bands}
             <polyline points="{outdoor_line}" fill="none" stroke="#64748b" stroke-width="2" stroke-dasharray="5 5"></polyline>
             <polyline points="{before_line}" fill="none" stroke="#1d4ed8" stroke-width="2.5"></polyline>
             <polyline points="{after_line}" fill="none" stroke="#15803d" stroke-width="2.5"></polyline>
-            <circle cx="{x_at(before_peak_index):.1f}" cy="{y_at(before_peak):.1f}" r="3.5" fill="#1d4ed8"></circle>
-            <circle cx="{x_at(after_peak_index):.1f}" cy="{y_at(after_peak):.1f}" r="3.5" fill="#15803d"></circle>
+            <circle cx="{x_at_hour(points[before_peak_index]["hour"]):.1f}" cy="{y_at(before_peak):.1f}" r="3.5" fill="#1d4ed8"></circle>
+            <circle cx="{x_at_hour(points[after_peak_index]["hour"]):.1f}" cy="{y_at(after_peak):.1f}" r="3.5" fill="#15803d"></circle>
+            {critical_markers}
             {annotations}
             {legend}
             <line x1="{left}" y1="{top + plot_height}" x2="{left + plot_width}" y2="{top + plot_height}" stroke="#cbd5e1"></line>
@@ -1407,10 +1764,76 @@ def _svg_polyline(points: Any) -> str:
     return " ".join(f"{x:.1f},{y:.1f}" for x, y in points)
 
 
+def _svg_daily_range_bands(
+    points: list[dict[str, Any]],
+    x_at_hour: Any,
+    y_at: Any,
+) -> str:
+    if not points or "before_min_temperature_c" not in points[0]:
+        return ""
+    return "\n".join(
+        [
+            _svg_range_band(
+                points,
+                x_at_hour,
+                y_at,
+                "before_min_temperature_c",
+                "before_max_temperature_c",
+                "#1d4ed8",
+            ),
+            _svg_range_band(
+                points,
+                x_at_hour,
+                y_at,
+                "after_min_temperature_c",
+                "after_max_temperature_c",
+                "#15803d",
+            ),
+        ],
+    )
+
+
+def _svg_range_band(
+    points: list[dict[str, Any]],
+    x_at_hour: Any,
+    y_at: Any,
+    min_key: str,
+    max_key: str,
+    color: str,
+) -> str:
+    top_points = [
+        (x_at_hour(point["hour"]), y_at(point[max_key]))
+        for point in points
+    ]
+    bottom_points = [
+        (x_at_hour(point["hour"]), y_at(point[min_key]))
+        for point in reversed(points)
+    ]
+    polygon_points = _svg_polyline([*top_points, *bottom_points])
+    return f'<polygon points="{polygon_points}" fill="{color}" opacity="0.12"></polygon>'
+
+
+def _svg_critical_markers(
+    profile: dict[str, Any],
+    x_at_hour: Any,
+    y_at: Any,
+) -> str:
+    markers = []
+    for marker in profile.get("critical_markers", []):
+        fill = "#dc2626" if marker["type"] == "hot" else "#2563eb"
+        markers.append(
+            f'<circle cx="{x_at_hour(marker["hour"]):.1f}" '
+            f'cy="{y_at(marker["value"]):.1f}" r="3" fill="{fill}">'
+            f'<title>{escape(marker["tooltip"])}</title>'
+            '</circle>'
+        )
+    return "\n".join(markers)
+
+
 def _svg_discomfort_rects(
     points: list[dict[str, Any]],
     primary_discomfort: str,
-    x_at: Any,
+    x_at_hour: Any,
     top: float,
     plot_height: float,
 ) -> str:
@@ -1429,8 +1852,10 @@ def _svg_discomfort_rects(
             start = index
         if start is not None and (not is_uncomfortable or index == len(points) - 1):
             end = index if is_uncomfortable else index - 1
-            x = x_at(start)
-            next_x = x_at(min(end + 1, len(points) - 1))
+            x = x_at_hour(points[start]["hour"])
+            end_point = points[end]
+            next_hour = end_point["hour"] + end_point.get("duration_h", 1.0)
+            next_x = x_at_hour(next_hour)
             width = max(4.0, next_x - x)
             fill = "#fee2e2" if primary_discomfort == "hot" else "#dbeafe"
             rects.append(
@@ -1439,6 +1864,27 @@ def _svg_discomfort_rects(
             )
             start = None
     return "\n".join(rects)
+
+
+def _svg_season_zones(
+    x_axis: dict[str, Any],
+    x_at_hour: Any,
+    top: float,
+    plot_height: float,
+) -> str:
+    zones = []
+    for zone in x_axis.get("zones", []):
+        x = x_at_hour(zone["start_hour"])
+        width = max(0.0, x_at_hour(zone["end_hour"]) - x)
+        zones.append(
+            f'<rect x="{x:.1f}" y="{top:.1f}" width="{width:.1f}" '
+            f'height="{plot_height:.1f}" fill="rgba(255, 160, 0, 0.08)"></rect>'
+        )
+        zones.append(
+            f'<text x="{x + 8:.1f}" y="{top + 16:.1f}" font-size="11" '
+            f'fill="#9a6700">{escape(zone["label"])}</text>'
+        )
+    return "\n".join(zones)
 
 
 def _svg_grid_lines(
@@ -1467,17 +1913,24 @@ def _svg_grid_lines(
 
 def _svg_x_labels(
     points: list[dict[str, Any]],
-    x_at: Any,
+    x_axis: dict[str, Any],
+    x_at_hour: Any,
     height: float,
     bottom: float,
 ) -> str:
     if not points:
         return ""
+    if x_axis.get("type") == "annual":
+        return "\n".join(
+            f'<text x="{x_at_hour(hour):.1f}" y="{height - bottom + 24:.1f}" '
+            f'text-anchor="middle" font-size="11" fill="#64748b">{escape(label)}</text>'
+            for label, hour in x_axis.get("labels", [])
+        )
     indexes = sorted({0, len(points) // 2, len(points) - 1})
     labels = []
     for index in indexes:
         labels.append(
-            f'<text x="{x_at(index):.1f}" y="{height - bottom + 24:.1f}" '
+            f'<text x="{x_at_hour(points[index]["hour"]):.1f}" y="{height - bottom + 24:.1f}" '
             f'text-anchor="middle" font-size="11" fill="#64748b">h{points[index]["hour"]}</text>'
         )
     return "\n".join(labels)
@@ -1531,6 +1984,13 @@ def get_svg_annotation(
 
 
 def _render_metric_table(rows: list[tuple[str, dict[str, Any]]]) -> str:
+    rows = [
+        (label, metric)
+        for label, metric in rows
+        if _metric_has_display_value(metric)
+    ]
+    if not rows:
+        return ""
     table_rows = "\n".join(
         "<tr>"
         f"<td>{escape(label)}</td>"
@@ -1560,6 +2020,13 @@ def _render_metric_table(rows: list[tuple[str, dict[str, Any]]]) -> str:
 
 
 def _render_delta_table(rows: list[tuple[str, dict[str, Any]]]) -> str:
+    rows = [
+        (label, metric)
+        for label, metric in rows
+        if _metric_has_display_value(metric)
+    ]
+    if not rows:
+        return ""
     table_rows = "\n".join(
         "<tr>"
         f"<td>{escape(label)}</td>"
@@ -1580,6 +2047,13 @@ def _render_delta_table(rows: list[tuple[str, dict[str, Any]]]) -> str:
         </tbody>
       </table>
 """
+
+
+def _metric_has_display_value(metric: dict[str, Any]) -> bool:
+    return any(
+        abs(float(metric.get(key, 0.0))) > 1e-9
+        for key in ("before", "after", "delta")
+    )
 
 
 def _format_before_after(metric: dict[str, Any]) -> str:

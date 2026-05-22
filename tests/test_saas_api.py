@@ -85,6 +85,7 @@ def test_profile_experience_api_accepts_window_profile(tmp_path, monkeypatch):
 
 def test_persistent_project_api_runs_and_exposes_report(tmp_path, monkeypatch):
     monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
+    monkeypatch.setattr("thermal_saas.api.render_pdf_from_html", lambda html: b"%PDF-1.4\n")
     client = TestClient(app)
 
     auth_payload, headers = _register(client)
@@ -154,6 +155,10 @@ def test_persistent_project_api_runs_and_exposes_report(tmp_path, monkeypatch):
         f"/simulation-runs/{simulation_runs[-1]['id']}/report-html",
         headers=headers,
     )
+    pdf_report_response = client.get(
+        f"/simulation-runs/{simulation_runs[-1]['id']}/report-pdf",
+        headers=headers,
+    )
     annual_run_response = client.get(
         f"/simulation-runs/{simulation_runs[-1]['id']}",
         headers=headers,
@@ -162,6 +167,10 @@ def test_persistent_project_api_runs_and_exposes_report(tmp_path, monkeypatch):
     assert "<!doctype html>" in report_response.text
     assert annual_report_response.status_code == 200
     assert "<!doctype html>" in annual_report_response.text
+    assert pdf_report_response.status_code == 200
+    assert pdf_report_response.content.startswith(b"%PDF")
+    assert pdf_report_response.headers["content-type"] == "application/pdf"
+    assert "attachment" in pdf_report_response.headers["content-disposition"]
     assert annual_run_response.json()["result"]["comparison"]["experiment"]["weather_year"] == 2023
 
 
@@ -255,3 +264,34 @@ def test_register_accepts_each_business_profile(tmp_path, monkeypatch):
 
         assert response.status_code == 200
         assert response.json()["organization"]["business_profile_id"] == profile_id
+
+
+def test_organization_branding_api_roundtrips_and_validates_color(tmp_path, monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
+    client = TestClient(app)
+    _, headers = _register(client)
+
+    empty_response = client.get("/organization-branding", headers=headers)
+    save_response = client.put(
+        "/organization-branding",
+        headers=headers,
+        json={
+            "primary_color": "#1a5c3a",
+            "phone": "0102030405",
+            "email_contact": "contact@example.com",
+            "website": "https://example.com",
+            "legal_mention": "RCS Test",
+        },
+    )
+    invalid_response = client.put(
+        "/organization-branding",
+        headers=headers,
+        json={"primary_color": "green"},
+    )
+
+    assert empty_response.status_code == 200
+    assert empty_response.json()["branding"] is None
+    assert save_response.status_code == 200
+    assert save_response.json()["branding"]["primary_color"] == "#1a5c3a"
+    assert save_response.json()["branding"]["phone"] == "0102030405"
+    assert invalid_response.status_code == 400

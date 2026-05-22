@@ -135,6 +135,8 @@ def compare_scenarios(
     return {
         "comparison_schema_version": "0.3",
         "dwelling_id": dwelling["dwelling_id"],
+        "dwelling_name": dwelling.get("metadata", {}).get("name", dwelling["dwelling_id"]),
+        "location": dwelling.get("location", {}),
         "before_scenario_id": before_scenario["scenario_id"],
         "after_scenario_id": after_scenario["scenario_id"],
         "experiment": _build_experiment_context(before_scenario, after_scenario),

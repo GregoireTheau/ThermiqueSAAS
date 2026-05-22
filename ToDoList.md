@@ -34,7 +34,7 @@
 - [ ] Générer le rapport PDF
 
 ## SaaS & mise en ligne
-- [ ] Mini-Interface 
-- [ ] Auth revendeur (login, comptes)
+- [x] Mini-Interface 
+- [x] Auth revendeur (login, comptes)
 - [ ] Historique des simulations par client
 - [ ] Compteur d'usage et gestion des quotas
