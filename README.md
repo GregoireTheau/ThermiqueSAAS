@@ -85,6 +85,71 @@ Pour ne regenerer qu'une adaptation :
 python3 scripts/generate_report_fixtures.py --adaptation better_windows
 ```
 
+## Export PDF SaaS
+
+L'endpoint SaaS `GET /simulation-runs/{id}/report-pdf` genere un PDF serveur a
+partir du rapport HTML stocke. Il utilise Chrome ou Chromium en mode headless.
+
+Prerequis runtime :
+
+- installer Chrome ou Chromium sur le serveur applicatif ;
+- verifier que le binaire est dans le `PATH`, ou definir explicitement
+  `THERMAL_PDF_BROWSER_PATH`, par exemple :
+
+```bash
+export THERMAL_PDF_BROWSER_PATH="/usr/bin/chromium"
+```
+
+Sur macOS local, l'application cherche aussi
+`/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`.
+
+Si aucun binaire Chrome/Chromium n'est disponible, ou si le rendu echoue, l'API
+renvoie `503 Service Unavailable` avec le detail de l'erreur. Le rapport HTML
+reste accessible via `/simulation-runs/{id}/report-html`.
+
+Les fichiers telecharges sont nommes avec le client ou projet, le scenario, la
+saison, le role et la date de simulation, par exemple :
+
+```text
+rapport-mme-dupont-better-windows-annual-annual-2026-05-22.pdf
+```
+
+## Configuration securite SaaS
+
+Variables d'environnement recommandees avant beta fermee :
+
+- `THERMAL_SAAS_SECRET_KEY` : secret serveur utilise pour signer les tokens de
+  session stockes sous forme de hash HMAC. Obligatoire si
+  `THERMAL_SAAS_ENV=production`.
+- `THERMAL_SAAS_ENV=production` : active l'exigence de secret explicite.
+- `THERMAL_SAAS_SESSION_TTL_HOURS` : duree de validite des sessions bearer.
+  Valeur par defaut : `12`.
+- `THERMAL_SAAS_CORS_ORIGINS` : origines autorisees separees par virgule.
+  Valeur locale par defaut :
+  `http://127.0.0.1:8000,http://127.0.0.1:8010`.
+- `THERMAL_SAAS_ALLOWED_HOSTS` : hosts HTTP acceptes par l'application.
+  Valeur locale par defaut : `127.0.0.1,localhost,testserver`.
+- `THERMAL_SAAS_MAX_REQUEST_BYTES` : taille maximale acceptee pour un payload
+  HTTP. Valeur par defaut : `1000000`.
+- `THERMAL_SAAS_AUTH_RATE_LIMIT_ATTEMPTS` : nombre de tentatives login/register
+  autorisees par IP + email dans la fenetre de temps. Valeur par defaut : `10`.
+- `THERMAL_SAAS_AUTH_RATE_LIMIT_WINDOW_SECONDS` : fenetre du rate limit auth.
+  Valeur par defaut : `300`.
+
+L'interface n'ecrit plus le token en `localStorage`. Le serveur pose un cookie
+`HttpOnly`, `SameSite=Lax`, `Secure` en production, tout en gardant le bearer
+token dans la reponse API pour compatibilite avec les tests et clients internes.
+
+Exemple :
+
+```bash
+export THERMAL_SAAS_ENV=production
+export THERMAL_SAAS_SECRET_KEY="change-this-long-random-secret"
+export THERMAL_SAAS_SESSION_TTL_HOURS=12
+export THERMAL_SAAS_CORS_ORIGINS="https://beta.example.com"
+export THERMAL_SAAS_ALLOWED_HOSTS="beta.example.com"
+```
+
 Validation des entrees :
 
 ```bash

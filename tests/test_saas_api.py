@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from thermal_saas.api import app
+from thermal_saas.api import AUTH_RATE_LIMITS, app
 
 
 def _register(client, profile_id="window_seller"):
@@ -44,7 +44,9 @@ def test_frontend_app_is_served(tmp_path, monkeypatch):
 
     assert response.status_code == 200
     assert "ThermalTwin" in response.text
-    assert "/static/app.js" in response.text
+    assert "/static/app.js?v=20260522-auth-hardening" in response.text
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
 
 
 def test_profile_experience_api_accepts_window_profile(tmp_path, monkeypatch):
@@ -157,7 +159,7 @@ def test_persistent_project_api_runs_and_exposes_report(tmp_path, monkeypatch):
     )
     pdf_report_response = client.get(
         f"/simulation-runs/{simulation_runs[-1]['id']}/report-pdf",
-        headers=headers,
+        headers={**headers, "Origin": "http://127.0.0.1:8010"},
     )
     annual_run_response = client.get(
         f"/simulation-runs/{simulation_runs[-1]['id']}",
@@ -171,6 +173,12 @@ def test_persistent_project_api_runs_and_exposes_report(tmp_path, monkeypatch):
     assert pdf_report_response.content.startswith(b"%PDF")
     assert pdf_report_response.headers["content-type"] == "application/pdf"
     assert "attachment" in pdf_report_response.headers["content-disposition"]
+    assert "rapport-mme-dupont-better-windows-annual-annual-" in (
+        pdf_report_response.headers["content-disposition"]
+    )
+    assert "content-disposition" in (
+        pdf_report_response.headers["access-control-expose-headers"].lower()
+    )
     assert annual_run_response.json()["result"]["comparison"]["experiment"]["weather_year"] == 2023
 
 
@@ -195,13 +203,79 @@ def test_login_me_and_logout(tmp_path, monkeypatch):
     token = login_response.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     me_response = client.get("/auth/me", headers=headers)
+    cookie_me_response = client.get("/auth/me")
     logout_response = client.post("/auth/logout", headers=headers)
     after_logout_response = client.get("/auth/me", headers=headers)
 
     assert login_response.status_code == 200
+    assert "httponly" in login_response.headers["set-cookie"].lower()
     assert me_response.json()["user"]["email"] == "demo@example.com"
+    assert cookie_me_response.json()["user"]["email"] == "demo@example.com"
     assert logout_response.status_code == 200
+    assert "thermal_saas_session=" in logout_response.headers["set-cookie"]
     assert after_logout_response.status_code == 401
+
+
+def test_auth_rate_limit_blocks_repeated_attempts(tmp_path, monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
+    monkeypatch.setattr("thermal_saas.api.AUTH_RATE_LIMIT_ATTEMPTS", 2)
+    AUTH_RATE_LIMITS.clear()
+    client = TestClient(app)
+
+    responses = [
+        client.post(
+            "/auth/login",
+            json={"email": "missing@example.com", "password": "wrong-password"},
+        )
+        for _ in range(3)
+    ]
+
+    assert [response.status_code for response in responses] == [401, 401, 429]
+
+
+def test_session_expires(tmp_path, monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
+    monkeypatch.setenv("THERMAL_SAAS_SESSION_TTL_HOURS", "0")
+    client = TestClient(app)
+
+    payload, headers = _register(client)
+    response = client.get("/auth/me", headers=headers)
+
+    assert "expires_at" in payload
+    assert response.status_code == 401
+
+
+def test_secret_key_is_required_in_production(tmp_path, monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
+    monkeypatch.setenv("THERMAL_SAAS_ENV", "production")
+    monkeypatch.delenv("THERMAL_SAAS_SECRET_KEY", raising=False)
+    client = TestClient(app)
+
+    response = client.post(
+        "/auth/register",
+        json={
+            "email": "secure@example.com",
+            "password": "password123",
+            "organization_name": "Secure Org",
+            "business_profile_id": "window_seller",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "THERMAL_SAAS_SECRET_KEY" in response.json()["detail"]
+
+
+def test_large_payload_is_rejected(tmp_path, monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
+    client = TestClient(app)
+
+    response = client.post(
+        "/auth/login",
+        content=b"x" * 1_000_001,
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 413
 
 
 def test_register_second_user_joins_existing_organization(tmp_path, monkeypatch):

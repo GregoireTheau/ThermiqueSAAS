@@ -8,7 +8,7 @@ import hashlib
 import hmac
 import secrets
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -18,6 +18,7 @@ from .business_profiles import load_business_profile
 
 
 DEFAULT_DB_PATH = Path("outputs/thermal_saas.sqlite")
+DEFAULT_SESSION_TTL_HOURS = 12
 
 
 class StorageError(ValueError):
@@ -98,6 +99,7 @@ def init_db(db_path: str | Path | None = None) -> None:
                 user_id text not null,
                 token_hash text not null unique,
                 created_at text not null,
+                expires_at text,
                 revoked_at text,
                 foreign key (user_id) references users(id)
             );
@@ -128,11 +130,19 @@ def init_db(db_path: str | Path | None = None) -> None:
             """
         )
         _ensure_column(connection, "organizations", "normalized_name", "text")
+        _ensure_column(connection, "sessions", "expires_at", "text")
         connection.execute(
             """
             update organizations
             set normalized_name = lower(trim(name))
             where normalized_name is null
+            """,
+        )
+        connection.execute(
+            """
+            update sessions
+            set expires_at = datetime(created_at, '+12 hours')
+            where expires_at is null
             """,
         )
 
@@ -146,6 +156,7 @@ def register_user_with_organization(
     db_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Create or join an organization, then create a user and session."""
+    _secret_key()
     if len(password) < 8:
         raise AuthError("Password must contain at least 8 characters.")
     init_db(db_path)
@@ -186,6 +197,7 @@ def login_user(
     db_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Authenticate a user and create a session token."""
+    _secret_key()
     init_db(db_path)
     with _connect(db_path or default_db_path()) as connection:
         row = connection.execute(
@@ -223,8 +235,9 @@ def get_user_by_token(
             join organizations on organizations.id = users.organization_id
             where sessions.token_hash = ?
               and sessions.revoked_at is null
+              and sessions.expires_at > ?
             """,
-            (token_hash,),
+            (token_hash, _now()),
         ).fetchone()
     if row is None:
         raise AuthError("Invalid or expired session.")
@@ -714,16 +727,23 @@ def _auth_payload(
         "user_id": user["id"],
         "token_hash": _hash_token(token),
         "created_at": _now(),
+        "expires_at": _session_expires_at(),
     }
     with _connect(db_path or default_db_path()) as connection:
         connection.execute(
             """
-            insert into sessions (id, user_id, token_hash, created_at)
-            values (:id, :user_id, :token_hash, :created_at)
+            insert into sessions (id, user_id, token_hash, created_at, expires_at)
+            values (:id, :user_id, :token_hash, :created_at, :expires_at)
             """,
             session,
         )
-    return {"access_token": token, "token_type": "bearer", "user": user, "organization": organization}
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "expires_at": session["expires_at"],
+        "user": user,
+        "organization": organization,
+    }
 
 
 def _report_branding_payload(
@@ -788,7 +808,25 @@ def _verify_password(password: str, stored_hash: str) -> bool:
 
 
 def _hash_token(token: str) -> str:
-    return hashlib.sha256(token.encode()).hexdigest()
+    secret_key = _secret_key()
+    return hmac.new(secret_key.encode(), token.encode(), hashlib.sha256).hexdigest()
+
+
+def _secret_key() -> str:
+    secret_key = os.environ.get("THERMAL_SAAS_SECRET_KEY")
+    if secret_key:
+        return secret_key
+    if os.environ.get("THERMAL_SAAS_ENV") == "production":
+        raise AuthError("THERMAL_SAAS_SECRET_KEY is required in production.")
+    return "thermal-saas-dev-secret-change-me"
+
+
+def _session_expires_at() -> str:
+    try:
+        ttl_hours = int(os.environ.get("THERMAL_SAAS_SESSION_TTL_HOURS", DEFAULT_SESSION_TTL_HOURS))
+    except ValueError:
+        ttl_hours = DEFAULT_SESSION_TTL_HOURS
+    return (datetime.now(timezone.utc) + timedelta(hours=ttl_hours)).isoformat()
 
 
 def _normalize_organization_name(name: str) -> str:

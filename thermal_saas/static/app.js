@@ -5,7 +5,7 @@ const state = {
   organization: null,
   project: null,
   rooms: [],
-  token: localStorage.getItem("thermal_saas_token") || "",
+  token: "",
   user: null,
   authStep: "organization",
   selectedOrganization: null,
@@ -97,6 +97,7 @@ async function api(path, options = {}) {
   if (state.token) headers.Authorization = `Bearer ${state.token}`;
   const response = await fetch(path, {
     headers,
+    credentials: "same-origin",
     ...options,
   });
   if (!response.ok) {
@@ -375,7 +376,6 @@ async function refreshSession() {
   } catch {
     state.token = "";
     state.user = null;
-    localStorage.removeItem("thermal_saas_token");
     els.logout.disabled = true;
     setStatus(els.authStatus, "Non connecté");
   }
@@ -786,7 +786,6 @@ async function logout() {
   state.brandingLogoUrl = "";
   state.pendingBranding = null;
   state.brandingEditorOpen = false;
-  localStorage.removeItem("thermal_saas_token");
   els.logout.disabled = true;
   els.createProject.disabled = true;
   els.saveAnswers.disabled = true;
@@ -809,7 +808,6 @@ function setSession(payload) {
     exists: true,
   };
   state.authStep = "credentials";
-  localStorage.setItem("thermal_saas_token", state.token);
   els.logout.disabled = false;
   setStatus(els.authStatus, `Connecté : ${state.user.email}`);
   updateUiState();
@@ -1045,8 +1043,10 @@ async function openReport(simulationRunId) {
     throw new Error("Le navigateur a bloqué l'ouverture du rapport.");
   }
   reportWindow.document.write("<p>Chargement du rapport...</p>");
+  const headers = state.token ? {Authorization: `Bearer ${state.token}`} : {};
   const response = await fetch(`/simulation-runs/${simulationRunId}/report-html`, {
-    headers: {Authorization: `Bearer ${state.token}`},
+    headers,
+    credentials: "same-origin",
   });
   if (!response.ok) {
     reportWindow.close();
@@ -1059,8 +1059,10 @@ async function openReport(simulationRunId) {
 }
 
 async function downloadReportPdf(simulationRunId) {
+  const headers = state.token ? {Authorization: `Bearer ${state.token}`} : {};
   const response = await fetch(`/simulation-runs/${simulationRunId}/report-pdf`, {
-    headers: {Authorization: `Bearer ${state.token}`},
+    headers,
+    credentials: "same-origin",
   });
   if (!response.ok) {
     throw new Error("PDF inaccessible.");
@@ -1069,11 +1071,21 @@ async function downloadReportPdf(simulationRunId) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `rapport-${simulationRunId}.pdf`;
+  link.download = reportPdfFilename(response) || `rapport-${simulationRunId}.pdf`;
   document.body.appendChild(link);
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+function reportPdfFilename(response) {
+  const disposition = response.headers.get("Content-Disposition") || "";
+  const encodedMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (encodedMatch) return decodeURIComponent(encodedMatch[1]);
+  const quotedMatch = disposition.match(/filename="([^"]+)"/i);
+  if (quotedMatch) return quotedMatch[1];
+  const plainMatch = disposition.match(/filename=([^;]+)/i);
+  return plainMatch ? plainMatch[1].trim() : "";
 }
 
 async function renderLatestSummary() {
