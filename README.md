@@ -150,6 +150,25 @@ export THERMAL_SAAS_CORS_ORIGINS="https://beta.example.com"
 export THERMAL_SAAS_ALLOWED_HOSTS="beta.example.com"
 ```
 
+## Migrations DB
+
+Le schema SaaS est versionne avec Alembic. Au demarrage, `init_db()` execute
+`alembic upgrade head` sur la base configuree par `THERMAL_SAAS_DB_PATH`.
+Alembic maintient la version courante dans `alembic_version`.
+
+Regles de modification :
+
+- ajouter une revision dans `migrations/versions/` ;
+- renseigner `revision` et `down_revision` ;
+- garder les migrations idempotentes autant que possible pour supporter les bases
+  SQLite deja creees avant Alembic (`create table if not exists`, verification de
+  colonnes avant `alter table`, `create index if not exists`) ;
+- ajouter un test de migration legacy dans `tests/test_saas_storage.py` si la
+  migration modifie une table existante.
+
+Les migrations actuelles couvrent le schema initial, la normalisation des noms
+d'organisation, le branding organisation et l'expiration des sessions.
+
 Validation des entrees :
 
 ```bash

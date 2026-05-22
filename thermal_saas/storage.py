@@ -13,6 +13,9 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from alembic import command
+from alembic.config import Config
+
 from .business_flow import run_profile_experience
 from .business_profiles import load_business_profile
 
@@ -35,116 +38,12 @@ def default_db_path() -> Path:
 
 
 def init_db(db_path: str | Path | None = None) -> None:
-    """Create the SQLite schema if needed."""
+    """Create or migrate the SQLite schema."""
     path = Path(db_path or default_db_path())
     path.parent.mkdir(parents=True, exist_ok=True)
-    with _connect(path) as connection:
-        connection.executescript(
-            """
-            create table if not exists organizations (
-                id text primary key,
-                name text not null,
-                normalized_name text unique,
-                business_profile_id text not null,
-                created_at text not null
-            );
-
-            create table if not exists projects (
-                id text primary key,
-                organization_id text not null,
-                name text not null,
-                customer_name text,
-                created_at text not null,
-                foreign key (organization_id) references organizations(id)
-            );
-
-            create table if not exists project_answers (
-                id text primary key,
-                project_id text not null,
-                version integer not null,
-                business_profile_id text not null,
-                answers_json text not null,
-                created_at text not null,
-                foreign key (project_id) references projects(id)
-            );
-
-            create table if not exists simulation_runs (
-                id text primary key,
-                project_id text not null,
-                answers_id text not null,
-                business_profile_id text not null,
-                adaptation_id text not null,
-                season text not null,
-                role text not null,
-                status text not null,
-                result_json text not null,
-                report_html text not null,
-                created_at text not null,
-                foreign key (project_id) references projects(id),
-                foreign key (answers_id) references project_answers(id)
-            );
-
-            create table if not exists users (
-                id text primary key,
-                organization_id text not null,
-                email text not null unique,
-                name text not null,
-                password_hash text not null,
-                created_at text not null,
-                foreign key (organization_id) references organizations(id)
-            );
-
-            create table if not exists sessions (
-                id text primary key,
-                user_id text not null,
-                token_hash text not null unique,
-                created_at text not null,
-                expires_at text,
-                revoked_at text,
-                foreign key (user_id) references users(id)
-            );
-
-            create table if not exists organization_branding (
-                id text primary key,
-                organization_id text not null unique,
-                logo_url text,
-                primary_color text,
-                phone text,
-                email_contact text,
-                website text,
-                legal_mention text,
-                created_at text not null,
-                updated_at text not null,
-                foreign key (organization_id) references organizations(id) on delete cascade
-            );
-
-            create trigger if not exists organization_branding_updated_at
-            after update on organization_branding
-            for each row
-            when new.updated_at = old.updated_at
-            begin
-                update organization_branding
-                set updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-                where id = old.id;
-            end;
-            """
-        )
-        _ensure_column(connection, "organizations", "normalized_name", "text")
-        _ensure_column(connection, "sessions", "expires_at", "text")
-        connection.execute(
-            """
-            update organizations
-            set normalized_name = lower(trim(name))
-            where normalized_name is null
-            """,
-        )
-        connection.execute(
-            """
-            update sessions
-            set expires_at = datetime(created_at, '+12 hours')
-            where expires_at is null
-            """,
-        )
+    config = Config(str(Path(__file__).resolve().parent.parent / "alembic.ini"))
+    config.attributes["db_path"] = str(path)
+    command.upgrade(config, "head")
 
 
 def register_user_with_organization(
@@ -666,22 +565,6 @@ def _connect(db_path: str | Path) -> sqlite3.Connection:
     connection.row_factory = sqlite3.Row
     connection.execute("pragma foreign_keys = on")
     return connection
-
-
-def _ensure_column(
-    connection: sqlite3.Connection,
-    table_name: str,
-    column_name: str,
-    column_definition: str,
-) -> None:
-    columns = {
-        row["name"]
-        for row in connection.execute(f"pragma table_info({table_name})").fetchall()
-    }
-    if column_name not in columns:
-        connection.execute(
-            f"alter table {table_name} add column {column_name} {column_definition}",
-        )
 
 
 def _answers_record_to_api(record: dict[str, Any]) -> dict[str, Any]:
