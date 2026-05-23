@@ -169,6 +169,126 @@ Regles de modification :
 Les migrations actuelles couvrent le schema initial, la normalisation des noms
 d'organisation, le branding organisation et l'expiration des sessions.
 
+## Deploiement beta fermee
+
+Le deploiement beta vise une instance unique, quelques utilisateurs internes ou
+clients pilotes, et une base persistante simple. Le code SaaS utilise encore
+`sqlite3` directement : la strategie retenue pour cette etape est donc
+**SQLite persistant temporaire**, pas PostgreSQL immediat.
+
+### Lancement Docker local
+
+```bash
+cp .env.example .env
+# Modifier THERMAL_SAAS_SECRET_KEY, CORS, allowed hosts et domaine.
+docker compose up --build
+```
+
+Application :
+
+```text
+http://127.0.0.1:8000/app
+```
+
+Healthcheck :
+
+```text
+http://127.0.0.1:8000/health
+```
+
+Validation locale du conteneur :
+
+```bash
+docker compose ps
+curl http://127.0.0.1:8000/health
+docker compose exec thermal-saas python - <<'PY'
+import sqlite3
+con = sqlite3.connect("/app/storage/thermal_saas.sqlite")
+print(con.execute("select version_num from alembic_version").fetchone()[0])
+PY
+```
+
+`/health` verifie aussi que la base est migrable avec Alembic. Si le volume
+SQLite est inaccessible ou si une migration echoue, le healthcheck doit passer
+en erreur.
+
+### Variables d'environnement beta
+
+Valeurs minimales a renseigner :
+
+```bash
+THERMAL_SAAS_ENV=production
+THERMAL_SAAS_SECRET_KEY=<secret long aleatoire>
+THERMAL_SAAS_DB_PATH=/app/storage/thermal_saas.sqlite
+THERMAL_SAAS_CORS_ORIGINS=https://thermal-beta.example.com
+THERMAL_SAAS_ALLOWED_HOSTS=thermal-beta.example.com
+THERMAL_PDF_BROWSER_PATH=/usr/bin/chromium
+```
+
+Le Dockerfile installe Chromium pour l'export PDF serveur et expose `/health`.
+Le volume Docker `thermal_saas_data` persiste `/app/storage`, donc la base
+SQLite survit aux redemarrages et redeploiements du conteneur.
+
+### Choix hebergement
+
+Option recommandee pour la beta fermee : **Render Web Service Docker + Persistent
+Disk**.
+
+Raisons :
+
+- Dockerfile supporte nativement ;
+- persistent disk disponible pour garder `/app/storage` ;
+- healthcheck HTTP configurable sur `/health` ;
+- domaine de test et TLS geres rapidement ;
+- complexite operationnelle plus faible qu'un VPS.
+
+Alternatives :
+
+- **Fly.io + Volume** : bon choix technique Docker/volumes, surtout si on veut
+  garder la main sur la region et migrer ensuite vers Postgres. Un peu plus
+  d'ops que Render.
+- **Railway + Volume** : rapide pour prototypes, volumes et bases managees
+  disponibles, mais a valider avec un vrai test de persistance avant beta.
+- **VPS Docker Compose** : controle maximum, mais il faut gerer TLS, backups,
+  firewall, updates systeme et monitoring soi-meme.
+
+### SQLite ou PostgreSQL
+
+Decision beta : **SQLite persistant temporaire**.
+
+Pourquoi :
+
+- le storage applicatif utilise encore `sqlite3` ;
+- Alembic est maintenant en place, ce qui prepare la suite ;
+- pour une beta fermee mono-instance, SQLite avec volume persistant suffit si on
+  ajoute un backup regulier du fichier `/app/storage/thermal_saas.sqlite`.
+
+Limites assumeees :
+
+- pas de scaling horizontal ;
+- ecritures concurrentes limitees ;
+- backups a mettre en place explicitement ;
+- migration PostgreSQL necessite de remplacer la couche `sqlite3` par SQLAlchemy
+  ou un repository compatible PostgreSQL.
+
+### Domaine de test
+
+Proposition :
+
+```text
+thermal-beta.<domaine-principal>
+```
+
+Exemple de configuration :
+
+```bash
+THERMAL_SAAS_CORS_ORIGINS=https://thermal-beta.example.com
+THERMAL_SAAS_ALLOWED_HOSTS=thermal-beta.example.com
+```
+
+Sur Render, pointer le sous-domaine vers le service via la configuration DNS
+fournie, puis laisser Render provisionner le TLS.
+
 Validation des entrees :
 
 ```bash

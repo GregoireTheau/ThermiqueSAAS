@@ -49,6 +49,17 @@ def test_frontend_app_is_served(tmp_path, monkeypatch):
     assert response.headers["x-frame-options"] == "DENY"
 
 
+def test_health_endpoint(tmp_path, monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
+    client = TestClient(app)
+
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
+    assert response.json()["service"] == "thermal-saas"
+
+
 def test_profile_experience_api_accepts_window_profile(tmp_path, monkeypatch):
     monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
     client = TestClient(app)

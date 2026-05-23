@@ -30,6 +30,7 @@ from .storage import (
     get_simulation_report_html,
     get_simulation_run,
     get_user_by_token,
+    init_db,
     list_organizations as load_organizations,
     list_projects as load_projects,
     list_project_simulation_runs,
@@ -170,6 +171,19 @@ def redirect_to_app() -> RedirectResponse:
 @app.get("/app")
 def get_app() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/health")
+def health_endpoint() -> dict[str, Any]:
+    try:
+        init_db()
+    except Exception as exc:  # pragma: no cover - defensive deployment signal
+        raise HTTPException(status_code=503, detail="Database unavailable.") from exc
+    return {
+        "status": "ok",
+        "service": "thermal-saas",
+        "version": app.version,
+    }
 
 
 def current_user(

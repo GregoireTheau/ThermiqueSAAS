@@ -19,6 +19,7 @@ outputs/
 .cache/
 data/weather/openmeteo/
 *.log
+.env
 
 # OS / editor
 .DS_Store
