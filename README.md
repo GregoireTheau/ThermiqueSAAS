@@ -152,8 +152,10 @@ export THERMAL_SAAS_ALLOWED_HOSTS="beta.example.com"
 
 ## Migrations DB
 
-Le schema SaaS est versionne avec Alembic. Au demarrage, `init_db()` execute
-`alembic upgrade head` sur la base configuree par `THERMAL_SAAS_DB_PATH`.
+Le schema SaaS est versionne avec Alembic. Au startup FastAPI et sur `/health`,
+`init_db()` execute `alembic upgrade head` sur la base configuree par
+`THERMAL_SAAS_DB_PATH`. Sur un disque Render neuf et vide, le fichier SQLite est
+donc cree et migre automatiquement avant que le service soit considere healthy.
 Alembic maintient la version courante dans `alembic_version`.
 
 Regles de modification :
@@ -220,8 +222,8 @@ Valeurs minimales a renseigner :
 THERMAL_SAAS_ENV=production
 THERMAL_SAAS_SECRET_KEY=<secret long aleatoire>
 THERMAL_SAAS_DB_PATH=/app/storage/thermal_saas.sqlite
-THERMAL_SAAS_CORS_ORIGINS=https://thermal-beta.example.com
-THERMAL_SAAS_ALLOWED_HOSTS=thermal-beta.example.com
+THERMAL_SAAS_CORS_ORIGINS=https://thermal-saas-beta.onrender.com,https://thermal-beta.example.com
+THERMAL_SAAS_ALLOWED_HOSTS=thermal-saas-beta.onrender.com,thermal-beta.example.com
 THERMAL_PDF_BROWSER_PATH=/usr/bin/chromium
 ```
 
@@ -251,6 +253,74 @@ Alternatives :
   disponibles, mais a valider avec un vrai test de persistance avant beta.
 - **VPS Docker Compose** : controle maximum, mais il faut gerer TLS, backups,
   firewall, updates systeme et monitoring soi-meme.
+
+### Deploiement Render
+
+Le fichier `render.yaml` decrit le service beta Docker :
+
+- service web Docker `thermal-saas-beta` ;
+- region `frankfurt` ;
+- healthcheck HTTP `/health` ;
+- disque persistant `thermal-saas-storage` monte sur `/app/storage` ;
+- base SQLite `/app/storage/thermal_saas.sqlite` ;
+- Chromium `/usr/bin/chromium` pour l'export PDF.
+
+Variables a renseigner dans Render au premier deploiement :
+
+- `THERMAL_SAAS_SECRET_KEY` : secret long aleatoire, obligatoire ;
+- `THERMAL_SAAS_CORS_ORIGINS` : domaine beta public, par exemple
+  `https://thermal-saas-beta.onrender.com,https://thermal-beta.example.com` ;
+- `THERMAL_SAAS_ALLOWED_HOSTS` : host beta public, par exemple
+  `thermal-saas-beta.onrender.com,thermal-beta.example.com`.
+
+L'application ajoute automatiquement `RENDER_EXTERNAL_HOSTNAME` aux hosts
+autorises et `RENDER_EXTERNAL_URL` aux origines CORS. Cela permet de valider
+l'URL `*.onrender.com` avant de brancher le domaine beta.
+
+### Backups SQLite beta
+
+Le disque Render reste le stockage primaire de la beta, mais il ne doit pas etre
+le seul endroit ou les donnees existent. L'API expose donc une route admin :
+
+```bash
+curl -X POST https://thermal-saas-beta.onrender.com/admin/backups \
+  -H "X-Thermal-Admin-Token: $THERMAL_SAAS_ADMIN_TOKEN"
+```
+
+La route execute `init_db()`, cree un snapshot SQLite coherent via l'API backup
+SQLite, compresse le fichier en gzip, puis l'envoie vers un stockage objet
+S3-compatible en path-style. Elle ne fonctionne que si toutes ces variables sont
+configurees :
+
+```bash
+THERMAL_SAAS_ADMIN_TOKEN=<secret long aleatoire>
+THERMAL_BACKUP_S3_ENDPOINT=https://s3.example.com
+THERMAL_BACKUP_S3_REGION=fr-par
+THERMAL_BACKUP_S3_BUCKET=thermal-saas-backups
+THERMAL_BACKUP_S3_PREFIX=thermal-saas/sqlite
+THERMAL_BACKUP_S3_ACCESS_KEY_ID=<access key>
+THERMAL_BACKUP_S3_SECRET_ACCESS_KEY=<secret key>
+```
+
+Pour la beta, planifier un appel quotidien de cette route depuis un scheduler
+externe suffit. Le resultat contient le bucket, la cle objet et la taille du
+backup. Verifier aussi dans Render si des snapshots automatiques de Persistent
+Disk sont disponibles sur le plan choisi, mais ne pas en faire le seul backup.
+
+Validation post-deploiement :
+
+```bash
+python3 scripts/smoke_beta.py \
+  --base-url https://thermal-saas-beta.onrender.com \
+  --admin-token "$THERMAL_SAAS_ADMIN_TOKEN"
+```
+
+Le script teste `/health`, `/app`, inscription, cookie/session, lookup
+organisation, creation projet, sauvegarde questionnaire, simulation, rapport
+HTML, export PDF et, si `--admin-token` est fourni, backup objet. Pour verifier
+la persistance apres redemarrage Render, relancer le script avec les memes
+`--email`, `--password` et `--organization` : le lookup organisation doit
+toujours repondre `exists=true`.
 
 ### SQLite ou PostgreSQL
 

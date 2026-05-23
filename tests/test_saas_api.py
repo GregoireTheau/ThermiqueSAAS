@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
-from thermal_saas.api import AUTH_RATE_LIMITS, app
+from thermal_saas.backup import BackupResult
+from thermal_saas.api import AUTH_RATE_LIMITS, _allowed_hosts, _cors_origins, app
 
 
 def _register(client, profile_id="window_seller"):
@@ -58,6 +59,91 @@ def test_health_endpoint(tmp_path, monkeypatch):
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
     assert response.json()["service"] == "thermal-saas"
+
+
+def test_startup_initializes_empty_database(tmp_path, monkeypatch):
+    db_path = tmp_path / "thermal_saas.sqlite"
+    monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(db_path))
+
+    with TestClient(app) as client:
+        response = client.get("/health")
+
+    assert response.status_code == 200
+    assert db_path.exists()
+
+
+def test_render_external_hostname_is_allowed(monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_ALLOWED_HOSTS", "thermal-beta.example.com")
+    monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", "thermal-saas-beta.onrender.com")
+
+    assert _allowed_hosts() == [
+        "thermal-beta.example.com",
+        "thermal-saas-beta.onrender.com",
+    ]
+
+
+def test_render_external_url_is_allowed_for_cors(monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_CORS_ORIGINS", "https://thermal-beta.example.com")
+    monkeypatch.setenv("RENDER_EXTERNAL_URL", "https://thermal-saas-beta.onrender.com/")
+
+    assert _cors_origins() == [
+        "https://thermal-beta.example.com",
+        "https://thermal-saas-beta.onrender.com",
+    ]
+
+
+def test_admin_backup_requires_configured_token(tmp_path, monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
+    monkeypatch.delenv("THERMAL_SAAS_ADMIN_TOKEN", raising=False)
+    client = TestClient(app)
+
+    response = client.post(
+        "/admin/backups",
+        headers={"X-Thermal-Admin-Token": "token"},
+    )
+
+    assert response.status_code == 503
+
+
+def test_admin_backup_rejects_invalid_token(tmp_path, monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
+    monkeypatch.setenv("THERMAL_SAAS_ADMIN_TOKEN", "expected-token")
+    client = TestClient(app)
+
+    response = client.post(
+        "/admin/backups",
+        headers={"X-Thermal-Admin-Token": "wrong-token"},
+    )
+
+    assert response.status_code == 403
+
+
+def test_admin_backup_uploads_sqlite_backup(tmp_path, monkeypatch):
+    db_path = tmp_path / "thermal_saas.sqlite"
+    monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(db_path))
+    monkeypatch.setenv("THERMAL_SAAS_ADMIN_TOKEN", "expected-token")
+
+    def fake_backup(path):
+        assert path == db_path
+        return BackupResult(
+            bucket="beta-backups",
+            key="thermal-saas/sqlite/thermal_saas-test.sqlite.gz",
+            size_bytes=123,
+            database_path=str(path),
+            created_at="20260523T120000Z",
+        )
+
+    monkeypatch.setattr("thermal_saas.api.backup_sqlite_to_object_storage", fake_backup)
+    client = TestClient(app)
+
+    response = client.post(
+        "/admin/backups",
+        headers={"X-Thermal-Admin-Token": "expected-token"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["backup"]["bucket"] == "beta-backups"
+    assert response.json()["backup"]["key"].endswith(".sqlite.gz")
 
 
 def test_profile_experience_api_accepts_window_profile(tmp_path, monkeypatch):

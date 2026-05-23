@@ -1,0 +1,49 @@
+services:
+  - type: web
+    name: thermal-saas-beta
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    maxShutdownDelaySeconds: 30
+    disk:
+      name: thermal-saas-storage
+      mountPath: /app/storage
+      sizeGB: 1
+    envVars:
+      - key: THERMAL_SAAS_ENV
+        value: production
+      - key: THERMAL_SAAS_SECRET_KEY
+        sync: false
+      - key: THERMAL_SAAS_DB_PATH
+        value: /app/storage/thermal_saas.sqlite
+      - key: THERMAL_SAAS_SESSION_TTL_HOURS
+        value: "12"
+      - key: THERMAL_SAAS_CORS_ORIGINS
+        sync: false
+      - key: THERMAL_SAAS_ALLOWED_HOSTS
+        sync: false
+      - key: THERMAL_SAAS_ADMIN_TOKEN
+        sync: false
+      - key: THERMAL_BACKUP_S3_ENDPOINT
+        sync: false
+      - key: THERMAL_BACKUP_S3_REGION
+        sync: false
+      - key: THERMAL_BACKUP_S3_BUCKET
+        sync: false
+      - key: THERMAL_BACKUP_S3_PREFIX
+        value: thermal-saas/sqlite
+      - key: THERMAL_BACKUP_S3_ACCESS_KEY_ID
+        sync: false
+      - key: THERMAL_BACKUP_S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: THERMAL_SAAS_MAX_REQUEST_BYTES
+        value: "1000000"
+      - key: THERMAL_SAAS_AUTH_RATE_LIMIT_ATTEMPTS
+        value: "10"
+      - key: THERMAL_SAAS_AUTH_RATE_LIMIT_WINDOW_SECONDS
+        value: "300"
+      - key: THERMAL_PDF_BROWSER_PATH
+        value: /usr/bin/chromium

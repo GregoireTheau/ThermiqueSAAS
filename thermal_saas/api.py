@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 from typing import Any
+from contextlib import asynccontextmanager
 from datetime import datetime
 import logging
 import os
 from pathlib import Path
 import re
+import secrets
 import time
 import unicodedata
 
+from .backup import BackupError, backup_sqlite_to_object_storage
 from .business_flow import BusinessFlowError, run_profile_experience
 from .business_profiles import (
     build_questionnaire,
@@ -31,6 +34,7 @@ from .storage import (
     get_simulation_run,
     get_user_by_token,
     init_db,
+    default_db_path,
     list_organizations as load_organizations,
     list_projects as load_projects,
     list_project_simulation_runs,
@@ -58,30 +62,49 @@ except ModuleNotFoundError as exc:  # pragma: no cover - depends on optional run
     ) from exc
 
 
-app = FastAPI(title="ThermalTwin SaaS API", version="0.1")
+def _csv_env(name: str, default: str = "") -> list[str]:
+    return [
+        value.strip()
+        for value in os.environ.get(name, default).split(",")
+        if value.strip()
+    ]
+
+
+def _allowed_hosts() -> list[str]:
+    hosts = _csv_env("THERMAL_SAAS_ALLOWED_HOSTS", "127.0.0.1,localhost,testserver")
+    render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
+    if render_hostname and render_hostname not in hosts:
+        hosts.append(render_hostname)
+    return hosts
+
+
+def _cors_origins() -> list[str]:
+    origins = _csv_env(
+        "THERMAL_SAAS_CORS_ORIGINS",
+        "http://127.0.0.1:8000,http://127.0.0.1:8010",
+    )
+    render_url = os.environ.get("RENDER_EXTERNAL_URL", "").strip().rstrip("/")
+    if render_url and render_url not in origins:
+        origins.append(render_url)
+    return origins
+
+
+@asynccontextmanager
+async def lifespan(app_instance: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title="ThermalTwin SaaS API", version="0.1", lifespan=lifespan)
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=[
-        host.strip()
-        for host in os.environ.get(
-            "THERMAL_SAAS_ALLOWED_HOSTS",
-            "127.0.0.1,localhost,testserver",
-        ).split(",")
-        if host.strip()
-    ],
+    allowed_hosts=_allowed_hosts(),
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        origin.strip()
-        for origin in os.environ.get(
-            "THERMAL_SAAS_CORS_ORIGINS",
-            "http://127.0.0.1:8000,http://127.0.0.1:8010",
-        ).split(",")
-        if origin.strip()
-    ],
+    allow_origins=_cors_origins(),
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT"],
     allow_headers=["Authorization", "Content-Type"],
@@ -186,6 +209,28 @@ def health_endpoint() -> dict[str, Any]:
     }
 
 
+@app.post("/admin/backups")
+def create_backup_endpoint(
+    admin_token: str | None = Header(default=None, alias="X-Thermal-Admin-Token"),
+) -> dict[str, Any]:
+    _require_admin_token(admin_token)
+    try:
+        init_db()
+        result = backup_sqlite_to_object_storage(default_db_path())
+    except BackupError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {
+        "status": "ok",
+        "backup": {
+            "bucket": result.bucket,
+            "key": result.key,
+            "size_bytes": result.size_bytes,
+            "database_path": result.database_path,
+            "created_at": result.created_at,
+        },
+    }
+
+
 def current_user(
     authorization: str | None = Header(default=None),
     session_cookie: str | None = Cookie(default=None, alias=AUTH_COOKIE_NAME),
@@ -197,6 +242,14 @@ def current_user(
         return get_user_by_token(token)
     except AuthError as exc:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
+
+
+def _require_admin_token(admin_token: str | None) -> None:
+    expected_token = os.environ.get("THERMAL_SAAS_ADMIN_TOKEN", "")
+    if not expected_token:
+        raise HTTPException(status_code=503, detail="Admin backup token is not configured.")
+    if not admin_token or not secrets.compare_digest(admin_token, expected_token):
+        raise HTTPException(status_code=403, detail="Invalid admin token.")
 
 
 def require_project_access(project_id: str, user: dict[str, Any]) -> None:
