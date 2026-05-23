@@ -36,6 +36,16 @@ class BusinessFlowError(ValueError):
     """Raised when business-flow answers are incomplete or invalid."""
 
 
+def _answer_bool(value: Any, default: bool = False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "oui", "on"}
+    return bool(value)
+
+
 def get_profile_questionnaire(profile_id: str) -> dict[str, Any]:
     """Return a profile questionnaire with catalog-backed options resolved."""
     catalog = load_reference_catalog()
@@ -178,19 +188,17 @@ def build_customer(
         "window_ref": answers.get("window_ref", "double_glazing_standard"),
         "shutter_ref": answers.get("shutter_ref", "roller_shutter_standard"),
         "shutter_usage": _shutter_usage(answers),
-        "heating_ref": answers.get("heating_ref", "electric_radiator"),
-        "has_cooling": bool(answers.get("has_cooling", False)),
+        "heating_ref": _initial_heating_ref(profile["id"], answers),
+        "has_cooling": _answer_bool(answers.get("has_cooling"), False),
         "setpoints": {"heating_c": heating_setpoint_c, "cooling_c": cooling_setpoint_c},
         "rooms": rooms,
         "thermal_layout": _thermal_layout(rooms, answers.get("thermal_layout")),
         "change": change,
         "change_details": _change_details(adaptation_id, answers),
         "target_scope": answers.get("target_scope", "all"),
-        "include_annual_experiment": bool(
-            answers.get(
-                "include_annual_experiment",
-                profile.get("include_annual_experiment", True),
-            ),
+        "include_annual_experiment": _answer_bool(
+            answers.get("include_annual_experiment"),
+            bool(profile.get("include_annual_experiment", True)),
         ),
         "annual_weather_year": int(answers.get("annual_weather_year", 2023)),
         "annual_weather_dir": answers.get("annual_weather_dir", "data/weather/openmeteo"),
@@ -285,6 +293,24 @@ def _change_details(adaptation_id: str, answers: dict[str, Any]) -> dict[str, An
             ),
         }
     return {}
+
+
+def _initial_heating_ref(profile_id: str, answers: dict[str, Any]) -> str:
+    if profile_id != "heat_pump_seller":
+        return answers.get("heating_ref", "electric_radiator")
+
+    _require_fields(answers, ["current_energy_id", "heat_emitters_id"])
+    current_energy_id = answers["current_energy_id"]
+    heat_emitters_id = answers["heat_emitters_id"]
+    if current_energy_id == "gas":
+        return "gas_boiler_standard"
+    if current_energy_id == "fuel_oil":
+        return "fuel_oil_boiler_standard"
+    if current_energy_id == "wood":
+        return "wood_stove_standard"
+    if current_energy_id == "electricity" and heat_emitters_id == "air_units":
+        return "air_air_heat_pump_standard"
+    return "electric_radiator"
 
 
 def _normalize_room(

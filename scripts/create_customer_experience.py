@@ -771,10 +771,15 @@ def build_dwelling(customer: dict[str, Any], catalog: dict[str, Any]) -> dict[st
     period = get_catalog_item(catalog, "envelope_defaults", customer["period_id"])
     ventilation = get_catalog_item(catalog, "ventilation", customer["ventilation_id"])
     ach_factor = customer["airtightness"]["ach_factor"]
+    ventilation_split = ventilation_components(
+        customer["ventilation_id"],
+        ventilation,
+        ach_factor,
+    )
     dwelling_id = slugify(customer["project_name"], "customer_dwelling")
 
     rooms = [
-        build_room(room, customer, catalog, period, ventilation, ach_factor)
+        build_room(room, customer, catalog, period, ventilation_split)
         for room in customer["rooms"]
     ]
     total_area_m2 = sum(room["floor_area_m2"] for room in rooms)
@@ -801,7 +806,10 @@ def build_dwelling(customer: dict[str, Any], catalog: dict[str, Any]) -> dict[st
             "equivalent_capacity_j_m2k": period["equivalent_capacity_j_m2k"],
             "thermal_bridge_factor": period["thermal_bridge_factor"],
             "internal_gain_w_m2": 4.0,
-            "ach_h": round(ventilation["default_ach_h"] * ach_factor, 2),
+            "ach_h": ventilation_split["legacy_ach_h"],
+            "infiltration_ach": ventilation_split["infiltration_ach"],
+            "mechanical_ach": ventilation_split["mechanical_ach"],
+            "recovery_efficiency": ventilation_split["recovery_efficiency"],
         },
         "rooms": rooms,
         "thermal_links": build_thermal_links(rooms, customer["thermal_layout"]),
@@ -822,7 +830,10 @@ def build_dwelling(customer: dict[str, Any], catalog: dict[str, Any]) -> dict[st
             "ventilation": {
                 "ventilation_ref": customer["ventilation_id"],
                 "type": ventilation_type(customer["ventilation_id"]),
-                "default_ach_h": round(ventilation["default_ach_h"] * ach_factor, 2),
+                "default_ach_h": ventilation_split["legacy_ach_h"],
+                "infiltration_ach": ventilation_split["infiltration_ach"],
+                "mechanical_ach": ventilation_split["mechanical_ach"],
+                "recovery_efficiency": ventilation_split["recovery_efficiency"],
             },
         },
     }
@@ -846,8 +857,7 @@ def build_room(
     customer: dict[str, Any],
     catalog: dict[str, Any],
     period: dict[str, Any],
-    ventilation: dict[str, Any],
-    ach_factor: float,
+    ventilation_split: dict[str, float],
 ) -> dict[str, Any]:
     room_id = room_input["id"]
     area_m2 = room_input["floor_area_m2"]
@@ -867,7 +877,10 @@ def build_room(
         "internal_gain_w_m2": internal_gain_for_room(room_input["type"]),
         "ventilation": {
             "mode": "ach",
-            "ach_h": round(ventilation["default_ach_h"] * ach_factor, 2),
+            "ach_h": ventilation_split["legacy_ach_h"],
+            "infiltration_ach": ventilation_split["infiltration_ach"],
+            "mechanical_ach": ventilation_split["mechanical_ach"],
+            "recovery_efficiency": ventilation_split["recovery_efficiency"],
             "ventilation_ref": customer["ventilation_id"],
         },
         "surfaces": build_surfaces(room_input, windows, customer, period),
@@ -1022,6 +1035,27 @@ def rounded_u(period: dict[str, Any], surface_type: str, u_factor: float) -> flo
     return round(period["u_values"][surface_type] * u_factor, 3)
 
 
+def ventilation_components(
+    ventilation_id: str,
+    ventilation: dict[str, Any],
+    ach_factor: float,
+) -> dict[str, float]:
+    default_ach = ventilation["default_ach_h"]
+    base_infiltration_ach = 0.15 * ach_factor
+    if "natural" in ventilation_id:
+        infiltration_ach = default_ach * ach_factor
+        mechanical_ach = 0.0
+    else:
+        infiltration_ach = base_infiltration_ach
+        mechanical_ach = max(0.0, default_ach - 0.15)
+    return {
+        "legacy_ach_h": round(default_ach * ach_factor, 2),
+        "infiltration_ach": round(infiltration_ach, 2),
+        "mechanical_ach": round(mechanical_ach, 2),
+        "recovery_efficiency": ventilation.get("recovery_efficiency", 0.0),
+    }
+
+
 def orientation_key(azimuth_deg: float) -> str:
     if azimuth_deg < 45 or azimuth_deg >= 315:
         return "north"
@@ -1041,31 +1075,30 @@ def build_thermal_links(
 
     rooms_by_id = {room["id"]: room for room in rooms}
     if thermal_layout["type"] == "manual":
-        pairs = [
-            (connection["room_a"], connection["room_b"])
-            for connection in thermal_layout["connections"]
-        ]
+        connections = thermal_layout["connections"]
     elif thermal_layout["type"] == "corridor":
         hub = next(
             (room for room in rooms if room["type"] == "corridor"),
             next((room for room in rooms if room["type"] == "living"), rooms[0]),
         )
-        pairs = [
-            (hub["id"], room["id"])
+        connections = [
+            {"room_a": hub["id"], "room_b": room["id"]}
             for room in rooms
             if room["id"] != hub["id"]
         ]
     else:
         hub = next((room for room in rooms if room["type"] == "living"), rooms[0])
-        pairs = [
-            (hub["id"], room["id"])
+        connections = [
+            {"room_a": hub["id"], "room_b": room["id"]}
             for room in rooms
             if room["id"] != hub["id"]
         ]
 
     links = []
     seen_pairs = set()
-    for room_a_id, room_b_id in pairs:
+    for connection in connections:
+        room_a_id = connection["room_a"]
+        room_b_id = connection["room_b"]
         if room_a_id == room_b_id:
             continue
         pair_key = tuple(sorted((room_a_id, room_b_id)))
@@ -1073,7 +1106,8 @@ def build_thermal_links(
             continue
         seen_pairs.add(pair_key)
         room_b = rooms_by_id[room_b_id]
-        area_m2 = min(10.0, max(4.0, math.sqrt(room_b["floor_area_m2"]) * room_b["height_m"]))
+        default_area_m2 = min(10.0, max(4.0, math.sqrt(room_b["floor_area_m2"]) * room_b["height_m"]))
+        area_m2 = connection.get("area_m2", default_area_m2)
         links.append(
             {
                 "id": f"{room_a_id}_{room_b_id}_link",
@@ -1081,8 +1115,8 @@ def build_thermal_links(
                 "room_b": room_b_id,
                 "type": "internal_wall",
                 "area_m2": round(area_m2, 2),
-                "u_value_w_m2k": 1.8,
-                "opening_factor": 0.8,
+                "u_value_w_m2k": connection.get("u_value_w_m2k", 1.8),
+                "opening_factor": connection.get("opening_factor", 0.8),
             },
         )
     return links
@@ -1371,6 +1405,8 @@ def build_scenario(
                 shutter_usage,
             ),
         }
+        if season == "summer":
+            scenario["controls"]["natural_ventilation"] = build_summer_natural_ventilation_controls()
     if apply_change:
         retrofit = build_retrofit(dwelling, change["id"], room_ids, catalog)
         if retrofit:
@@ -1510,6 +1546,14 @@ def build_summer_shutter_controls(
             for hour in range(duration_days * 24)
             if 8 <= hour % 24 <= 19
         ],
+    }
+
+
+def build_summer_natural_ventilation_controls() -> dict[str, Any]:
+    return {
+        "default_ach": 0.0,
+        "smart_night_cooling": True,
+        "smart_ach": 4.0,
     }
 
 

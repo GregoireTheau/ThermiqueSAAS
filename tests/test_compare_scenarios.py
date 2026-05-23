@@ -22,7 +22,7 @@ def test_compare_heatwave_before_after_reflective_roof():
         air_heat_capacity_j_kgk=1005.0,
     )
 
-    assert round(comparison["deltas"]["electricity_kwh"], 2) == 0.95
+    assert round(comparison["deltas"]["electricity_kwh"], 2) == 0.98
     assert round(
         comparison["deltas"]["rooms"]["bedroom"]["delta_max_temperature_c"],
         1,

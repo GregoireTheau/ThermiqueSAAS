@@ -14,6 +14,14 @@ from utils import (
 from .dwelling_loader import get_rooms_by_id
 
 
+BOUNDARY_TEMPERATURE_REDUCTION_FACTORS = {
+    "exterior": 1.0,
+    "party": 0.5,
+    "unheated_space": 0.7,
+    "ground": 0.6,
+}
+
+
 def compute_room_static_losses(
     dwelling: dict[str, Any],
     room: dict[str, Any],
@@ -21,18 +29,18 @@ def compute_room_static_losses(
     outdoor_temperature_c: float,
     air_density_kg_m3: float,
     air_heat_capacity_j_kgk: float,
+    natural_ventilation_ach: float = 0.0,
 ) -> dict[str, float]:
     """Return static loss coefficients and losses for one room."""
     defaults = dwelling["defaults"]
     delta_t_k = indoor_temperature_c - outdoor_temperature_c
 
-    surface_ua_w_k = sum_ua(
-        (
-            surface["u_value_w_m2k"],
-            surface["area_m2"],
-        )
+    surface_ua_w_k = sum(
+        surface["u_value_w_m2k"]
+        * surface["area_m2"]
+        * BOUNDARY_TEMPERATURE_REDUCTION_FACTORS[surface["boundary"]]
         for surface in room["surfaces"]
-        if surface["boundary"] in {"exterior", "ground", "unheated_space", "party"}
+        if surface["boundary"] in BOUNDARY_TEMPERATURE_REDUCTION_FACTORS
     )
     window_ua_w_k = sum_ua(
         (
@@ -49,24 +57,69 @@ def compute_room_static_losses(
     )
 
     ventilation = room.get("ventilation", {})
-    ach_h = ventilation.get("ach_h", defaults["ach_h"])
-    airflow_m3_s = airflow_from_ach(ach_h, room["volume_m3"])
-    ventilation_h_w_k = ventilation_heat_transfer_coefficient(
-        airflow_m3_s,
+    building_ventilation = dwelling.get("systems", {}).get("ventilation", {})
+    legacy_ach_h = ventilation.get("ach_h", defaults["ach_h"])
+    infiltration_ach = ventilation.get(
+        "infiltration_ach",
+        building_ventilation.get(
+            "infiltration_ach",
+            defaults.get("infiltration_ach", 0.0),
+        ),
+    )
+    mechanical_ach = ventilation.get(
+        "mechanical_ach",
+        building_ventilation.get(
+            "mechanical_ach",
+            defaults.get("mechanical_ach", legacy_ach_h),
+        ),
+    )
+    recovery_efficiency = ventilation.get(
+        "recovery_efficiency",
+        building_ventilation.get(
+            "recovery_efficiency",
+            defaults.get("recovery_efficiency", 0.0),
+        ),
+    )
+    infiltration_h_w_k = ventilation_heat_transfer_coefficient(
+        airflow_from_ach(infiltration_ach, room["volume_m3"]),
         air_density_kg_m3,
         air_heat_capacity_j_kgk,
     )
+    mechanical_h_w_k = ventilation_heat_transfer_coefficient(
+        airflow_from_ach(mechanical_ach, room["volume_m3"]),
+        air_density_kg_m3,
+        air_heat_capacity_j_kgk,
+    ) * (1.0 - recovery_efficiency)
+    natural_ventilation_h_w_k = ventilation_heat_transfer_coefficient(
+        airflow_from_ach(natural_ventilation_ach, room["volume_m3"]),
+        air_density_kg_m3,
+        air_heat_capacity_j_kgk,
+    )
+    ventilation_h_w_k = (
+        infiltration_h_w_k
+        + mechanical_h_w_k
+        + natural_ventilation_h_w_k
+    )
 
     total_h_w_k = transmission_h_w_k + ventilation_h_w_k
+    infiltration_loss_w = infiltration_h_w_k * delta_t_k
+    mechanical_ventilation_loss_w = mechanical_h_w_k * delta_t_k
+    natural_ventilation_loss_w = natural_ventilation_h_w_k * delta_t_k
 
     return {
         "surface_ua_w_k": surface_ua_w_k,
         "window_ua_w_k": window_ua_w_k,
         "thermal_bridge_h_w_k": transmission_ua_w_k * bridge_factor,
         "transmission_h_w_k": transmission_h_w_k,
+        "infiltration_h_w_k": infiltration_h_w_k,
+        "mechanical_ventilation_h_w_k": mechanical_h_w_k,
+        "natural_ventilation_h_w_k": natural_ventilation_h_w_k,
         "ventilation_h_w_k": ventilation_h_w_k,
         "total_h_w_k": total_h_w_k,
         "transmission_loss_w": transmission_h_w_k * delta_t_k,
+        "infiltration_loss_w": infiltration_loss_w,
+        "mechanical_ventilation_loss_w": mechanical_ventilation_loss_w,
+        "natural_ventilation_loss_w": natural_ventilation_loss_w,
         "ventilation_loss_w": ventilation_h_w_k * delta_t_k,
         "total_loss_w": total_h_w_k * delta_t_k,
     }
@@ -100,9 +153,15 @@ def compute_dwelling_static_losses(
             "window_ua_w_k",
             "thermal_bridge_h_w_k",
             "transmission_h_w_k",
+            "infiltration_h_w_k",
+            "mechanical_ventilation_h_w_k",
+            "natural_ventilation_h_w_k",
             "ventilation_h_w_k",
             "total_h_w_k",
             "transmission_loss_w",
+            "infiltration_loss_w",
+            "mechanical_ventilation_loss_w",
+            "natural_ventilation_loss_w",
             "ventilation_loss_w",
             "total_loss_w",
         )

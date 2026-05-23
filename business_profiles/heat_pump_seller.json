@@ -85,6 +85,13 @@
               {"id": "double_flow_standard", "label": "VMC double flux"},
               {"id": "airtight_recent", "label": "Logement recent etanche"}
             ]
+          },
+          {
+            "id": "has_cooling",
+            "type": "boolean",
+            "label": "Le logement a-t-il deja une climatisation active ?",
+            "required": false,
+            "default": false
           }
         ]
       },

@@ -96,6 +96,9 @@ def write_results_csv(
         "envelope_power_w",
         "transmission_power_w",
         "ventilation_power_w",
+        "infiltration_power_w",
+        "mechanical_ventilation_power_w",
+        "natural_ventilation_power_w",
     ]
     with Path(output_path).open("w", encoding="utf-8", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=fieldnames)

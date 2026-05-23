@@ -1,9 +1,12 @@
 from thermal_saas.business_flow import (
+    build_customer,
     ensure_annual_weather,
     get_profile_questionnaire,
     run_profile_experience,
 )
-from thermal_saas.business_profiles import list_business_profiles
+from thermal_saas.business_profiles import list_business_profiles, load_business_profile
+from thermal_model import load_reference_catalog
+from scripts import create_customer_experience as customer_experience
 
 
 def _base_answers():
@@ -46,10 +49,19 @@ def test_all_business_profiles_are_listed():
     }
 
 
+def test_all_business_profiles_ask_ventilation_and_airtightness():
+    for profile in list_business_profiles():
+        question_ids = _question_ids(get_profile_questionnaire(profile["id"]))
+
+        assert "ventilation_id" in question_ids
+        assert "airtightness_id" in question_ids
+
+
 def test_solar_protection_profile_runs_only_summer_protection_experience():
     questionnaire = get_profile_questionnaire("solar_protection_seller")
     question_ids = _question_ids(questionnaire)
 
+    assert "has_cooling" in question_ids
     assert "shutter_ref" in question_ids
     assert "current_energy_id" not in question_ids
 
@@ -60,6 +72,71 @@ def test_solar_protection_profile_runs_only_summer_protection_experience():
     retrofit = result["simulation_runs"][0]["after_scenario"]["retrofit"]
     assert retrofit["shutter_overrides"]
     _assert_annual_run(result["simulation_runs"][-1])
+
+
+def test_has_cooling_answer_builds_cooling_system_only_when_enabled():
+    catalog = load_reference_catalog()
+    profile = load_business_profile("solar_protection_seller")
+
+    customer_without_cooling = build_customer(_base_answers() | {"has_cooling": "false"}, profile, catalog)
+    dwelling_without_cooling = customer_experience.build_dwelling(customer_without_cooling, catalog)
+    assert dwelling_without_cooling["systems"]["cooling"] == []
+
+    customer_with_cooling = build_customer(_base_answers() | {"has_cooling": "true"}, profile, catalog)
+    dwelling_with_cooling = customer_experience.build_dwelling(customer_with_cooling, catalog)
+    assert dwelling_with_cooling["systems"]["cooling"][0]["type"] == "air_conditioner"
+
+
+def test_heat_pump_profile_uses_existing_heating_before_retrofit():
+    catalog = load_reference_catalog()
+    profile = load_business_profile("heat_pump_seller")
+    answers = {
+        key: value
+        for key, value in _base_answers().items()
+        if key != "heating_ref"
+    } | {
+        "airtightness_id": "standard",
+        "ventilation_id": "simple_flow",
+        "current_energy_id": "electricity",
+        "heat_emitters_id": "electric_radiators",
+    }
+
+    customer = build_customer(answers, profile, catalog)
+    dwelling = customer_experience.build_dwelling(customer, catalog)
+    heating = dwelling["systems"]["heating"][0]
+
+    assert heating["system_ref"] == "electric_radiator"
+    assert heating["performance_ref"]["cop"] == 1.0
+
+    result = run_profile_experience("heat_pump_seller", answers)
+    retrofit = result["simulation_runs"][0]["after_scenario"]["retrofit"]["system_overrides"][0]
+
+    assert retrofit["system_ref"] == "air_air_heat_pump_standard"
+    assert retrofit["performance_ref"]["cop"] >= 2.5
+
+
+def test_heat_pump_profile_maps_existing_energy_to_initial_heating():
+    catalog = load_reference_catalog()
+    profile = load_business_profile("heat_pump_seller")
+    base_answers = {
+        key: value
+        for key, value in _base_answers().items()
+        if key != "heating_ref"
+    } | {
+        "airtightness_id": "standard",
+        "ventilation_id": "simple_flow",
+        "heat_emitters_id": "water_radiators",
+    }
+
+    expected_refs = {
+        "gas": "gas_boiler_standard",
+        "fuel_oil": "fuel_oil_boiler_standard",
+        "wood": "wood_stove_standard",
+    }
+    for energy_id, expected_ref in expected_refs.items():
+        customer = build_customer(base_answers | {"current_energy_id": energy_id}, profile, catalog)
+
+        assert customer["heating_ref"] == expected_ref
 
 
 def test_roof_insulation_profile_runs_roof_insulation_experiences():

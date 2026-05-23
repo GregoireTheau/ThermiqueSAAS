@@ -192,6 +192,74 @@ def test_customer_setpoints_and_shutter_usage_feed_summer_scenario():
         "hour": 8,
         "opening_ratio": 0.75,
     }
+    assert before["controls"]["natural_ventilation"] == {
+        "default_ach": 0.0,
+        "smart_night_cooling": True,
+        "smart_ach": 4.0,
+    }
+
+
+def test_manual_thermal_links_keep_one_parameterized_link_per_pair():
+    rooms = [
+        {"id": "living", "floor_area_m2": 24.0, "height_m": 2.5},
+        {"id": "bedroom", "floor_area_m2": 12.0, "height_m": 2.5},
+    ]
+    layout = {
+        "type": "manual",
+        "connections": [
+            {
+                "room_a": "living",
+                "room_b": "bedroom",
+                "area_m2": 6.5,
+                "u_value_w_m2k": 1.2,
+                "opening_factor": 0.4,
+            },
+            {
+                "room_a": "bedroom",
+                "room_b": "living",
+                "area_m2": 9.0,
+                "u_value_w_m2k": 2.0,
+                "opening_factor": 0.9,
+            },
+        ],
+    }
+
+    links = customer_experience.build_thermal_links(rooms, layout)
+
+    assert links == [
+        {
+            "id": "living_bedroom_link",
+            "room_a": "living",
+            "room_b": "bedroom",
+            "type": "internal_wall",
+            "area_m2": 6.5,
+            "u_value_w_m2k": 1.2,
+            "opening_factor": 0.4,
+        },
+    ]
+
+
+def test_manual_thermal_links_deduce_missing_u_and_opening_defaults():
+    rooms = [
+        {"id": "living", "floor_area_m2": 24.0, "height_m": 2.5},
+        {"id": "bedroom", "floor_area_m2": 12.0, "height_m": 2.5},
+    ]
+    layout = {
+        "type": "manual",
+        "connections": [
+            {
+                "room_a": "living",
+                "room_b": "bedroom",
+                "area_m2": 6.5,
+            },
+        ],
+    }
+
+    links = customer_experience.build_thermal_links(rooms, layout)
+
+    assert links[0]["area_m2"] == 6.5
+    assert links[0]["u_value_w_m2k"] == 1.8
+    assert links[0]["opening_factor"] == 0.8
 
 
 def test_middle_floor_apartment_does_not_need_room_roof_or_floor_questions():

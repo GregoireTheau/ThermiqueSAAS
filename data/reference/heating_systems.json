@@ -51,6 +51,24 @@
         "mode": "constant",
         "cop": 1.0
       }
+    },
+    {
+      "id": "fuel_oil_boiler_standard",
+      "name": "Chaudiere fioul standard",
+      "type": "boiler",
+      "performance_ref": {
+        "mode": "constant",
+        "cop": 0.85
+      }
+    },
+    {
+      "id": "wood_stove_standard",
+      "name": "Chauffage bois standard",
+      "type": "boiler",
+      "performance_ref": {
+        "mode": "constant",
+        "cop": 0.75
+      }
     }
   ]
 }

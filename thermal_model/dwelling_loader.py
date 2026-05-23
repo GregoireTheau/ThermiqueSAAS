@@ -147,6 +147,17 @@ def _validate_room_ventilation(ventilation: Mapping[str, Any], room_id: str) -> 
             f"room {room_id}.ventilation.mode must be 'ach'"
         )
     _validate_non_negative(ventilation["ach_h"], f"room {room_id}.ventilation.ach_h")
+    for key in ("infiltration_ach", "mechanical_ach"):
+        if key in ventilation:
+            _validate_non_negative(
+                ventilation[key],
+                f"room {room_id}.ventilation.{key}",
+            )
+    if "recovery_efficiency" in ventilation:
+        _validate_factor(
+            ventilation["recovery_efficiency"],
+            f"room {room_id}.ventilation.recovery_efficiency",
+        )
 
 
 def _validate_surface(surface: Mapping[str, Any], room_id: str) -> None:
@@ -206,6 +217,7 @@ def _validate_thermal_links(
     room_ids: set[str],
 ) -> None:
     link_ids: list[str] = []
+    link_pairs: list[str] = []
     for link in links:
         _require_keys(
             link,
@@ -233,6 +245,8 @@ def _validate_thermal_links(
             raise DwellingValidationError(
                 f"thermal link {link['id']} cannot link a room to itself"
             )
+        pair_key = "__".join(sorted((link["room_a"], link["room_b"])))
+        link_pairs.append(pair_key)
         _validate_positive(link["area_m2"], f"thermal link {link['id']}.area_m2")
         _validate_positive(
             link["u_value_w_m2k"],
@@ -244,6 +258,7 @@ def _validate_thermal_links(
         )
 
     _validate_unique(link_ids, "thermal link ids")
+    _validate_unique(link_pairs, "thermal link room pairs")
 
 
 def _validate_systems(systems: Mapping[str, Any], room_ids: set[str]) -> None:
@@ -277,6 +292,17 @@ def _validate_systems(systems: Mapping[str, Any], room_ids: set[str]) -> None:
         ventilation["default_ach_h"],
         "systems.ventilation.default_ach_h",
     )
+    for key in ("infiltration_ach", "mechanical_ach"):
+        if key in ventilation:
+            _validate_non_negative(
+                ventilation[key],
+                f"systems.ventilation.{key}",
+            )
+    if "recovery_efficiency" in ventilation:
+        _validate_factor(
+            ventilation["recovery_efficiency"],
+            "systems.ventilation.recovery_efficiency",
+        )
 
 
 def _validate_served_rooms(

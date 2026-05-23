@@ -5,6 +5,7 @@ from pathlib import Path
 from jsonschema import Draft202012Validator
 
 from thermal_model import (
+    DwellingValidationError,
     ScenarioValidationError,
     get_climate_zone_for_department,
     get_window_reference,
@@ -13,6 +14,7 @@ from thermal_model import (
     load_scenario,
     resolve_dwelling_references,
     validate_scenario,
+    validate_dwelling,
 )
 
 
@@ -186,3 +188,59 @@ def test_scenario_schema_accepts_weather_ref():
     errors = list(Draft202012Validator(schema).iter_errors(scenario))
 
     assert errors == []
+
+
+def test_scenario_schema_accepts_natural_ventilation_controls():
+    schema = json.loads(Path("schemas/scenario.schema.json").read_text())
+    scenario = deepcopy(load_scenario("data/examples/scenario_simple.json"))
+    scenario["controls"] = {
+        "natural_ventilation": {
+            "default_ach": 0.0,
+            "smart_night_cooling": True,
+            "smart_ach": 4.0,
+            "hourly": [
+                {"hour": 22, "ach": 3.0},
+            ],
+        },
+    }
+
+    errors = list(Draft202012Validator(schema).iter_errors(scenario))
+
+    assert errors == []
+
+
+def test_dwelling_schema_accepts_split_ventilation_fields():
+    schema = json.loads(Path("schemas/dwelling.schema.json").read_text())
+    dwelling = deepcopy(load_dwelling("data/examples/house_simple.json"))
+    dwelling["defaults"]["infiltration_ach"] = 0.15
+    dwelling["defaults"]["mechanical_ach"] = 0.35
+    dwelling["defaults"]["recovery_efficiency"] = 0.75
+    dwelling["systems"]["ventilation"]["infiltration_ach"] = 0.15
+    dwelling["systems"]["ventilation"]["mechanical_ach"] = 0.35
+    dwelling["systems"]["ventilation"]["recovery_efficiency"] = 0.75
+    dwelling["rooms"][0]["ventilation"]["infiltration_ach"] = 0.15
+    dwelling["rooms"][0]["ventilation"]["mechanical_ach"] = 0.35
+    dwelling["rooms"][0]["ventilation"]["recovery_efficiency"] = 0.75
+
+    errors = list(Draft202012Validator(schema).iter_errors(dwelling))
+
+    assert errors == []
+
+
+def test_validate_dwelling_rejects_duplicate_reversed_thermal_links():
+    dwelling = load_dwelling("data/examples/house_simple.json", validate=False)
+    dwelling["thermal_links"].append(
+        {
+            **dwelling["thermal_links"][0],
+            "id": "reversed_duplicate_link",
+            "room_a": dwelling["thermal_links"][0]["room_b"],
+            "room_b": dwelling["thermal_links"][0]["room_a"],
+        },
+    )
+
+    try:
+        validate_dwelling(dwelling)
+    except DwellingValidationError as exc:
+        assert "thermal link room pairs" in str(exc)
+    else:
+        raise AssertionError("validate_dwelling accepted duplicate reversed thermal links")

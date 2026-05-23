@@ -126,6 +126,78 @@ textarea {
   font-weight: 400;
 }
 
+input[type="hidden"] {
+  display: none;
+}
+
+.booleanQuestion {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.fieldLabel {
+  color: #2f3b47;
+  font-weight: 600;
+}
+
+.booleanPills {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.booleanPills label {
+  margin-top: 0;
+  display: block;
+  position: relative;
+  cursor: pointer;
+}
+
+.booleanPills input[type="radio"] {
+  position: absolute;
+  width: 1px;
+  min-height: 0;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  opacity: 0;
+}
+
+.booleanPills label span {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.booleanPills label:hover span {
+  border-color: var(--accent);
+}
+
+.booleanPills input[type="radio"]:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.booleanPills input[type="radio"]:checked + span {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
 textarea {
   resize: vertical;
 }
@@ -462,6 +534,67 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.connectionFields {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.connectionFields > label,
+.connectionPills {
+  grid-column: 1 / -1;
+}
+
+.connectionPills {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  color: #2f3b47;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.connectionPills > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.connectionPill {
+  width: auto;
+  min-height: 34px;
+  margin: 0;
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.connectionPill:hover {
+  border-color: var(--accent);
+}
+
+.connectionPill.selected {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.connectionParams {
+  display: contents;
+}
+
+.connectionParams h4 {
+  grid-column: 1 / -1;
+  margin: 8px 0 0;
+  font-size: 0.9rem;
 }
 
 .roomAdd {

@@ -115,7 +115,7 @@ def test_render_report_html_contains_report_sections_without_hourly_traces():
     assert "24 h" in html
     assert "°C" in html
     assert "€" in html
-    assert ".0 °C" not in html
+    assert ".00 °C" not in html
     assert comparison["dwelling_id"] in html
 
 

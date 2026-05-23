@@ -5,6 +5,7 @@ const state = {
   organization: null,
   project: null,
   rooms: [],
+  thermalLinks: [],
   token: "",
   user: null,
   authStep: "organization",
@@ -184,7 +185,7 @@ function updateUiState() {
   els.projectCreateFields.hidden = !state.projectDraftOpen;
   els.createProject.disabled = !state.organization || !state.projectDraftOpen;
   els.saveAnswers.disabled = !state.project;
-  els.runSimulation.disabled = !state.project || !state.answersSaved || state.simulationStatus === "loading" || hasCurrentReports();
+  els.runSimulation.disabled = !state.project || !state.answersSaved || state.simulationStatus === "loading";
   els.newProject.disabled = !state.organization;
   els.addRoomMenuButton.disabled = !state.project;
   if (!state.project) els.roomTypeMenu.hidden = true;
@@ -395,6 +396,7 @@ async function loadQuestionnaire() {
   state.latestAnswers = null;
   state.simulationRuns = [];
   state.latestReportId = null;
+  state.thermalLinks = [];
   state.simulationStatus = "idle";
   state.projectDraftOpen = false;
   els.createProject.disabled = true;
@@ -505,6 +507,22 @@ function renderQuestion(question) {
       .join("");
     return `<label>${question.label}<select name="${question.id}">${options}</select></label>`;
   }
+  if (question.type === "boolean") {
+    const selected = question.default ? "true" : "false";
+    return `<div class="booleanQuestion">
+      <span class="fieldLabel">${question.label}</span>
+      <div class="booleanPills">
+        <label>
+          <input id="${question.id}_false" name="${question.id}" type="radio" value="false" ${selected === "false" ? "checked" : ""}>
+          <span>Non</span>
+        </label>
+        <label>
+          <input id="${question.id}_true" name="${question.id}" type="radio" value="true" ${selected === "true" ? "checked" : ""}>
+          <span>Oui</span>
+        </label>
+      </div>
+    </div>`;
+  }
   const value = question.default ?? "";
   const inputType = question.type === "number" ? "number" : "text";
   return `<label>${question.label}<input name="${question.id}" type="${inputType}" value="${value}"></label>`;
@@ -563,7 +581,14 @@ function markUnsaved() {
 
 function setField(name, value) {
   const field = els.questionnaireForm.elements.namedItem(name);
-  if (field) field.value = value;
+  if (!field) return;
+  if (field.length && field[0]?.type === "radio") {
+    [...field].forEach((option) => {
+      option.checked = String(option.value) === String(value);
+    });
+    return;
+  }
+  field.value = value;
 }
 
 function getField(name, fallback = "") {
@@ -604,7 +629,7 @@ function roomPreset(kind) {
 }
 
 function roomFieldVisible(field) {
-  if (["name", "type", "floor_area_m2", "height_m"].includes(field)) return true;
+  if (["name", "type", "floor_area_m2", "height_m", "exterior_contact"].includes(field)) return true;
   if (state.profileId === "heat_pump_seller") return false;
   if (["roof_insulation_seller", "reflective_roof_seller"].includes(state.profileId)) {
     return ["has_roof", "orientation", "wall_length_m"].includes(field);
@@ -617,8 +642,9 @@ function renderRoomField(field, html) {
 }
 
 function renderRooms() {
-  els.rooms.innerHTML = state.rooms.map((room, index) => `
-    <div class="room" data-room-index="${index}">
+  const rooms = roomsWithIds(state.rooms);
+  els.rooms.innerHTML = rooms.map((room, index) => `
+    <div class="room" data-room-index="${index}" data-room-id="${room.id}">
       <div class="roomTitle">
         <h3>Pièce ${index + 1}</h3>
         <button class="removeRoom" type="button" data-remove-room="${index}">Retirer</button>
@@ -638,6 +664,14 @@ function renderRooms() {
       </label>`)}
       ${renderRoomField("floor_area_m2", `<label>Surface m²<input data-room-field="floor_area_m2" type="number" value="${room.floor_area_m2}"></label>`)}
       ${renderRoomField("height_m", `<label>Hauteur m<input data-room-field="height_m" type="number" value="${room.height_m}"></label>`)}
+      ${renderRoomField("exterior_contact", `<label>Type de frontière principale
+        <select data-room-field="exterior_contact">
+          ${option("exterior", "Façade(s) donnant sur l'extérieur", room.exterior_contact || "exterior")}
+          ${option("interior", "Pièce intérieure (pas de mur extérieur)", room.exterior_contact || "exterior")}
+          ${option("unheated_space", "Contre un local non chauffé (garage, cave, combles)", room.exterior_contact || "exterior")}
+          ${option("party", "Contre un voisin ou mur mitoyen", room.exterior_contact || "exterior")}
+        </select>
+      </label>`)}
       ${renderRoomField("orientation", `<label>Orientation
         <select data-room-field="orientation">
           ${["N", "E", "S", "W", "SE", "SW"].map((value) => option(value, value, room.orientation)).join("")}
@@ -659,6 +693,7 @@ function renderRooms() {
           ${option("false", "Non", String(room.has_roof))}
         </select>
       </label>`)}
+      ${renderConnections(room, rooms)}
     </div>
   `).join("");
 }
@@ -667,28 +702,171 @@ function option(value, label, selected) {
   return `<option value="${value}" ${value === selected ? "selected" : ""}>${label}</option>`;
 }
 
-function syncRoomsFromDom() {
-  state.rooms = [...document.querySelectorAll(".room")].map((roomElement) => {
+function roomsWithIds(rooms) {
+  const used = new Set();
+  return rooms.map((room, index) => {
+    let id = room.id || slugify(room.name || `piece-${index + 1}`) || `room_${index + 1}`;
+    if (used.has(id)) id = `${id}_${index + 1}`;
+    used.add(id);
+    return {...room, id};
+  });
+}
+
+function slugify(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function pairKey(roomA, roomB) {
+  return [roomA, roomB].sort().join("__");
+}
+
+function linkForPair(roomA, roomB) {
+  return state.thermalLinks.find((link) => pairKey(link.room_a, link.room_b) === pairKey(roomA, roomB));
+}
+
+function roomLabel(room, index) {
+  return room.name || `Pièce ${index + 1}`;
+}
+
+function renderConnections(room, rooms) {
+  if (rooms.length < 2) return "";
+  const connectedIds = rooms
+    .filter((other) => other.id !== room.id && linkForPair(room.id, other.id))
+    .map((other) => other.id);
+  const ownedLinks = state.thermalLinks
+    .filter((link) => link.room_a === room.id || link.room_b === room.id)
+    .filter((link) => rooms.some((candidate) => candidate.id === otherRoomId(link, room.id)))
+    .filter((link) => connectionOwnerRoomId(link, rooms) === room.id);
+  return `
+    <div class="connectionFields">
+      <div class="connectionPills" role="group" aria-label="Connexions avec les autres pièces">
+        <span>Connexions avec les autres pièces</span>
+        <div>
+          ${rooms
+            .filter((other) => other.id !== room.id)
+            .map((other, index) => renderConnectionPill(room, other, index, connectedIds.includes(other.id)))
+            .join("")}
+        </div>
+      </div>
+      ${ownedLinks.map((link) => renderConnectionParams(link, rooms, room.id)).join("")}
+    </div>
+  `;
+}
+
+function renderConnectionPill(room, other, index, isConnected) {
+  return `
+    <button
+      type="button"
+      class="connectionPill ${isConnected ? "selected" : ""}"
+      data-toggle-connection="true"
+      data-room-id="${room.id}"
+      data-other-room-id="${other.id}"
+      aria-pressed="${isConnected ? "true" : "false"}"
+    >
+      ${isConnected ? "✓ " : ""}${roomLabel(other, index)}
+    </button>
+  `;
+}
+
+function connectionOwnerRoomId(link, rooms) {
+  if (link.owner_room_id && rooms.some((room) => room.id === link.owner_room_id)) {
+    return link.owner_room_id;
+  }
+  const roomAIndex = rooms.findIndex((room) => room.id === link.room_a);
+  const roomBIndex = rooms.findIndex((room) => room.id === link.room_b);
+  return roomAIndex <= roomBIndex ? link.room_a : link.room_b;
+}
+
+function otherRoomId(link, roomId) {
+  return link.room_a === roomId ? link.room_b : link.room_a;
+}
+
+function renderConnectionParams(link, rooms, roomId) {
+  const otherId = otherRoomId(link, roomId);
+  const otherIndex = rooms.findIndex((room) => room.id === otherId);
+  const other = rooms[otherIndex];
+  const key = pairKey(link.room_a, link.room_b);
+  return `
+    <div class="connectionParams" data-link-key="${key}">
+      <h4>Lien avec ${roomLabel(other || {name: otherId}, otherIndex)}</h4>
+      <label>Surface commune m²<input data-link-field="area_m2" type="number" min="0.1" step="0.1" value="${link.area_m2 ?? 4}"></label>
+    </div>
+  `;
+}
+
+function syncRoomsFromDom(connectionChange = null) {
+  const existingLinks = new Map(state.thermalLinks.map((link) => [pairKey(link.room_a, link.room_b), link]));
+  document.querySelectorAll("[data-link-key]").forEach((linkElement) => {
+    const key = linkElement.dataset.linkKey;
+    const existing = existingLinks.get(key);
+    if (!existing) return;
+    existing.area_m2 = Number(linkElement.querySelector('[data-link-field="area_m2"]').value || existing.area_m2);
+  });
+  const roomElements = [...document.querySelectorAll(".room")];
+  const rooms = roomElements.map((roomElement, index) => {
     const value = (field, fallback) => {
       const fieldElement = roomElement.querySelector(`[data-room-field="${field}"]`);
       return fieldElement ? fieldElement.value : fallback;
     };
+    const exteriorContact = value("exterior_contact", "exterior");
     return {
+      id: roomElement.dataset.roomId || `room_${index + 1}`,
       name: value("name", "Pièce"),
       type: value("type", "living"),
       floor_area_m2: Number(value("floor_area_m2", 20)),
       height_m: Number(value("height_m", 2.5)),
       has_roof: value("has_roof", "true") === "true",
       has_ground_floor: true,
-      exterior_contact: "exterior",
-      facades: [{
+      exterior_contact: exteriorContact,
+      facades: exteriorContact === "exterior" ? [{
         orientation: value("orientation", "S"),
         window_area_m2: Number(value("window_area_m2", 0)),
         wall_length_m: Number(value("wall_length_m", 4)),
         mask_factor: Number(value("mask_factor", 1)),
-      }],
+      }] : [],
     };
   });
+  state.rooms = roomsWithIds(rooms);
+  const roomIds = new Set(state.rooms.map((room) => room.id));
+  if (!connectionChange) {
+    state.thermalLinks = [...existingLinks.values()]
+      .filter((link) => roomIds.has(link.room_a) && roomIds.has(link.room_b));
+    return;
+  }
+  const activeLinks = new Map();
+  roomElements.forEach((roomElement) => {
+    const roomId = roomElement.dataset.roomId;
+    if (connectionChange && roomId !== connectionChange.roomId) {
+      return;
+    }
+    const selectedIds = connectionChange && roomId === connectionChange.roomId
+      ? connectionChange.selectedIds
+      : [];
+    selectedIds.forEach((otherId) => {
+      if (!otherId || otherId === roomId) return;
+      const key = pairKey(roomId, otherId);
+      const existing = existingLinks.get(key) || {};
+      const [roomA, roomB] = [roomId, otherId].sort();
+      activeLinks.set(key, {
+        room_a: roomA,
+        room_b: roomB,
+        area_m2: Number(existing.area_m2 ?? 4),
+        owner_room_id: connectionChange?.roomId || existing.owner_room_id || roomA,
+      });
+    });
+  });
+  if (connectionChange) {
+    state.thermalLinks = state.thermalLinks
+      .filter((link) => link.room_a !== connectionChange.roomId && link.room_b !== connectionChange.roomId)
+      .concat([...activeLinks.values()]);
+  } else {
+    state.thermalLinks = [...activeLinks.values()];
+  }
 }
 
 function collectAnswers() {
@@ -697,6 +875,14 @@ function collectAnswers() {
   const answers = Object.fromEntries(formData.entries());
   answers.project_name = els.projectName.value;
   answers.rooms = state.rooms;
+  answers.thermal_layout = {
+    type: state.rooms.length < 2 ? "single_room" : "manual",
+    connections: state.thermalLinks.map((link) => ({
+      room_a: link.room_a,
+      room_b: link.room_b,
+      area_m2: link.area_m2,
+    })),
+  };
   for (const key of ["heating_setpoint_c", "cooling_setpoint_c"]) {
     if (answers[key] !== undefined && answers[key] !== "") answers[key] = Number(answers[key]);
   }
@@ -856,6 +1042,7 @@ async function createProject() {
     state.latestAnswers = null;
     state.simulationRuns = [];
     state.latestReportId = null;
+    state.thermalLinks = [];
     state.simulationStatus = "idle";
     state.projectDraftOpen = false;
     els.saveAnswers.disabled = false;
@@ -879,6 +1066,7 @@ function startNewProject() {
   state.latestAnswers = null;
   state.simulationRuns = [];
   state.latestReportId = null;
+  state.thermalLinks = [];
   state.simulationStatus = "idle";
   state.projectDraftOpen = true;
   state.rooms = [defaultRoom()];
@@ -926,24 +1114,37 @@ async function loadProject() {
 function applyAnswers(answers) {
   els.projectName.value = answers.project_name || state.project?.name || els.projectName.value;
   for (const [key, value] of Object.entries(answers)) {
-    if (key === "rooms") continue;
+    if (key === "rooms" || key === "thermal_layout") continue;
     setField(key, value);
   }
   syncPositionOptions();
   if (answers.rooms) {
-    state.rooms = answers.rooms.map((room) => ({
-      name: room.name,
-      type: room.type,
-      floor_area_m2: room.floor_area_m2,
-      height_m: room.height_m,
-      orientation: room.facades?.[0]?.orientation || "S",
-      window_area_m2: room.facades?.[0]?.window_area_m2 || 0,
-      wall_length_m: room.facades?.[0]?.wall_length_m || 4,
-      has_roof: Boolean(room.has_roof),
+    state.rooms = answers.rooms.map(roomFromAnswer);
+    state.thermalLinks = (answers.thermal_layout?.connections || []).map((connection) => ({
+      room_a: connection.room_a,
+      room_b: connection.room_b,
+      area_m2: Number(connection.area_m2 ?? 4),
     }));
     renderRooms();
   }
   updateUiState();
+}
+
+function roomFromAnswer(room) {
+  return {
+    id: room.id,
+    name: room.name,
+    type: room.type,
+    floor_area_m2: room.floor_area_m2,
+    height_m: room.height_m,
+    orientation: room.facades?.[0]?.orientation || "S",
+    window_area_m2: room.facades?.[0]?.window_area_m2 || 0,
+    wall_length_m: room.facades?.[0]?.wall_length_m || 4,
+    exterior_contact: room.exterior_contact || "exterior",
+    mask_factor: room.facades?.[0]?.mask_factor ?? 1,
+    has_roof: Boolean(room.has_roof),
+    has_ground_floor: room.has_ground_floor !== false,
+  };
 }
 
 async function saveAnswers() {
@@ -982,12 +1183,6 @@ async function saveAnswers() {
 
 async function runSimulation() {
   try {
-    if (hasCurrentReports()) {
-      state.simulationStatus = "success";
-      setStatus(els.answersStatus, "Simulation déjà faite pour ces réponses. Rapports disponibles.");
-      updateUiState();
-      return;
-    }
     state.simulationStatus = "loading";
     updateUiState();
     const batch = await api(`/projects/${state.project.id}/simulations`, {method: "POST"});
@@ -1210,7 +1405,7 @@ function renderSimulationState() {
   els.runSimulation.textContent = state.simulationStatus === "loading"
     ? "⏳ Simulation en cours…"
     : hasCurrentReports()
-      ? "Simulation déjà faite"
+      ? "Relancer simulation"
     : "Lancer simulation";
   if (state.simulationStatus === "loading") {
     els.simulationState.className = "stateBox";
@@ -1220,7 +1415,7 @@ function renderSimulationState() {
     const latestRun = reports[reports.length - 1] || state.simulationRuns[state.simulationRuns.length - 1];
     els.simulationState.className = "stateBox success";
     els.simulationState.textContent = hasCurrentReports()
-      ? `✓ Simulation déjà faite pour ces réponses — rapports disponibles`
+      ? `✓ Rapports disponibles pour ces réponses — relance possible`
       : `✓ Simulation terminée le ${formatDate(latestRun.created_at)} — voir la synthèse`;
   } else if (state.simulationStatus === "error") {
     els.simulationState.className = "stateBox error";
@@ -1254,17 +1449,13 @@ function applyDemo(demoId) {
     const answers = demoAnswers(demoId);
     state.pendingDemoAnswers = answers;
     for (const [key, value] of Object.entries(answers)) {
-      if (key !== "rooms") setField(key, value);
+      if (key !== "rooms" && key !== "thermal_layout") setField(key, value);
     }
-    state.rooms = answers.rooms.map((room) => ({
-      name: room.name,
-      type: room.type,
-      floor_area_m2: room.floor_area_m2,
-      height_m: room.height_m,
-      orientation: room.facades?.[0]?.orientation || "S",
-      window_area_m2: room.facades?.[0]?.window_area_m2 || 0,
-      wall_length_m: room.facades?.[0]?.wall_length_m || 4,
-      has_roof: Boolean(room.has_roof),
+    state.rooms = answers.rooms.map(roomFromAnswer);
+    state.thermalLinks = (answers.thermal_layout?.connections || []).map((connection) => ({
+      room_a: connection.room_a,
+      room_b: connection.room_b,
+      area_m2: Number(connection.area_m2 ?? 4),
     }));
     renderRooms();
     state.answersSaved = false;
@@ -1390,6 +1581,25 @@ els.questionnaireForm.addEventListener("change", (event) => {
   markUnsaved();
 });
 els.rooms.addEventListener("input", markUnsaved);
+els.rooms.addEventListener("change", (event) => {
+  markUnsaved();
+});
+els.rooms.addEventListener("click", (event) => {
+  const toggle = event.target.closest("[data-toggle-connection]");
+  if (!toggle) return;
+  const roomId = toggle.dataset.roomId;
+  const otherRoomId = toggle.dataset.otherRoomId;
+  const roomElement = toggle.closest(".room");
+  const selectedIds = [...roomElement.querySelectorAll("[data-toggle-connection][aria-pressed='true']")]
+    .map((button) => button.dataset.otherRoomId)
+    .filter((id) => id !== otherRoomId);
+  if (toggle.getAttribute("aria-pressed") !== "true") {
+    selectedIds.push(otherRoomId);
+  }
+  syncRoomsFromDom({roomId, selectedIds});
+  markUnsaved();
+  renderRooms();
+});
 els.projectName.addEventListener("input", markUnsaved);
 els.addRoomMenuButton.addEventListener("click", () => {
   els.roomTypeMenu.hidden = !els.roomTypeMenu.hidden;

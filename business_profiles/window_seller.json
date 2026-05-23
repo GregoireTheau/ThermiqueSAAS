@@ -52,6 +52,26 @@
             "options_ref": "envelope_defaults"
           },
           {
+            "id": "has_cooling",
+            "type": "boolean",
+            "label": "Le logement a-t-il deja une climatisation active ?",
+            "required": false,
+            "default": false
+          },
+          {
+            "id": "ventilation_id",
+            "type": "select",
+            "label": "Ventilation principale",
+            "required": true,
+            "options": [
+              {"id": "natural_leaky_old", "label": "Ventilation naturelle logement ancien"},
+              {"id": "natural_average", "label": "Ventilation naturelle moyenne"},
+              {"id": "simple_flow", "label": "VMC simple flux"},
+              {"id": "double_flow_standard", "label": "VMC double flux"},
+              {"id": "airtight_recent", "label": "Logement recent etanche"}
+            ]
+          },
+          {
             "id": "wall_insulation_id",
             "type": "select",
             "label": "Isolation des murs donnant dehors",

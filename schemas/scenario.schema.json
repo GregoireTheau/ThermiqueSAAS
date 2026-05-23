@@ -170,6 +170,9 @@
       "properties": {
         "shutters": {
           "$ref": "#/$defs/shutter_controls"
+        },
+        "natural_ventilation": {
+          "$ref": "#/$defs/natural_ventilation_controls"
         }
       }
     },
@@ -202,6 +205,44 @@
         },
         "opening_ratio": {
           "$ref": "#/$defs/factor_0_1"
+        }
+      }
+    },
+    "natural_ventilation_controls": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "default_ach": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "smart_night_cooling": {
+          "type": "boolean"
+        },
+        "smart_ach": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "hourly": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/natural_ventilation_hourly_control"
+          }
+        }
+      }
+    },
+    "natural_ventilation_hourly_control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hour",
+        "ach"
+      ],
+      "properties": {
+        "hour": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ach": {
+          "$ref": "#/$defs/non_negative_number"
         }
       }
     },

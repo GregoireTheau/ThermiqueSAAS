@@ -81,6 +81,12 @@ def simulate_1r1c(
 
         for room_id, room in rooms.items():
             current_temperature_c = temperatures[room_id]
+            natural_ventilation_ach = _natural_ventilation_ach(
+                scenario,
+                weather_point["hour"],
+                current_temperature_c,
+                outdoor_temperature_c,
+            )
             loss_data = compute_room_static_losses(
                 dwelling,
                 room,
@@ -88,6 +94,7 @@ def simulate_1r1c(
                 outdoor_temperature_c,
                 air_density_kg_m3,
                 air_heat_capacity_j_kgk,
+                natural_ventilation_ach=natural_ventilation_ach,
             )
             total_h_w_k = loss_data["total_h_w_k"]
             internal_gain_w = room.get(
@@ -100,6 +107,19 @@ def simulate_1r1c(
                 outdoor_temperature_c - current_temperature_c
             )
             ventilation_power_w = loss_data["ventilation_h_w_k"] * (
+                outdoor_temperature_c - current_temperature_c
+            )
+            infiltration_power_w = loss_data["infiltration_h_w_k"] * (
+                outdoor_temperature_c - current_temperature_c
+            )
+            mechanical_ventilation_power_w = loss_data[
+                "mechanical_ventilation_h_w_k"
+            ] * (
+                outdoor_temperature_c - current_temperature_c
+            )
+            natural_ventilation_power_w = loss_data[
+                "natural_ventilation_h_w_k"
+            ] * (
                 outdoor_temperature_c - current_temperature_c
             )
             envelope_power_w = total_h_w_k * (outdoor_temperature_c - current_temperature_c)
@@ -166,6 +186,9 @@ def simulate_1r1c(
                 "envelope_power_w": envelope_power_w,
                 "transmission_power_w": transmission_power_w,
                 "ventilation_power_w": ventilation_power_w,
+                "infiltration_power_w": infiltration_power_w,
+                "mechanical_ventilation_power_w": mechanical_ventilation_power_w,
+                "natural_ventilation_power_w": natural_ventilation_power_w,
             }
 
         hourly_results.append(
@@ -353,6 +376,21 @@ def _summarize_rooms(
                 "ventilation_power_w",
                 timestep_h,
             ),
+            "infiltration_exchange_kwh": _sum_energy(
+                room_hours,
+                "infiltration_power_w",
+                timestep_h,
+            ),
+            "mechanical_ventilation_exchange_kwh": _sum_energy(
+                room_hours,
+                "mechanical_ventilation_power_w",
+                timestep_h,
+            ),
+            "natural_ventilation_exchange_kwh": _sum_energy(
+                room_hours,
+                "natural_ventilation_power_w",
+                timestep_h,
+            ),
             "coupling_exchange_kwh": _sum_energy(room_hours, "coupling_power_w", timestep_h),
             "cold_degree_hours": sum(
                 max(0.0, heating_setpoint_c - temperature_c) * timestep_h
@@ -471,6 +509,24 @@ def _shutter_opening_ratio(scenario: dict[str, Any], hour: int) -> float:
         if entry["hour"] == hour:
             return entry["opening_ratio"]
     return default_opening_ratio
+
+
+def _natural_ventilation_ach(
+    scenario: dict[str, Any],
+    hour: int,
+    room_temperature_c: float,
+    outdoor_temperature_c: float,
+) -> float:
+    controls = scenario.get("controls", {}).get("natural_ventilation", {})
+    natural_ach = controls.get("default_ach", 0.0)
+    if controls.get("smart_night_cooling", False):
+        smart_ach = controls.get("smart_ach", 4.0)
+        natural_ach = smart_ach if outdoor_temperature_c < room_temperature_c else 0.0
+
+    for entry in controls.get("hourly", []):
+        if entry["hour"] == hour:
+            return entry["ach"]
+    return natural_ach
 
 
 def _compute_heating(

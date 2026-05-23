@@ -85,6 +85,20 @@ def validate_scenario(scenario: Mapping[str, Any]) -> None:
     if setpoints["heating_c"] > setpoints["cooling_c"]:
         raise ScenarioValidationError("heating_c cannot be greater than cooling_c")
 
+    controls = scenario.get("controls", {})
+    natural_ventilation = controls.get("natural_ventilation", {})
+    for key in ("default_ach", "smart_ach"):
+        if key in natural_ventilation and natural_ventilation[key] < 0:
+            raise ScenarioValidationError(
+                f"scenario.controls.natural_ventilation.{key} must be >= 0"
+            )
+    for entry in natural_ventilation.get("hourly", []):
+        _require_keys(entry, ("hour", "ach"), "natural ventilation hourly control")
+        if entry["hour"] < 0:
+            raise ScenarioValidationError("natural ventilation hour must be >= 0")
+        if entry["ach"] < 0:
+            raise ScenarioValidationError("natural ventilation ach must be >= 0")
+
     weather = scenario["weather"]
     if "hourly" not in weather:
         if "weather_ref" in weather:

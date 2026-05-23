@@ -110,9 +110,17 @@ def _resolve_room_ventilation(
     if ventilation_ref:
         reference = get_ventilation_reference(catalog, ventilation_ref)
         _set_if_missing(ventilation, "ach_h", reference["default_ach_h"])
+        _set_if_missing(
+            ventilation,
+            "recovery_efficiency",
+            reference.get("recovery_efficiency", 0.0),
+        )
 
     _set_if_missing(ventilation, "mode", "ach")
     _set_if_missing(ventilation, "ach_h", defaults["ach_h"])
+    _set_if_missing(ventilation, "infiltration_ach", 0.0)
+    _set_if_missing(ventilation, "mechanical_ach", ventilation["ach_h"])
+    _set_if_missing(ventilation, "recovery_efficiency", 0.0)
 
 
 def _resolve_surface(
@@ -180,6 +188,11 @@ def _resolve_building_ventilation(
     reference = get_ventilation_reference(catalog, ventilation_ref)
     _set_if_missing(ventilation, "type", _ventilation_system_type(reference["id"]))
     _set_if_missing(ventilation, "default_ach_h", reference["default_ach_h"])
+    _set_if_missing(
+        ventilation,
+        "recovery_efficiency",
+        reference.get("recovery_efficiency", 0.0),
+    )
 
 
 def _ventilation_system_type(ventilation_ref: str) -> str:

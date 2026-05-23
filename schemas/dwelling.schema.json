@@ -156,6 +156,15 @@
         "ach_h": {
           "$ref": "#/$defs/non_negative_number"
         },
+        "infiltration_ach": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "mechanical_ach": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "recovery_efficiency": {
+          "$ref": "#/$defs/factor_0_1"
+        },
         "building_period_ref": {
           "$ref": "#/$defs/id"
         }
@@ -241,6 +250,15 @@
         },
         "ach_h": {
           "$ref": "#/$defs/non_negative_number"
+        },
+        "infiltration_ach": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "mechanical_ach": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "recovery_efficiency": {
+          "$ref": "#/$defs/factor_0_1"
         },
         "ventilation_ref": {
           "$ref": "#/$defs/id"
@@ -566,6 +584,15 @@
         },
         "default_ach_h": {
           "$ref": "#/$defs/non_negative_number"
+        },
+        "infiltration_ach": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "mechanical_ach": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "recovery_efficiency": {
+          "$ref": "#/$defs/factor_0_1"
         },
         "ventilation_ref": {
           "$ref": "#/$defs/id"
