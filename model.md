@@ -273,10 +273,21 @@ shutter_factor = closed_factor + opening_ratio * (open_factor - closed_factor)
 Le gain solaire par fenêtre est :
 
 ```text
-Phi_solar_window = A_window * Irradiance_orientation * g_value * shutter_factor * mask_factor
+Phi_solar_window = A_window * Irradiance_orientation * cloudiness_factor * g_value * shutter_factor * mask_factor
 ```
 
 avec `mask_factor` borné entre 0 et 1 dans les fonctions solaires.
+
+Le facteur de nébulosité est appliqué dans le moteur au moment du calcul des
+apports solaires. Les fichiers météo conservent donc les irradiances brutes.
+Si la météo horaire ne fournit pas le mois, ou si le scénario ne fournit pas
+`climate_zone_id`, le facteur vaut `1.0`.
+
+| Mois | H1 | H2 | H3 |
+|---|---:|---:|---:|
+| Décembre, janvier, février | 0.25 | 0.35 | 0.45 |
+| Mars, avril, mai, septembre, octobre, novembre | 0.45 | 0.55 | 0.60 |
+| Juin, juillet, août | 0.65 | 0.70 | 0.80 |
 
 ## 8. Apports Solaires Opaques
 
@@ -286,7 +297,7 @@ Formules :
 
 ```text
 absorptivity = 1 - albedo
-Phi_absorbed = A_surface * Irradiance_orientation * mask_factor * absorptivity
+Phi_absorbed = A_surface * Irradiance_orientation * cloudiness_factor * mask_factor * absorptivity
 Phi_opaque_to_room = solar_to_room_factor * Phi_absorbed
 ```
 

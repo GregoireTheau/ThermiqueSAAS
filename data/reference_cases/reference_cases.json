@@ -25,10 +25,10 @@
       "systems": {"heating": {"type": "electric_radiator", "max_power_w": 6000, "cop": 1.0}, "cooling": null},
       "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
       "expected_metrics": {
-        "heating_electric_kwh": {"min": 103.0, "max": 104.0},
-        "max_temperature_c": {"min": 19.1, "max": 19.4},
-        "solar_gain_kwh": {"min": 26.9, "max": 27.6},
-        "transmission_exchange_kwh": {"min": -122.0, "max": -120.8},
+        "heating_electric_kwh": {"min": 120.4, "max": 121.6},
+        "max_temperature_c": {"min": 18.9, "max": 19.1},
+        "solar_gain_kwh": {"min": 9.3, "max": 9.8},
+        "transmission_exchange_kwh": {"min": -121.8, "max": -120.6},
         "ventilation_exchange_kwh": {"min": -15.4, "max": -14.8}
       }
     },
@@ -53,11 +53,11 @@
       "systems": {"heating": {"type": "electric_radiator", "max_power_w": 6000, "cop": 1.0}, "cooling": null},
       "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
       "expected_metrics": {
-        "heating_electric_kwh": {"min": 26.6, "max": 27.2},
-        "max_temperature_c": {"min": 21.3, "max": 21.8},
-        "solar_gain_kwh": {"min": 18.5, "max": 19.1},
-        "transmission_exchange_kwh": {"min": -40.0, "max": -39.1},
-        "ventilation_exchange_kwh": {"min": -10.8, "max": -10.1}
+        "heating_electric_kwh": {"min": 37.2, "max": 38.0},
+        "max_temperature_c": {"min": 18.9, "max": 19.1},
+        "solar_gain_kwh": {"min": 6.3, "max": 6.9},
+        "transmission_exchange_kwh": {"min": -38.8, "max": -37.9},
+        "ventilation_exchange_kwh": {"min": -10.5, "max": -9.8}
       }
     },
     {
@@ -83,11 +83,11 @@
       "systems": {"heating": {"type": "heat_pump", "max_power_w": 9000, "cop": 3.2}, "cooling": null},
       "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
       "expected_metrics": {
-        "heating_thermal_kwh": {"min": 12.0, "max": 12.3},
-        "heating_electric_kwh": {"min": 3.7, "max": 3.9},
-        "max_temperature_c": {"min": 23.2, "max": 23.6},
-        "solar_gain_kwh": {"min": 29.5, "max": 30.1},
-        "transmission_exchange_kwh": {"min": -30.9, "max": -30.3}
+        "heating_thermal_kwh": {"min": 23.5, "max": 24.2},
+        "heating_electric_kwh": {"min": 7.2, "max": 7.7},
+        "max_temperature_c": {"min": 19.3, "max": 19.8},
+        "solar_gain_kwh": {"min": 10.1, "max": 10.8},
+        "transmission_exchange_kwh": {"min": -28.7, "max": -27.7}
       }
     },
     {
@@ -113,11 +113,11 @@
       "systems": {"heating": {"type": "boiler", "max_power_w": 12000, "cop": 0.9}, "cooling": null},
       "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
       "expected_metrics": {
-        "heating_thermal_kwh": {"min": 84.4, "max": 85.3},
-        "heating_electric_kwh": {"min": 93.8, "max": 94.7},
-        "max_temperature_c": {"min": 21.2, "max": 21.6},
-        "solar_gain_kwh": {"min": 46.8, "max": 47.7},
-        "transmission_exchange_kwh": {"min": -120.7, "max": -119.4}
+        "heating_thermal_kwh": {"min": 111.0, "max": 113.0},
+        "heating_electric_kwh": {"min": 123.0, "max": 126.0},
+        "max_temperature_c": {"min": 18.9, "max": 19.1},
+        "solar_gain_kwh": {"min": 16.1, "max": 17.0},
+        "transmission_exchange_kwh": {"min": -117.8, "max": -116.1}
       }
     },
     {
@@ -146,11 +146,11 @@
         "canicule_occupant_raisonnable": {"shutter_opening_ratio": 1.0, "shutter_hourly": [{"start_hour": 8, "end_hour": 19, "opening_ratio": 0.1}], "natural_ventilation_default_ach": 0.0, "smart_night_cooling": true, "smart_ach": 4.0}
       },
       "expected_metrics": {
-        "max_temperature_c": {"min": 36.3, "max": 36.7},
-        "final_temperature_c": {"min": 33.8, "max": 34.3},
-        "hot_degree_hours": {"min": 122.0, "max": 124.2},
-        "solar_gain_kwh": {"min": 19.6, "max": 20.2},
-        "ventilation_exchange_kwh": {"min": -6.4, "max": -5.9}
+        "max_temperature_c": {"min": 34.2, "max": 34.9},
+        "final_temperature_c": {"min": 32.5, "max": 33.2},
+        "hot_degree_hours": {"min": 99.0, "max": 102.0},
+        "solar_gain_kwh": {"min": 13.5, "max": 14.3},
+        "ventilation_exchange_kwh": {"min": -4.1, "max": -3.4}
       }
     },
     {
@@ -178,11 +178,11 @@
         "canicule_occupant_raisonnable": {"shutter_opening_ratio": 1.0, "shutter_hourly": [{"start_hour": 8, "end_hour": 19, "opening_ratio": 0.1}], "natural_ventilation_default_ach": 0.0, "smart_night_cooling": true, "smart_ach": 4.0}
       },
       "expected_metrics": {
-        "max_temperature_c": {"min": 56.7, "max": 57.4},
-        "final_temperature_c": {"min": 46.0, "max": 46.7},
-        "hot_degree_hours": {"min": 368.0, "max": 373.0},
-        "solar_gain_kwh": {"min": 24.5, "max": 25.2},
-        "transmission_exchange_kwh": {"min": -11.3, "max": -10.7}
+        "max_temperature_c": {"min": 49.4, "max": 50.4},
+        "final_temperature_c": {"min": 41.7, "max": 42.7},
+        "hot_degree_hours": {"min": 284.0, "max": 290.0},
+        "solar_gain_kwh": {"min": 16.9, "max": 17.9},
+        "transmission_exchange_kwh": {"min": -7.5, "max": -6.4}
       }
     },
     {
@@ -210,11 +210,11 @@
         "canicule_occupant_raisonnable": {"shutter_opening_ratio": 1.0, "shutter_hourly": [{"start_hour": 8, "end_hour": 19, "opening_ratio": 0.1}], "natural_ventilation_default_ach": 0.0, "smart_night_cooling": true, "smart_ach": 4.0}
       },
       "expected_metrics": {
-        "max_temperature_c": {"min": 55.5, "max": 56.2},
-        "final_temperature_c": {"min": 51.4, "max": 52.1},
-        "hot_degree_hours": {"min": 361.0, "max": 366.0},
-        "solar_gain_kwh": {"min": 47.5, "max": 48.5},
-        "ventilation_exchange_kwh": {"min": -3.2, "max": -2.7}
+        "max_temperature_c": {"min": 47.7, "max": 48.8},
+        "final_temperature_c": {"min": 45.0, "max": 46.0},
+        "hot_degree_hours": {"min": 269.0, "max": 276.0},
+        "solar_gain_kwh": {"min": 32.9, "max": 34.3},
+        "ventilation_exchange_kwh": {"min": -2.2, "max": -1.3}
       }
     },
     {
@@ -242,11 +242,11 @@
         "canicule_occupant_raisonnable": {"shutter_opening_ratio": 1.0, "shutter_hourly": [{"start_hour": 8, "end_hour": 19, "opening_ratio": 0.1}], "natural_ventilation_default_ach": 0.0, "smart_night_cooling": true, "smart_ach": 4.0}
       },
       "expected_metrics": {
-        "max_temperature_c": {"min": 38.4, "max": 38.9},
-        "final_temperature_c": {"min": 37.3, "max": 37.9},
-        "hot_degree_hours": {"min": 155.0, "max": 159.0},
-        "solar_gain_kwh": {"min": 15.0, "max": 15.5},
-        "transmission_exchange_kwh": {"min": -0.7, "max": -0.2}
+        "max_temperature_c": {"min": 35.8, "max": 36.5},
+        "final_temperature_c": {"min": 35.2, "max": 36.0},
+        "hot_degree_hours": {"min": 124.0, "max": 130.0},
+        "solar_gain_kwh": {"min": 10.3, "max": 11.0},
+        "transmission_exchange_kwh": {"min": 0.2, "max": 1.1}
       }
     },
     {
@@ -270,11 +270,11 @@
       "systems": {"heating": {"type": "heat_pump", "max_power_w": 8000, "cop": 3.2}, "cooling": null},
       "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
       "expected_metrics": {
-        "heating_thermal_kwh": {"min": 9.3, "max": 9.6},
-        "heating_electric_kwh": {"min": 2.8, "max": 3.1},
-        "max_temperature_c": {"min": 22.5, "max": 22.9},
-        "solar_gain_kwh": {"min": 20.6, "max": 21.3},
-        "ventilation_exchange_kwh": {"min": -13.9, "max": -13.3}
+        "heating_thermal_kwh": {"min": 18.5, "max": 19.5},
+        "heating_electric_kwh": {"min": 5.7, "max": 6.2},
+        "max_temperature_c": {"min": 19.1, "max": 19.7},
+        "solar_gain_kwh": {"min": 7.0, "max": 7.7},
+        "ventilation_exchange_kwh": {"min": -13.2, "max": -12.2}
       }
     },
     {
@@ -298,11 +298,11 @@
       "systems": {"heating": {"type": "electric_radiator", "max_power_w": 9000, "cop": 1.0}, "cooling": null},
       "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
       "expected_metrics": {
-        "heating_electric_kwh": {"min": 11.0, "max": 11.5},
-        "max_temperature_c": {"min": 22.4, "max": 22.8},
-        "solar_gain_kwh": {"min": 24.0, "max": 24.7},
-        "transmission_exchange_kwh": {"min": -24.9, "max": -24.3},
-        "ventilation_exchange_kwh": {"min": -17.4, "max": -16.7}
+        "heating_electric_kwh": {"min": 22.2, "max": 23.3},
+        "max_temperature_c": {"min": 19.1, "max": 19.7},
+        "solar_gain_kwh": {"min": 8.2, "max": 8.9},
+        "transmission_exchange_kwh": {"min": -23.6, "max": -22.4},
+        "ventilation_exchange_kwh": {"min": -16.5, "max": -15.4}
       }
     },
     {
@@ -326,11 +326,11 @@
       "systems": {"heating": {"type": "electric_radiator", "max_power_w": 8000, "cop": 1.0}, "cooling": null},
       "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
       "expected_metrics": {
-        "heating_electric_kwh": {"min": 10.6, "max": 11.1},
-        "max_temperature_c": {"min": 22.6, "max": 23.0},
-        "final_temperature_c": {"min": 18.9, "max": 19.3},
-        "solar_gain_kwh": {"min": 21.6, "max": 22.3},
-        "transmission_exchange_kwh": {"min": -24.0, "max": -23.4}
+        "heating_electric_kwh": {"min": 21.8, "max": 22.9},
+        "max_temperature_c": {"min": 19.0, "max": 19.6},
+        "final_temperature_c": {"min": 18.9, "max": 19.2},
+        "solar_gain_kwh": {"min": 7.4, "max": 8.0},
+        "transmission_exchange_kwh": {"min": -22.8, "max": -21.6}
       }
     },
     {
@@ -353,11 +353,11 @@
       "systems": {"heating": {"type": "electric_radiator", "max_power_w": 8000, "cop": 1.0}, "cooling": null},
       "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
       "expected_metrics": {
-        "heating_electric_kwh": {"min": 18.5, "max": 19.2},
-        "max_temperature_c": {"min": 20.6, "max": 21.1},
-        "solar_gain_kwh": {"min": 14.5, "max": 15.1},
-        "transmission_exchange_kwh": {"min": -13.1, "max": -12.5},
-        "ventilation_exchange_kwh": {"min": -27.2, "max": -26.2}
+        "heating_electric_kwh": {"min": 27.0, "max": 28.1},
+        "max_temperature_c": {"min": 18.9, "max": 19.1},
+        "solar_gain_kwh": {"min": 4.9, "max": 5.5},
+        "transmission_exchange_kwh": {"min": -13.1, "max": -12.3},
+        "ventilation_exchange_kwh": {"min": -27.2, "max": -25.8}
       }
     },
     {
@@ -380,11 +380,11 @@
       "systems": {"heating": {"type": "electric_radiator", "max_power_w": 8000, "cop": 1.0}, "cooling": null},
       "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
       "expected_metrics": {
-        "heating_electric_kwh": {"min": 3.7, "max": 4.2},
-        "max_temperature_c": {"min": 22.6, "max": 23.1},
-        "final_temperature_c": {"min": 21.0, "max": 21.5},
-        "solar_gain_kwh": {"min": 14.5, "max": 15.1},
-        "ventilation_exchange_kwh": {"min": -5.0, "max": -4.4}
+        "heating_electric_kwh": {"min": 5.7, "max": 6.4},
+        "max_temperature_c": {"min": 19.5, "max": 20.1},
+        "final_temperature_c": {"min": 18.9, "max": 19.2},
+        "solar_gain_kwh": {"min": 4.9, "max": 5.5},
+        "ventilation_exchange_kwh": {"min": -4.7, "max": -4.1}
       }
     },
     {
@@ -411,11 +411,11 @@
         "canicule_occupant_raisonnable": {"shutter_opening_ratio": 1.0, "shutter_hourly": [{"start_hour": 8, "end_hour": 19, "opening_ratio": 0.1}], "natural_ventilation_default_ach": 0.0, "smart_night_cooling": true, "smart_ach": 4.0}
       },
       "expected_metrics": {
-        "max_temperature_c": {"min": 54.4, "max": 55.2},
-        "final_temperature_c": {"min": 50.2, "max": 51.0},
-        "hot_degree_hours": {"min": 353.0, "max": 359.0},
-        "solar_gain_kwh": {"min": 25.0, "max": 25.7},
-        "ventilation_exchange_kwh": {"min": -3.6, "max": -3.0}
+        "max_temperature_c": {"min": 47.5, "max": 48.5},
+        "final_temperature_c": {"min": 44.7, "max": 45.8},
+        "hot_degree_hours": {"min": 270.0, "max": 279.0},
+        "solar_gain_kwh": {"min": 17.2, "max": 18.3},
+        "ventilation_exchange_kwh": {"min": -2.5, "max": -1.6}
       }
     },
     {
@@ -442,11 +442,11 @@
         "canicule_occupant_raisonnable": {"shutter_opening_ratio": 1.0, "shutter_hourly": [{"start_hour": 8, "end_hour": 19, "opening_ratio": 0.1}], "natural_ventilation_default_ach": 0.0, "smart_night_cooling": true, "smart_ach": 4.0}
       },
       "expected_metrics": {
-        "max_temperature_c": {"min": 34.9, "max": 35.5},
-        "final_temperature_c": {"min": 34.8, "max": 35.4},
-        "hot_degree_hours": {"min": 111.0, "max": 115.0},
-        "solar_gain_kwh": {"min": 25.0, "max": 25.7},
-        "ventilation_exchange_kwh": {"min": 0.2, "max": 0.8}
+        "max_temperature_c": {"min": 32.8, "max": 33.4},
+        "final_temperature_c": {"min": 32.8, "max": 33.4},
+        "hot_degree_hours": {"min": 85.0, "max": 90.0},
+        "solar_gain_kwh": {"min": 17.2, "max": 18.3},
+        "ventilation_exchange_kwh": {"min": 0.6, "max": 1.2}
       }
     }
   ]

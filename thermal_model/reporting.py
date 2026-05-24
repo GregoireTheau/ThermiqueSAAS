@@ -10,6 +10,77 @@ from typing import Any
 DISCOMFORT_COLD_THRESHOLD_C = 19.0
 DISCOMFORT_HOT_THRESHOLD_C = 26.0
 
+PROFILE_BY_ADAPTATION = {
+    "heat_pump": "heat_pump_seller",
+    "roof_insulation": "roof_insulation_seller",
+    "reflective_roof": "reflective_roof_seller",
+    "solar_protection": "solar_protection_seller",
+    "better_windows": "window_seller",
+}
+
+REPORT_PRESENTATION_CONFIG = {
+    ("heat_pump_seller", "all"): {
+        "hero_kpis": ["final_energy", "cost", "co2"],
+        "secondary_kpis": ["heating_thermal", "heating_final"],
+        "hidden_summary_kpis": ["hot_discomfort"],
+        "reading_template": "heat_pump",
+    },
+    ("roof_insulation_seller", "winter"): {
+        "hero_kpis": ["heating_thermal", "heating_final", "cost"],
+        "secondary_kpis": ["hot_discomfort", "max_temperature"],
+        "hidden_summary_kpis": [],
+        "reading_template": "roof_insulation_winter",
+    },
+    ("roof_insulation_seller", "annual"): {
+        "hero_kpis": ["heating_thermal", "heating_final", "cost"],
+        "secondary_kpis": ["hot_discomfort", "max_temperature"],
+        "hidden_summary_kpis": [],
+        "reading_template": "roof_insulation_winter",
+    },
+    ("roof_insulation_seller", "summer"): {
+        "hero_kpis": ["hot_discomfort", "max_temperature"],
+        "secondary_kpis": ["cooling_thermal", "final_energy"],
+        "hidden_summary_kpis": [],
+        "reading_template": "roof_insulation_summer",
+        "fixed_notes": ["roof_summer_limited"],
+    },
+    ("reflective_roof_seller", "all"): {
+        "hero_kpis": ["hot_discomfort", "max_temperature"],
+        "secondary_kpis": ["heating_final", "cost"],
+        "hidden_summary_kpis": ["final_energy_if_negative"],
+        "reading_template": "reflective_roof",
+        "conditional_notes": ["reduced_winter_solar_gains"],
+    },
+    ("solar_protection_seller", "all"): {
+        "hero_kpis": ["hot_discomfort", "max_temperature"],
+        "secondary_kpis": ["heating_final", "cost"],
+        "hidden_summary_kpis": ["final_energy_if_negative"],
+        "reading_template": "solar_protection",
+        "conditional_notes": ["blocked_winter_solar_gains"],
+    },
+    ("window_seller", "winter"): {
+        "hero_kpis": ["final_energy", "cost"],
+        "secondary_kpis": ["heating_thermal", "heating_final"],
+        "hidden_summary_kpis": [],
+        "reading_template": "windows_winter",
+        "fixed_notes": ["windows_winter_scope"],
+    },
+    ("window_seller", "summer"): {
+        "hero_kpis": ["hot_discomfort", "max_temperature"],
+        "secondary_kpis": ["final_energy", "cost"],
+        "hidden_summary_kpis": [],
+        "reading_template": "windows_summer",
+        "fixed_notes": ["windows_summer_scope"],
+    },
+    ("window_seller", "annual"): {
+        "hero_kpis": ["final_energy", "cost", "hot_discomfort"],
+        "secondary_kpis": ["heating_thermal", "max_temperature"],
+        "hidden_summary_kpis": [],
+        "reading_template": "windows_annual",
+        "special_sections": ["windows_double_effect"],
+    },
+}
+
 
 def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
     """Build a compact, client-facing report model from a comparison payload."""
@@ -25,6 +96,7 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
     purpose_text = _build_purpose_text(experiment, season)
     tested_change_text = _build_tested_change_text(experiment)
     scenario_type = _scenario_type(experiment)
+    profile_id = _profile_id(experiment)
     rooms = [
         _build_room_report(room_id, room_delta)
         for room_id, room_delta in deltas["rooms"].items()
@@ -42,6 +114,8 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
         ),
     }
     comfort_mode = get_comfort_mode(experiment_data)
+    energy_breakdown = _build_energy_breakdown(before_totals, after_totals, deltas)
+    presentation_config = _presentation_config(profile_id, season)
     most_impacted_room = max(
         rooms,
         key=lambda room: (
@@ -52,7 +126,7 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
     )
 
     return {
-        "report_schema_version": "0.3",
+        "report_schema_version": "0.5",
         "source": {
             "comparison_schema_version": comparison["comparison_schema_version"],
             "dwelling_id": comparison["dwelling_id"],
@@ -64,6 +138,7 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
         "experiment": {
             "title": title,
             "season": season,
+            "business_profile_id": profile_id,
             "adaptation_id": experiment.get("adaptation_id", "unknown"),
             "scenario_type": scenario_type,
             "adaptation_label": experiment.get("adaptation_label", ""),
@@ -104,7 +179,15 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
             "context": context_text,
             "purpose": purpose_text,
             "tested_change": tested_change_text,
-            "conclusion": _build_conclusion_text(experiment, headline, driver, most_impacted_room),
+            "conclusion": _build_conclusion_text(
+                experiment,
+                headline,
+                driver,
+                most_impacted_room,
+                presentation_config,
+                energy_breakdown,
+                rooms,
+            ),
         },
         "sign_convention": (
             "Delta = avant - après ; une valeur positive signifie une réduction "
@@ -117,16 +200,22 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
                 deltas["electricity_kwh"],
                 "kWh",
             ),
+            "final_energy": _metric(
+                before_totals["final_energy_kwh"],
+                after_totals["final_energy_kwh"],
+                deltas["final_energy_kwh"],
+                "kWh_final",
+            ),
             "cost": _metric(
-                before_totals["electricity_cost_eur"],
-                after_totals["electricity_cost_eur"],
-                deltas["electricity_cost_eur"],
+                before_totals["energy_cost_eur"],
+                after_totals["energy_cost_eur"],
+                deltas["energy_cost_eur"],
                 "EUR",
             ),
             "co2": _metric(
-                before_totals["electricity_co2_kg"],
-                after_totals["electricity_co2_kg"],
-                deltas["electricity_co2_kg"],
+                before_totals["energy_co2_kg"],
+                after_totals["energy_co2_kg"],
+                deltas["energy_co2_kg"],
                 "kgCO2",
             ),
             "max_temperature_reduction_c": round(
@@ -142,6 +231,21 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
                 2,
             ),
         },
+        "primary_kpis": _build_primary_kpis(
+            presentation_config,
+            energy_breakdown,
+            before_totals,
+            after_totals,
+            deltas,
+            rooms,
+        ),
+        "secondary_kpis": _build_secondary_kpis(presentation_config, energy_breakdown, rooms),
+        "presentation": _build_presentation_notes(
+            presentation_config,
+            experiment,
+            energy_breakdown,
+            rooms,
+        ),
         "main_gain_driver": {
             "key": driver["key"],
             "label": driver["label"],
@@ -166,32 +270,7 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
             comfort_mode,
             season,
         ),
-        "energy_breakdown": {
-            "heating_thermal": _metric(
-                before_totals["heating_thermal_kwh"],
-                after_totals["heating_thermal_kwh"],
-                deltas["heating_thermal_kwh"],
-                "kWh_th",
-            ),
-            "heating_electric": _metric(
-                before_totals["heating_electric_kwh"],
-                after_totals["heating_electric_kwh"],
-                deltas["heating_electric_kwh"],
-                "kWh",
-            ),
-            "cooling_thermal": _metric(
-                before_totals["cooling_thermal_kwh"],
-                after_totals["cooling_thermal_kwh"],
-                deltas["cooling_thermal_kwh"],
-                "kWh_th",
-            ),
-            "cooling_electric": _metric(
-                before_totals["cooling_electric_kwh"],
-                after_totals["cooling_electric_kwh"],
-                deltas["cooling_electric_kwh"],
-                "kWh",
-            ),
-        },
+        "energy_breakdown": energy_breakdown,
         "rooms": rooms,
         "methodology": {
             "model": "Simulation thermique horaire 1R1C piece par piece",
@@ -234,8 +313,11 @@ def render_report_html(
     )
     executive_html = _render_executive_summary(report)
     context_params_html = _render_context_params(experiment, report["temperature_profiles"])
-    windows_note_html = _render_windows_note(experiment)
+    profile_notes_html = _render_profile_notes(report)
+    short_scenario_note_html = _render_short_scenario_note(experiment)
+    special_sections_html = _render_special_sections(report)
     results_sections_html = _render_results_sections(report)
+    contextual_notes_html = _render_contextual_notes(report)
     header_html = _render_report_header(source, experiment, generated_date, branding)
     footer_html = _render_report_footer(branding)
     custom_color_css = _render_branding_css(branding)
@@ -259,8 +341,8 @@ def render_report_html(
       --c-accent-light: #dbeafe;
       --c-gain: #15803d;
       --c-gain-light: #dcfce7;
-      --c-loss: #b91c1c;
-      --c-loss-light: #fee2e2;
+      --c-loss: #c2410c;
+      --c-loss-light: #ffedd5;
       --c-neutral: #475569;
       --c-hot-zone: #fef3c7;
       {custom_color_css}
@@ -409,13 +491,20 @@ def render_report_html(
       border-left: 4px solid var(--c-accent);
       color: var(--c-text);
     }}
-    .info-note {{
-      margin-top: 14px;
-      border-left: 4px solid var(--c-accent);
-      background: var(--c-accent-light);
-      padding: 12px 14px;
-      border-radius: 8px;
-    }}
+      .info-note {{
+        margin-top: 14px;
+        border-left: 4px solid var(--c-accent);
+        background: var(--c-accent-light);
+        padding: 12px 14px;
+        border-radius: 8px;
+      }}
+      .context-note {{
+        margin-top: 12px;
+        border-left: 4px solid #f59e0b;
+        background: #fffbeb;
+        padding: 12px 14px;
+        border-radius: 8px;
+      }}
     .summary-grid {{
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -544,7 +633,24 @@ def render_report_html(
       background: var(--c-surface);
       font-weight: 750;
     }}
-    .data-table tr:last-child td {{ border-bottom: 0; }}
+      .data-table tr:last-child td {{ border-bottom: 0; }}
+      .result-block {{
+        margin-top: 14px;
+      }}
+      .result-block h3 {{
+        font-size: 18px;
+        color: var(--c-text);
+      }}
+      .value-main {{
+        display: block;
+        font-weight: 760;
+      }}
+      .value-sub {{
+        display: block;
+        color: var(--c-muted);
+        font-size: 12px;
+        margin-top: 2px;
+      }}
     .delta-badge {{
       display: inline-block;
       min-width: 54px;
@@ -605,14 +711,16 @@ def render_report_html(
       <h2>Contexte</h2>
       <div class="context-grid">
         <div class="context-text">
-          <p>{escape(narrative["context"])}</p>
-          <p>{escape(narrative["purpose"])}</p>
+          <p>{_format_prose_html(narrative["context"])}</p>
+          <p>{_format_prose_html(narrative["purpose"])}</p>
         </div>
         <div class="params">
           {context_params_html}
         </div>
       </div>
-      {windows_note_html}
+      {profile_notes_html}
+      {short_scenario_note_html}
+      {special_sections_html}
     </section>
 
     <section>
@@ -623,11 +731,12 @@ def render_report_html(
     <section>
       <h2>Résultats principaux</h2>
       {results_sections_html}
+      {contextual_notes_html}
     </section>
 
     <section>
       <h2>Lecture des résultats</h2>
-      <p>{escape(narrative["conclusion"])}</p>
+      <p>{_format_prose_html(narrative["conclusion"])}</p>
     </section>
 
     <section>
@@ -1140,6 +1249,166 @@ def _delta_metric(delta: float, unit: str) -> dict[str, Any]:
     }
 
 
+def _build_energy_breakdown(
+    before_totals: dict[str, Any],
+    after_totals: dict[str, Any],
+    deltas: dict[str, Any],
+) -> dict[str, Any]:
+    before_vectors = before_totals.get("final_energy_kwh_by_energy", {})
+    after_vectors = after_totals.get("final_energy_kwh_by_energy", {})
+    vector_keys = sorted(set(before_vectors) | set(after_vectors))
+    return {
+        "heating_thermal": _metric(
+            before_totals["heating_thermal_kwh"],
+            after_totals["heating_thermal_kwh"],
+            deltas["heating_thermal_kwh"],
+            "kWh_th",
+        ),
+        "heating_final": _metric(
+            before_totals["heating_final_kwh"],
+            after_totals["heating_final_kwh"],
+            deltas["heating_final_kwh"],
+            "kWh_final",
+        ),
+        "heating_electric": _metric(
+            before_totals["heating_electric_kwh"],
+            after_totals["heating_electric_kwh"],
+            deltas["heating_electric_kwh"],
+            "kWh",
+        ),
+        "cooling_thermal": _metric(
+            before_totals["cooling_thermal_kwh"],
+            after_totals["cooling_thermal_kwh"],
+            deltas["cooling_thermal_kwh"],
+            "kWh_th",
+        ),
+        "cooling_electric": _metric(
+            before_totals["cooling_electric_kwh"],
+            after_totals["cooling_electric_kwh"],
+            deltas["cooling_electric_kwh"],
+            "kWh",
+        ),
+        "final_energy": _metric(
+            before_totals["final_energy_kwh"],
+            after_totals["final_energy_kwh"],
+            deltas["final_energy_kwh"],
+            "kWh_final",
+        ),
+        "cost": _metric(
+            before_totals["energy_cost_eur"],
+            after_totals["energy_cost_eur"],
+            deltas["energy_cost_eur"],
+            "EUR",
+        ),
+        "co2": _metric(
+            before_totals["energy_co2_kg"],
+            after_totals["energy_co2_kg"],
+            deltas["energy_co2_kg"],
+            "kgCO2",
+        ),
+        "final_energy_by_vector": {
+            vector: _metric(
+                before_vectors.get(vector, 0.0),
+                after_vectors.get(vector, 0.0),
+                before_vectors.get(vector, 0.0) - after_vectors.get(vector, 0.0),
+                "kWh_final",
+            )
+            for vector in vector_keys
+        },
+    }
+
+
+def _build_primary_kpis(
+    config: dict[str, Any],
+    energy: dict[str, Any],
+    before_totals: dict[str, Any],
+    after_totals: dict[str, Any],
+    deltas: dict[str, Any],
+    rooms: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    del before_totals, after_totals, deltas
+    available = _presentation_metrics(energy, rooms)
+    kpis = [
+        {"label": _kpi_label(key), "metric": available[key]}
+        for key in config["hero_kpis"]
+        if key in available and _metric_is_relevant(available[key])
+    ]
+    return kpis[:3]
+
+
+def _build_secondary_kpis(
+    config: dict[str, Any],
+    energy: dict[str, Any],
+    rooms: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    available = _presentation_metrics(energy, rooms)
+    return [
+        {"label": _kpi_label(key), "metric": available[key]}
+        for key in config.get("secondary_kpis", [])
+        if key in available and _metric_is_relevant(available[key])
+    ]
+
+
+def _presentation_metrics(
+    energy: dict[str, Any],
+    rooms: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    return {
+        "heating_thermal": energy["heating_thermal"],
+        "heating_final": energy["heating_final"],
+        "cooling_thermal": energy["cooling_thermal"],
+        "cooling_electric": energy["cooling_electric"],
+        "final_energy": energy["final_energy"],
+        "cost": energy["cost"],
+        "co2": energy["co2"],
+        "hot_discomfort": _aggregate_comfort_metric(rooms, "hot_degree_hours"),
+        "cold_discomfort": _aggregate_comfort_metric(rooms, "cold_degree_hours"),
+        "max_temperature": _aggregate_max_temperature_metric(rooms),
+    }
+
+
+def _kpi_label(key: str) -> str:
+    labels = {
+        "heating_thermal": "Besoin chauffage réduit",
+        "heating_final": "Énergie finale chauffage",
+        "cooling_thermal": "Besoin rafraîchissement",
+        "cooling_electric": "Climatisation électrique",
+        "final_energy": "Énergie finale économisée",
+        "cost": "Coût économisé",
+        "co2": "CO₂ évité",
+        "hot_discomfort": "Inconfort chaud évité",
+        "cold_discomfort": "Inconfort froid évité",
+        "max_temperature": "Température maximale réduite",
+    }
+    return labels.get(key, key)
+
+
+def _metric_is_relevant(metric: dict[str, Any]) -> bool:
+    return abs(float(metric.get("delta", 0.0))) > 1e-9
+
+
+def _aggregate_comfort_metric(
+    rooms: list[dict[str, Any]],
+    summary_key: str,
+) -> dict[str, Any]:
+    before = sum(room["comfort"][summary_key]["before"] for room in rooms)
+    after = sum(room["comfort"][summary_key]["after"] for room in rooms)
+    return _metric(before, after, before - after, "°C·h")
+
+
+def _aggregate_max_temperature_metric(rooms: list[dict[str, Any]]) -> dict[str, Any]:
+    before = max(room["comfort"]["max_temperature_c"]["before"] for room in rooms)
+    after = max(room["comfort"]["max_temperature_c"]["after"] for room in rooms)
+    return _metric(before, after, before - after, "C")
+
+
+def _aggregate_balance_delta(rooms: list[dict[str, Any]], summary_key: str) -> float:
+    return sum(
+        room["thermal_balance_deltas"][summary_key]["delta"]
+        for room in rooms
+    )
+
+
 def _relative_delta_pct(before: float, delta: float) -> float | None:
     if before == 0:
         return None
@@ -1152,6 +1421,37 @@ def _effect(delta: float) -> str:
     if delta < 0:
         return "increase"
     return "unchanged"
+
+
+def _profile_id(experiment: dict[str, Any]) -> str:
+    explicit_profile = experiment.get("business_profile_id")
+    if explicit_profile:
+        return explicit_profile
+    return PROFILE_BY_ADAPTATION.get(experiment.get("adaptation_id", ""), "generic")
+
+
+def _presentation_config(profile_id: str, season: str) -> dict[str, Any]:
+    config = REPORT_PRESENTATION_CONFIG.get((profile_id, season))
+    if config is None:
+        config = REPORT_PRESENTATION_CONFIG.get((profile_id, "all"))
+    if config is None:
+        config = {
+            "hero_kpis": ["heating_thermal", "final_energy", "cold_discomfort"],
+            "secondary_kpis": ["hot_discomfort", "max_temperature"],
+            "hidden_summary_kpis": [],
+            "reading_template": "generic",
+        }
+    return {
+        "profile_id": profile_id,
+        "season": season,
+        "hero_kpis": list(config.get("hero_kpis", [])),
+        "secondary_kpis": list(config.get("secondary_kpis", [])),
+        "hidden_summary_kpis": list(config.get("hidden_summary_kpis", [])),
+        "reading_template": config.get("reading_template", "generic"),
+        "fixed_notes": list(config.get("fixed_notes", [])),
+        "conditional_notes": list(config.get("conditional_notes", [])),
+        "special_sections": list(config.get("special_sections", [])),
+    }
 
 
 def _scenario_type(experiment: dict[str, Any]) -> str:
@@ -1289,34 +1589,68 @@ def _build_conclusion_text(
     headline: dict[str, Any],
     driver: dict[str, Any],
     most_impacted_room: dict[str, Any],
+    config: dict[str, Any],
+    energy: dict[str, Any],
+    rooms: list[dict[str, Any]],
 ) -> str:
+    del headline
     season = _infer_season(experiment)
-    if season == "summer":
-        comfort_sentence = (
-            f"La piece la plus sensible est {most_impacted_room['room_name']}: "
-            f"la température maximale y passe de "
-            f"{most_impacted_room['comfort']['max_temperature_c']['before']:.2f} °C à "
-            f"{most_impacted_room['comfort']['max_temperature_c']['after']:.2f} °C."
+    template = config["reading_template"]
+    hot_discomfort = _aggregate_comfort_metric(rooms, "hot_degree_hours")
+    max_temperature = _aggregate_max_temperature_metric(rooms)
+    transmission_delta = _aggregate_balance_delta(rooms, "transmission_exchange")
+
+    if template == "heat_pump":
+        return (
+            "La PAC fournit le même besoin de chaleur "
+            f"({_format_value(energy['heating_thermal']['before'], 'kWh_th')}) avec "
+            "un meilleur rendement, réduisant l'énergie électrique consommée de "
+            f"{_format_pct(energy['final_energy'])}."
         )
-        discomfort_sentence = (
-            f"Sur l'ensemble du logement, l'inconfort chaud évité atteint "
-            f"{headline['hot_degree_hours_reduced']:.2f} °C·h."
+    if template == "roof_insulation_winter":
+        return (
+            "L'isolation réduit le besoin de chauffage de "
+            f"{_format_pct(energy['heating_thermal'])}. "
+            "L'impact été est à lire séparément."
         )
-    else:
-        comfort_sentence = (
-            f"La pièce la plus impactée est {most_impacted_room['room_name']}, "
-            "avec le plus fort gain de confort cumulé dans cette séquence froide."
+    if template == "roof_insulation_summer":
+        return (
+            "L'isolation seule a un effet limité en été. Combinée à des volets "
+            "et à une ventilation nocturne, l'effet sur la surchauffe devient plus significatif."
         )
-        discomfort_sentence = (
-            f"Sur l'ensemble du logement, l'inconfort froid évité atteint "
-            f"{headline['cold_degree_hours_reduced']:.2f} °C·h."
+    if template == "reflective_roof":
+        return (
+            "Le revêtement réfléchissant réduit l'inconfort estival de "
+            f"{_format_pct(hot_discomfort)}. L'impact sur la facture annuelle est secondaire."
+        )
+    if template == "solar_protection":
+        return (
+            "Les protections solaires réduisent l'inconfort chaud de "
+            f"{_format_pct(hot_discomfort)}."
+        )
+    if template == "windows_winter":
+        return (
+            "Le vitrage performant réduit les pertes par transmission de "
+            f"{_format_value(max(0.0, transmission_delta), 'kWh')} sur la période."
+        )
+    if template == "windows_summer":
+        return (
+            "Le vitrage performant réduit les apports et les pics de température "
+            f"jusqu'à {_format_delta(max_temperature)} sur cette séquence chaude."
+        )
+    if template == "windows_annual":
+        return (
+            "Le remplacement des fenêtres agit sur les pertes hivernales et sur "
+            "le confort estival. Le bilan annuel combine ces deux effets."
         )
 
+    if season == "summer":
+        return (
+            f"La pièce la plus sensible est {most_impacted_room['room_name']} pour la température. "
+            f"Le principal facteur explicatif identifié est : {driver['label']}."
+        )
     return (
-        f"{comfort_sentence} {discomfort_sentence} "
-        f"Côté énergie, le delta simulé est de "
-        f"{headline['electricity_saved_kwh']:.2f} kWh, soit "
-        f"{headline['cost_saved_eur']:.2f} € sur la période. "
+        "La modification agit sur le bilan thermique du logement. "
         f"Le principal facteur explicatif identifié est : {driver['label']}."
     )
 
@@ -1393,18 +1727,12 @@ def get_room_status(room_data: dict, comfort_mode: str) -> tuple[str, str]:
 
 
 def _render_executive_summary(report: dict[str, Any]) -> str:
-    headline = report["headline"]
-    discomfort = _primary_discomfort_metric(report)
-    discomfort_label = (
-        "Inconfort chaud cumulé"
-        if report["comfort_mode"] == "hot"
-        else "Inconfort froid cumulé"
-    )
+    primary_kpis = report["primary_kpis"]
+    if not primary_kpis:
+        return '<div class="info-note">Aucun indicateur de synthèse significatif sur cette période.</div>'
     return f"""
       <div class="summary-grid">
-        {_render_kpi("Économie énergie", headline["electricity"])}
-        {_render_kpi("Économie coût", headline["cost"])}
-        {_render_kpi(discomfort_label, discomfort)}
+        {"".join(_render_kpi(kpi["label"], kpi["metric"]) for kpi in primary_kpis)}
       </div>
 """
 
@@ -1514,41 +1842,207 @@ def _render_context_params(
     return f"<table>{table_rows}</table>"
 
 
-def _render_windows_note(experiment: dict[str, Any]) -> str:
-    if experiment.get("scenario_type") != "windows":
+def _build_presentation_notes(
+    config: dict[str, Any],
+    experiment: dict[str, Any],
+    energy: dict[str, Any],
+    rooms: list[dict[str, Any]],
+) -> dict[str, Any]:
+    del experiment
+    context_notes = []
+    effect_notes = []
+    hot_discomfort = _aggregate_comfort_metric(rooms, "hot_degree_hours")
+
+    for note_key in config.get("fixed_notes", []):
+        if note_key == "roof_summer_limited":
+            effect_notes.append({
+                "title": "Effet été de l'isolation seule",
+                "text": (
+                    "L'isolation seule a un effet limité en été. Combinée à des volets "
+                    "ou à une ventilation nocturne, l'effet sur la surchauffe devient significatif."
+                ),
+            })
+        elif note_key == "windows_winter_scope":
+            context_notes.append(
+                "Ce rapport couvre l'effet hivernal. Voir le rapport été pour "
+                "l'effet sur le confort estival.",
+            )
+        elif note_key == "windows_summer_scope":
+            context_notes.append(
+                "Un vitrage performant réduit les apports solaires directs en été. "
+                "L'effet sur le confort dépend de l'orientation et de la surface vitrée exposée.",
+            )
+
+    for note_key in config.get("conditional_notes", []):
+        heating_delta = energy["heating_final"]["delta"]
+        if heating_delta >= 0:
+            continue
+        heating_increase = _format_value(abs(heating_delta), "kWh_final")
+        if note_key == "reduced_winter_solar_gains":
+            effect_notes.append({
+                "title": "Pourquoi le chauffage augmente-t-il légèrement ?",
+                "text": (
+                    "Le revêtement réfléchissant limite aussi les apports solaires "
+                    f"gratuits en hiver ({heating_increase} de chauffage en plus). "
+                    "Sur l'année, le bilan confort reste très favorable."
+                ),
+            })
+        elif note_key == "blocked_winter_solar_gains":
+            effect_notes.append({
+                "title": "Pourquoi le chauffage augmente-t-il légèrement ?",
+                "text": (
+                    "Les volets bloquent aussi des apports solaires gratuits en hiver "
+                    f"({heating_increase} de chauffage en plus). Sur l'année, le gain "
+                    "confort reste l'argument principal."
+                ),
+            })
+
+    if (
+        config["profile_id"] == "roof_insulation_seller"
+        and config["season"] == "annual"
+        and hot_discomfort["delta"] < 0
+    ):
+        effect_notes.append({
+            "title": "Impact été",
+            "text": (
+                "L'isolation ralentit aussi l'évacuation de chaleur en été. "
+                "À combiner avec volets ou ventilation nocturne."
+            ),
+        })
+
+    return {
+        "config": config,
+        "context_notes": context_notes,
+        "effect_notes": effect_notes,
+    }
+
+
+def _render_profile_notes(report: dict[str, Any]) -> str:
+    notes = report["presentation"]["context_notes"]
+    if not notes:
+        return ""
+    return "\n".join(
+        f'<div class="info-note">{_format_prose_html(note)}</div>'
+        for note in notes
+    )
+
+
+def _render_short_scenario_note(experiment: dict[str, Any]) -> str:
+    if experiment.get("role") == "annual" or experiment.get("duration_days", 0.0) >= 30:
         return ""
     return """
       <div class="info-note">
-        Ce rapport présente deux simulations distinctes pour ce scénario :
-        une en conditions estivales (apports solaires) et une en conditions
-        hivernales (pertes par transmission). Les résultats sont à lire
-        conjointement pour évaluer l'impact annuel du vitrage.
+        Les coûts affichés correspondent à la période simulée. Estimation annuelle :
+        voir le rapport annuel pour les montants sur 12 mois.
+      </div>
+"""
+
+
+def _render_contextual_notes(report: dict[str, Any]) -> str:
+    notes = report["presentation"]["effect_notes"]
+    if not notes:
+        return ""
+    return "\n".join(
+        f"""
+      <div class="context-note">
+        <strong>{escape(note['title'])}</strong>
+        <p>{_format_prose_html(note['text'])}</p>
+      </div>
+"""
+        for note in notes
+    )
+
+
+def _render_special_sections(report: dict[str, Any]) -> str:
+    config = report["presentation"]["config"]
+    if "windows_double_effect" not in config.get("special_sections", []):
+        return ""
+    energy = report["energy_breakdown"]
+    hot_discomfort = _aggregate_comfort_metric(report["rooms"], "hot_degree_hours")
+    return f"""
+      <div class="info-note">
+        <strong>Double effet.</strong>
+        Hiver : {_format_delta(energy["heating_final"])} économisés.
+        Été : {_format_delta(hot_discomfort)} d'inconfort chaud évité.
       </div>
 """
 
 
 def _render_results_sections(report: dict[str, Any]) -> str:
-    comfort_table_html = _render_comfort_result_table(report)
-    energy_table_html = _render_energy_result_table(report)
-    if report["comfort_mode"] == "hot":
-        sections = [comfort_table_html, energy_table_html]
-    else:
-        sections = [energy_table_html, comfort_table_html]
-    return "\n".join(sections)
-
-
-def _render_energy_result_table(report: dict[str, Any]) -> str:
-    energy = report["energy_breakdown"]
-    headline = report["headline"]
-    return _render_metric_table([
-        ("Chauffage thermique", energy["heating_thermal"]),
-        ("Chauffage électrique", energy["heating_electric"]),
-        ("Climatisation thermique", energy["cooling_thermal"]),
-        ("Climatisation électrique", energy["cooling_electric"]),
-        ("Électricité totale", headline["electricity"]),
-        ("Coût estimé", headline["cost"]),
-        ("CO₂", headline["co2"]),
+    return "\n".join([
+        _render_needs_result_block(report),
+        _render_energy_cost_result_block(report),
+        _render_comfort_result_block(report),
     ])
+
+
+def _render_result_block(title: str, body_html: str, note: str = "") -> str:
+    if not body_html:
+        return ""
+    note_html = f'<div class="info-note">{_format_prose_html(note)}</div>' if note else ""
+    return f"""
+      <div class="result-block">
+        <h3>{escape(title)}</h3>
+        {note_html}
+        {body_html}
+      </div>
+"""
+
+
+def _render_needs_result_block(report: dict[str, Any]) -> str:
+    energy = report["energy_breakdown"]
+    return _render_result_block(
+        "Besoins du logement",
+        _render_metric_table([
+            ("Besoin chauffage thermique", energy["heating_thermal"]),
+            ("Climatisation thermique", energy["cooling_thermal"]),
+        ]),
+        (
+            "Besoin thermique = chaleur à fournir ou à extraire pour tenir la consigne. "
+            "Le besoin thermique dépend de l'enveloppe et de la météo — "
+            "pas du système de chauffage."
+        ),
+    )
+
+
+def _render_energy_cost_result_block(report: dict[str, Any]) -> str:
+    energy = report["energy_breakdown"]
+    vector_rows = [
+        (f"Énergie finale {_energy_vector_label(vector)}", metric)
+        for vector, metric in energy["final_energy_by_vector"].items()
+    ]
+    return _render_result_block(
+        "Énergie et coût",
+        _render_metric_table(
+            vector_rows
+            + [
+                ("Énergie finale totale", energy["final_energy"]),
+                ("Coût estimé", energy["cost"]),
+                ("CO₂", energy["co2"]),
+            ],
+        ),
+        (
+            "Énergie finale = énergie facturée après rendement ou COP du système. "
+            "Les deltas négatifs sont des hausses à lire avec les notes de contexte."
+        ),
+    )
+
+
+def _render_comfort_result_block(report: dict[str, Any]) -> str:
+    return _render_result_block(
+        "Confort thermique",
+        _render_comfort_result_table(report),
+    )
+
+
+def _energy_vector_label(vector: str) -> str:
+    labels = {
+        "electricity": "électricité",
+        "gas": "gaz",
+        "fuel_oil": "fioul",
+        "wood": "bois",
+    }
+    return labels.get(vector, vector.replace("_", " "))
 
 
 def _render_comfort_result_table(report: dict[str, Any]) -> str:
@@ -1996,8 +2490,10 @@ def _render_metric_table(rows: list[tuple[str, dict[str, Any]]]) -> str:
         f"<td>{escape(label)}</td>"
         f"<td>{_format_value(metric['before'], metric['unit'])}</td>"
         f"<td>{_format_value(metric['after'], metric['unit'])}</td>"
-        f"<td class=\"{_value_class(metric['delta'])}\">{_format_delta(metric)}</td>"
-        f"<td>{_format_pct_badge(metric)}</td>"
+        f"<td class=\"{_value_class(metric['delta'])}\">"
+        f"<span class=\"value-main\">{_format_pct(metric)}</span>"
+        f"<span class=\"value-sub\">{_format_delta(metric)}</span>"
+        "</td>"
         "</tr>"
         for label, metric in rows
     )
@@ -2008,7 +2504,6 @@ def _render_metric_table(rows: list[tuple[str, dict[str, Any]]]) -> str:
             <th>Indicateur</th>
             <th>Avant</th>
             <th>Après</th>
-            <th>Delta</th>
             <th>Variation</th>
           </tr>
         </thead>
@@ -2063,6 +2558,10 @@ def _format_before_after(metric: dict[str, Any]) -> str:
     )
 
 
+def _format_prose_html(text: str) -> str:
+    return escape(text).replace(". ", ".<br>")
+
+
 def _format_delta(metric: dict[str, Any]) -> str:
     return _format_value(metric["delta"], metric["unit"])
 
@@ -2095,6 +2594,7 @@ def _display_unit(unit: str) -> str:
         "C.h": "°C·h",
         "EUR": "€",
         "kWh_th": "kWh therm.",
+        "kWh_final": "kWh fin.",
         "kgCO2": "kg CO₂",
     }
     return units.get(unit, unit)

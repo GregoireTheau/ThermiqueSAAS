@@ -32,7 +32,7 @@ def test_report_model_keeps_traceable_headline_metrics():
 
     report = build_report_model(comparison)
 
-    assert report["report_schema_version"] == "0.3"
+    assert report["report_schema_version"] == "0.5"
     assert report["source"]["dwelling_id"] == comparison["dwelling_id"]
     assert report["experiment"]["duration_hours"] == 24
     assert report["experiment"]["duration_days"] == 1
@@ -62,6 +62,12 @@ def test_report_model_keeps_traceable_headline_metrics():
     )
     assert report["headline"]["electricity"]["effect"] == "reduction"
     assert report["headline"]["electricity"]["unit"] == "kWh"
+    assert report["headline"]["final_energy"]["unit"] == "kWh_final"
+    assert report["headline"]["cost"]["before"] == round(
+        comparison["before"]["totals"]["energy_cost_eur"],
+        2,
+    )
+    assert 1 <= len(report["primary_kpis"]) <= 3
 
 
 def test_report_model_excludes_hourly_traces():
@@ -108,6 +114,8 @@ def test_render_report_html_contains_report_sections_without_hourly_traces():
     assert "Contexte" in html
     assert "Graphiques de température" in html
     assert "Résultats principaux" in html
+    assert "Besoin thermique = chaleur à fournir ou à extraire" in html
+    assert "Énergie finale totale" in html
     assert "Lecture des résultats" in html
     assert "Détail par pièce" in html
     assert "Rapport généré automatiquement" in html
@@ -158,6 +166,144 @@ def test_render_report_html_hides_zero_rows():
 
     assert "Chauffage thermique" not in html
     assert "Heures d&#x27;inconfort cumulées (froid)" not in html
+
+
+def test_report_kpis_are_adapted_to_business_scenario_type():
+    heat_pump_result = run_profile_experience(
+        "heat_pump_seller",
+        {
+            "project_name": "Maison PAC",
+            "city": "Bordeaux",
+            "postal_code": "33000",
+            "dwelling_type": "house",
+            "position_id": "single_storey_house",
+            "period_id": "1975_1988_basic_insulation",
+            "heating_ref": "electric_radiator",
+            "current_energy_id": "electricity",
+            "heat_emitters_id": "electric_radiators",
+            "rooms": [
+                {
+                    "name": "Salon",
+                    "type": "living",
+                    "floor_area_m2": 30.0,
+                    "has_roof": True,
+                    "facades": [
+                        {
+                            "orientation": "S",
+                            "window_area_m2": 4.0,
+                            "wall_length_m": 6.0,
+                        },
+                    ],
+                },
+            ],
+        },
+        include_report_html=False,
+    )
+    heat_pump_report = heat_pump_result["simulation_runs"][0]["report"]
+
+    assert heat_pump_report["experiment"]["scenario_type"] == "heat_pump"
+    assert [kpi["label"] for kpi in heat_pump_report["primary_kpis"]] == [
+        "Énergie finale économisée",
+        "Coût économisé",
+        "CO₂ évité",
+    ]
+    assert "La PAC fournit le même besoin de chaleur" in heat_pump_report["narrative"]["conclusion"]
+
+
+def test_business_report_presentation_is_profile_specific():
+    answers = {
+        "project_name": "Maison présentation",
+        "city": "Bordeaux",
+        "postal_code": "33000",
+        "dwelling_type": "house",
+        "position_id": "single_storey_house",
+        "period_id": "1975_1988_basic_insulation",
+        "heating_ref": "electric_radiator",
+        "current_energy_id": "electricity",
+        "heat_emitters_id": "electric_radiators",
+        "window_ref": "double_glazing_old",
+        "window_air_leakage_id": "leaky",
+        "rooms": [
+            {
+                "name": "Salon",
+                "type": "living",
+                "floor_area_m2": 30.0,
+                "has_roof": True,
+                "facades": [
+                    {
+                        "orientation": "S",
+                        "window_area_m2": 5.0,
+                        "wall_length_m": 6.0,
+                    },
+                ],
+            },
+        ],
+    }
+
+    heat_pump = run_profile_experience(
+        "heat_pump_seller",
+        answers,
+        include_report_html=False,
+    )["simulation_runs"][-1]["report"]
+    assert [kpi["label"] for kpi in heat_pump["primary_kpis"]] == [
+        "Énergie finale économisée",
+        "Coût économisé",
+        "CO₂ évité",
+    ]
+    assert "Inconfort chaud évité" not in [
+        kpi["label"] for kpi in heat_pump["primary_kpis"]
+    ]
+
+    roof = run_profile_experience(
+        "roof_insulation_seller",
+        answers,
+        include_report_html=True,
+    )["simulation_runs"][-1]
+    assert [kpi["label"] for kpi in roof["report"]["primary_kpis"]] == [
+        "Besoin chauffage réduit",
+        "Énergie finale chauffage",
+        "Coût économisé",
+    ]
+    assert "Impact été" in roof["report_html"]
+
+    reflective = run_profile_experience(
+        "reflective_roof_seller",
+        answers,
+        include_report_html=True,
+    )["simulation_runs"][-1]
+    assert [kpi["label"] for kpi in reflective["report"]["primary_kpis"]] == [
+        "Inconfort chaud évité",
+        "Température maximale réduite",
+    ]
+    assert "Énergie finale économisée" not in [
+        kpi["label"] for kpi in reflective["report"]["primary_kpis"]
+    ]
+    assert "Pourquoi le chauffage augmente-t-il légèrement ?" in reflective["report_html"]
+
+    windows_result = run_profile_experience(
+        "window_seller",
+        answers,
+        include_report_html=True,
+    )
+    windows_summer = windows_result["simulation_runs"][1]
+    assert (
+        "Un vitrage performant réduit les apports solaires directs en été.<br>"
+        "L&#x27;effet sur le confort dépend de l&#x27;orientation"
+        in windows_summer["report_html"]
+    )
+
+    windows = windows_result["simulation_runs"][-1]
+    assert [kpi["label"] for kpi in windows["report"]["primary_kpis"]] == [
+        "Énergie finale économisée",
+        "Coût économisé",
+        "Inconfort chaud évité",
+    ]
+    assert "Double effet" in windows["report_html"]
+    assert (
+        "Énergie finale = énergie facturée après rendement ou COP du système.<br>"
+        "Les deltas négatifs sont des hausses"
+        in windows["report_html"]
+    )
 
 
 def test_annual_temperature_profile_uses_daily_points_and_month_labels():

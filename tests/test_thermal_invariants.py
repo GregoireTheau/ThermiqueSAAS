@@ -360,3 +360,47 @@ def test_warmer_weather_reduces_heating_needs():
         mild_results["totals"]["heating_electric_kwh"]
         < cold_results["totals"]["heating_electric_kwh"]
     )
+
+
+def test_cloudiness_factor_requires_month_and_climate_zone():
+    dwelling = _base_dwelling()
+    scenario_without_month = _scenario(
+        temperatures=[30.0] * 24,
+        solar_south=600.0,
+        heating_c=0.0,
+        cooling_c=80.0,
+    )
+    scenario_without_month["climate_zone_id"] = "FR_H2c"
+    scenario_with_month = deepcopy(scenario_without_month)
+    for point in scenario_with_month["weather"]["hourly"]:
+        point["month"] = 7
+    scenario_without_zone = deepcopy(scenario_with_month)
+    del scenario_without_zone["climate_zone_id"]
+
+    without_month_results = simulate_1r1c(
+        dwelling,
+        scenario_without_month,
+        air_density_kg_m3=AIR_DENSITY_KG_M3,
+        air_heat_capacity_j_kgk=AIR_HEAT_CAPACITY_J_KGK,
+    )
+    with_month_results = simulate_1r1c(
+        dwelling,
+        scenario_with_month,
+        air_density_kg_m3=AIR_DENSITY_KG_M3,
+        air_heat_capacity_j_kgk=AIR_HEAT_CAPACITY_J_KGK,
+    )
+    without_zone_results = simulate_1r1c(
+        dwelling,
+        scenario_without_zone,
+        air_density_kg_m3=AIR_DENSITY_KG_M3,
+        air_heat_capacity_j_kgk=AIR_HEAT_CAPACITY_J_KGK,
+    )
+
+    assert (
+        with_month_results["rooms_summary"]["main_room"]["solar_gain_kwh"]
+        < without_month_results["rooms_summary"]["main_room"]["solar_gain_kwh"]
+    )
+    assert (
+        without_zone_results["rooms_summary"]["main_room"]["solar_gain_kwh"]
+        == without_month_results["rooms_summary"]["main_room"]["solar_gain_kwh"]
+    )

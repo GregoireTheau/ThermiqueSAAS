@@ -357,6 +357,7 @@ def build_thermal_weather(
         hourly.append(
             {
                 "hour": hour,
+                "month": int(row["datetime"].month),
                 "outdoor_temperature_c": round(float(row["temperature_2m"]), 2),
                 "solar_irradiance_w_m2": _orientation_irradiance(row),
             }

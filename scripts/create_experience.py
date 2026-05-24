@@ -195,6 +195,7 @@ def build_weather(season: str, duration_days: int) -> dict[str, Any]:
             hourly.append(
                 {
                     "hour": hour,
+                    "month": 7,
                     "outdoor_temperature_c": round(outdoor_temperature_c, 2),
                     "solar_irradiance_w_m2": {
                         "north": round(80.0 * solar_peak, 2),
@@ -212,6 +213,7 @@ def build_weather(season: str, duration_days: int) -> dict[str, Any]:
             hourly.append(
                 {
                     "hour": hour,
+                    "month": 1,
                     "outdoor_temperature_c": round(outdoor_temperature_c, 2),
                     "solar_irradiance_w_m2": {
                         "north": 0.0,

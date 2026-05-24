@@ -182,6 +182,7 @@ def _build_experiment_context(
     experiment = before_scenario.get("experiment", {})
     return {
         "adaptation_id": experiment.get("adaptation_id", "unknown"),
+        "business_profile_id": experiment.get("business_profile_id", ""),
         "adaptation_label": experiment.get("adaptation_label", ""),
         "role": experiment.get("role", "primary"),
         "label": experiment.get("label", ""),

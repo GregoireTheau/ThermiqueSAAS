@@ -136,6 +136,7 @@ def _build_scenario(case):
         "description": case["physical_comment"],
         "timestep_h": 1.0,
         "initial_temperatures_c": {"main_room": case["initial_temperature_c"]},
+        "climate_zone_id": scenario_data.get("climate_zone_id", "FR_H2c"),
         "setpoints": {
             "heating_c": scenario_data["heating_c"],
             "cooling_c": scenario_data["cooling_c"],

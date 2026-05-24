@@ -112,6 +112,8 @@ def validate_scenario(scenario: Mapping[str, Any]) -> None:
     expected_hour = 0
     for point in weather["hourly"]:
         _require_keys(point, ("hour", "outdoor_temperature_c"), "weather hourly point")
+        if "month" in point and not 1 <= point["month"] <= 12:
+            raise ScenarioValidationError("weather hourly point month must be between 1 and 12")
         if point["hour"] != expected_hour:
             raise ScenarioValidationError(
                 f"weather hour must be sequential from 0, got {point['hour']}"

@@ -41,6 +41,9 @@
         "type": "number"
       }
     },
+    "climate_zone_id": {
+      "$ref": "#/$defs/id"
+    },
     "setpoints": {
       "$ref": "#/$defs/setpoints"
     },
@@ -579,6 +582,11 @@
         },
         "outdoor_temperature_c": {
           "type": "number"
+        },
+        "month": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
         },
         "solar_irradiance_w_m2": {
           "$ref": "#/$defs/solar_irradiance"

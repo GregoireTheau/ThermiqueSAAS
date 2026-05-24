@@ -253,7 +253,7 @@ EXPERIMENT_SPECS = {
         "role": "secondary",
         "condition": "exposed_windows",
         "label": "Ete canicule",
-        "reason": "Experience secondaire lancee si des vitrages exposes peuvent influencer les apports solaires.",
+        "reason": "Experience secondaire lancée si des vitrages exposes peuvent influencer les apports solaires.",
     },
     "summer_long_secondary": {
         "id": "summer_long",
@@ -1379,6 +1379,7 @@ def build_scenario(
             room["id"]: initial_temperature_for_experiment(experiment_spec)
             for room in dwelling["rooms"]
         },
+        "climate_zone_id": dwelling["location"]["climate_zone_id"],
         "setpoints": scenario_setpoints,
         "weather": build_scenario_weather(
             experiment_spec,
@@ -1480,6 +1481,7 @@ def build_weather(
         )
         weather_point = {
             "hour": hour,
+            "month": month_for_weather_profile(weather_profile),
             "outdoor_temperature_c": round(outdoor_temperature_c, 2),
             "solar_irradiance_w_m2": solar_profile(weather_profile, hour_in_day),
         }
@@ -1504,6 +1506,12 @@ def climate_family_for_zone(climate_zone_id: str) -> str:
     if climate_zone_id.startswith("FR_H1"):
         return "H1"
     return "H2"
+
+
+def month_for_weather_profile(weather_profile: dict[str, Any]) -> int:
+    if weather_profile["profile_type"] == "winter_design":
+        return 1
+    return 7
 
 
 def solar_profile(weather_profile: dict[str, Any], hour_in_day: int) -> dict[str, float]:
@@ -1706,7 +1714,7 @@ def run_customer_experience(args: argparse.Namespace) -> None:
     print(f"Logement exporte: {output_dir / 'dwelling.json'}")
 
     if not target_is_applicable or not experiments:
-        print("Aucune experience lancee: le changement choisi ne s'applique pas aux elements saisis.")
+        print("Aucune expérience lancée: le changement choisi ne s'applique pas aux elements saisis.")
         return
 
     for experiment in experiments:

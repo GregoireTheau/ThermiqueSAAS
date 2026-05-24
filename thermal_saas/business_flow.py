@@ -78,6 +78,10 @@ def run_profile_experience(
 
     simulation_runs = []
     for experiment in experiments:
+        for scenario_key in ("before", "after"):
+            experiment[scenario_key].setdefault("experiment", {})[
+                "business_profile_id"
+            ] = profile["id"]
         prepare_experiment_weather(experiment)
         before = experiment["before"]
         after = experiment["after"]
