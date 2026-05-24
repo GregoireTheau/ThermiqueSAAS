@@ -287,19 +287,35 @@
         "id": "living_heat_pump_unit",
         "system_ref": "air_air_heat_pump_standard",
         "type": "heat_pump",
+        "energy_vector": "electricity",
         "served_rooms": [
           "living_room"
         ],
         "max_power_w": 3500,
         "performance_ref": {
-          "mode": "constant",
-          "cop": 3.2
+          "mode": "temperature_curve",
+          "cop": 3.2,
+          "points": [
+            {
+              "outdoor_temperature_c": -7.0,
+              "cop": 2.0
+            },
+            {
+              "outdoor_temperature_c": 7.0,
+              "cop": 3.2
+            },
+            {
+              "outdoor_temperature_c": 15.0,
+              "cop": 4.0
+            }
+          ]
         }
       },
       {
         "id": "bedroom_radiator",
         "system_ref": "electric_radiator",
         "type": "electric_radiator",
+        "energy_vector": "electricity",
         "served_rooms": [
           "bedroom"
         ],
@@ -313,6 +329,7 @@
         "id": "bathroom_radiator",
         "system_ref": "electric_radiator",
         "type": "electric_radiator",
+        "energy_vector": "electricity",
         "served_rooms": [
           "bathroom"
         ],

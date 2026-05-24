@@ -166,6 +166,7 @@ def _resolve_systems(dwelling: Dwelling, catalog: ReferenceCatalog) -> None:
         if system_ref:
             reference = get_heating_system_reference(catalog, system_ref)
             _set_if_missing(system, "type", reference["type"])
+            _set_if_missing(system, "energy_vector", reference["energy_vector"])
             _set_if_missing(system, "performance_ref", reference["performance_ref"])
 
     for system in systems["cooling"]:

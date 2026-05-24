@@ -11,6 +11,7 @@ from .dwelling_loader import (
     validate_dwelling,
 )
 from .dwelling_resolver import resolve_dwelling_references
+from .physical_validation import collect_model_warnings
 from .reference_loader import (
     ReferenceDataError,
     get_climate_zone_for_department,
@@ -53,6 +54,7 @@ __all__ = [
     "apply_scenario_overrides",
     "build_report_model",
     "compare_scenarios",
+    "collect_model_warnings",
     "compute_dwelling_static_losses",
     "compute_room_static_losses",
     "DwellingValidationError",

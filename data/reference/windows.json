@@ -47,24 +47,43 @@
       "solar_factor_open": 1.0,
       "u_factor_closed": 1.0
     },
-    {
-      "id": "roller_shutter_standard",
-      "name": "Volet roulant standard",
-      "type": "roller_shutter",
-      "solar_factor_closed": 0.15,
-      "solar_factor_open": 1.0,
-      "u_factor_closed": 0.8
-    },
-    {
-      "id": "external_blind",
-      "name": "Store exterieur",
-      "type": "external_blind",
-      "solar_factor_closed": 0.25,
-      "solar_factor_open": 1.0,
-      "u_factor_closed": 0.95
-    },
-    {
-      "id": "interior_blind",
+        {
+            "id": "roller_shutter_standard",
+            "name": "Volet roulant standard",
+            "type": "roller_shutter",
+            "solar_factor_closed": 0.15,
+            "solar_factor_open": 1.0,
+            "u_factor_closed": 0.8
+        },
+        {
+            "id": "roller_shutter_insulating",
+            "name": "Volet roulant isolant",
+            "type": "roller_shutter",
+            "solar_factor_closed": 0.1,
+            "solar_factor_open": 1.0,
+            "u_factor_closed": 0.65
+        },
+        {
+            "id": "external_blind",
+            "name": "Store exterieur",
+            "type": "external_blind",
+            "solar_factor_closed": 0.25,
+            "solar_factor_open": 1.0,
+            "u_factor_closed": 0.95
+        },
+        {
+            "id": "fixed_south_overhang",
+            "name": "Casquette solaire sud",
+            "type": "other",
+            "solar_factor_closed": 0.35,
+            "solar_factor_open": 0.55,
+            "u_factor_closed": 1.0,
+            "orientation_relevance": [
+                "south"
+            ]
+        },
+        {
+            "id": "interior_blind",
       "name": "Store interieur",
       "type": "blind",
       "solar_factor_closed": 0.55,

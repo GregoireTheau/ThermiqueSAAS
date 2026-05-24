@@ -326,9 +326,9 @@ def _validate_performance_ref(
     system_id: str,
 ) -> None:
     _require_keys(performance_ref, ("mode",), f"system {system_id}.performance_ref")
-    if performance_ref["mode"] != "constant":
+    if performance_ref["mode"] not in {"constant", "temperature_curve"}:
         raise DwellingValidationError(
-            f"system {system_id}.performance_ref.mode must be 'constant'"
+            f"system {system_id}.performance_ref.mode must be 'constant' or 'temperature_curve'"
         )
 
     performance_key = "cop" if system_type == "heating" else "eer"
@@ -341,6 +341,26 @@ def _validate_performance_ref(
         performance_ref[performance_key],
         f"system {system_id}.performance_ref.{performance_key}",
     )
+    if performance_ref["mode"] == "temperature_curve":
+        if system_type != "heating":
+            raise DwellingValidationError(
+                f"system {system_id}.performance_ref temperature_curve is only supported for heating"
+            )
+        points = performance_ref.get("points", [])
+        if len(points) < 2:
+            raise DwellingValidationError(
+                f"system {system_id}.performance_ref.points must contain at least 2 points"
+            )
+        for point in points:
+            _require_keys(
+                point,
+                ("outdoor_temperature_c", "cop"),
+                f"system {system_id}.performance_ref point",
+            )
+            _validate_positive(
+                point["cop"],
+                f"system {system_id}.performance_ref point.cop",
+            )
 
 
 def _require_keys(

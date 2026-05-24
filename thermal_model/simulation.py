@@ -70,6 +70,8 @@ def simulate_1r1c(
     totals = {
         "heating_thermal_kwh": 0.0,
         "heating_electric_kwh": 0.0,
+        "heating_final_kwh": 0.0,
+        "heating_final_kwh_by_energy": {},
         "cooling_thermal_kwh": 0.0,
         "cooling_electric_kwh": 0.0,
     }
@@ -81,6 +83,7 @@ def simulate_1r1c(
 
         for room_id, room in rooms.items():
             current_temperature_c = temperatures[room_id]
+            shutter_opening_ratio = _shutter_opening_ratio(scenario, weather_point["hour"])
             natural_ventilation_ach = _natural_ventilation_ach(
                 scenario,
                 weather_point["hour"],
@@ -95,6 +98,7 @@ def simulate_1r1c(
                 air_density_kg_m3,
                 air_heat_capacity_j_kgk,
                 natural_ventilation_ach=natural_ventilation_ach,
+                shutter_opening_ratio=shutter_opening_ratio,
             )
             total_h_w_k = loss_data["total_h_w_k"]
             internal_gain_w = room.get(
@@ -136,12 +140,13 @@ def simulate_1r1c(
                 timestep_s,
             )
 
-            heating_power_w, heating_electric_w = _compute_heating(
+            heating_power_w, heating_final_power_by_energy = _compute_heating(
                 heating_by_room.get(room_id, []),
                 heating_setpoint_c,
                 free_next_temperature_c,
                 capacities[room_id],
                 timestep_s,
+                outdoor_temperature_c,
             )
             cooling_power_w, cooling_electric_w = _compute_cooling(
                 cooling_by_room.get(room_id, []),
@@ -163,9 +168,17 @@ def simulate_1r1c(
                 heating_power_w,
                 timestep_h,
             )
-            totals["heating_electric_kwh"] += energy_from_power(
-                heating_electric_w,
+            _add_energy_by_vector(
+                totals["heating_final_kwh_by_energy"],
+                heating_final_power_by_energy,
                 timestep_h,
+            )
+            totals["heating_electric_kwh"] = totals["heating_final_kwh_by_energy"].get(
+                "electricity",
+                0.0,
+            )
+            totals["heating_final_kwh"] = sum(
+                totals["heating_final_kwh_by_energy"].values()
             )
             totals["cooling_thermal_kwh"] += energy_from_power(
                 cooling_power_w,
@@ -201,11 +214,20 @@ def simulate_1r1c(
 
     electricity_kwh = totals["heating_electric_kwh"] + totals["cooling_electric_kwh"]
     totals["electricity_kwh"] = electricity_kwh
+    final_energy_kwh_by_energy = dict(totals["heating_final_kwh_by_energy"])
+    final_energy_kwh_by_energy["electricity"] = (
+        final_energy_kwh_by_energy.get("electricity", 0.0)
+        + totals["cooling_electric_kwh"]
+    )
+    totals["final_energy_kwh_by_energy"] = final_energy_kwh_by_energy
+    totals["final_energy_kwh"] = sum(final_energy_kwh_by_energy.values())
+    totals["energy_cost_eur"] = _energy_cost(final_energy_kwh_by_energy, scenario)
+    totals["energy_co2_kg"] = _energy_co2(final_energy_kwh_by_energy, scenario)
     totals["electricity_cost_eur"] = (
-        electricity_kwh * scenario["energy_prices"]["electricity_eur_kwh"]
+        electricity_kwh * _energy_price(scenario, "electricity")
     )
     totals["electricity_co2_kg"] = (
-        electricity_kwh * scenario["co2_factors"]["electricity_kg_kwh"]
+        electricity_kwh * _co2_factor(scenario, "electricity")
     )
 
     return {
@@ -535,9 +557,10 @@ def _compute_heating(
     free_next_temperature_c: float,
     capacity_j_k: float,
     timestep_s: float,
-) -> tuple[float, float]:
+    outdoor_temperature_c: float,
+) -> tuple[float, dict[str, float]]:
     if not systems:
-        return 0.0, 0.0
+        return 0.0, {}
 
     required_power_w = heating_power_required(
         heating_setpoint_c,
@@ -547,14 +570,100 @@ def _compute_heating(
     )
     max_power_w = sum(system["max_power_w"] for system in systems)
     heating_power_w = limited_heating_power(required_power_w, max_power_w)
-    electric_power_w = sum(
-        heating_electric_power(
-            heating_power_w * system["max_power_w"] / max_power_w,
-            system["performance_ref"]["cop"],
+    final_power_by_energy: dict[str, float] = {}
+    for system in systems:
+        system_thermal_power_w = heating_power_w * system["max_power_w"] / max_power_w
+        final_power_w = heating_electric_power(
+            system_thermal_power_w,
+            _heating_performance(system["performance_ref"], outdoor_temperature_c),
         )
-        for system in systems
+        energy_vector = _heating_energy_vector(system)
+        final_power_by_energy[energy_vector] = (
+            final_power_by_energy.get(energy_vector, 0.0) + final_power_w
+        )
+    return heating_power_w, final_power_by_energy
+
+
+def _heating_performance(
+    performance_ref: dict[str, Any],
+    outdoor_temperature_c: float,
+) -> float:
+    if performance_ref["mode"] == "temperature_curve":
+        points = sorted(
+            performance_ref["points"],
+            key=lambda point: point["outdoor_temperature_c"],
+        )
+        if outdoor_temperature_c <= points[0]["outdoor_temperature_c"]:
+            return points[0]["cop"]
+        if outdoor_temperature_c >= points[-1]["outdoor_temperature_c"]:
+            return points[-1]["cop"]
+        for lower, upper in zip(points, points[1:]):
+            if lower["outdoor_temperature_c"] <= outdoor_temperature_c <= upper[
+                "outdoor_temperature_c"
+            ]:
+                span = upper["outdoor_temperature_c"] - lower["outdoor_temperature_c"]
+                ratio = (outdoor_temperature_c - lower["outdoor_temperature_c"]) / span
+                return lower["cop"] + ratio * (upper["cop"] - lower["cop"])
+    return performance_ref["cop"]
+
+
+def _heating_energy_vector(system: dict[str, Any]) -> str:
+    if "energy_vector" in system:
+        return system["energy_vector"]
+    system_ref = system.get("system_ref", "")
+    if "gas" in system_ref:
+        return "gas"
+    if "fuel_oil" in system_ref:
+        return "fuel_oil"
+    if "wood" in system_ref:
+        return "wood"
+    return "electricity"
+
+
+def _add_energy_by_vector(
+    total_by_energy: dict[str, float],
+    power_by_energy: dict[str, float],
+    timestep_h: float,
+) -> None:
+    for energy, power_w in power_by_energy.items():
+        total_by_energy[energy] = total_by_energy.get(energy, 0.0) + energy_from_power(
+            power_w,
+            timestep_h,
+        )
+
+
+def _energy_cost(energy_kwh_by_energy: dict[str, float], scenario: dict[str, Any]) -> float:
+    return sum(
+        energy_kwh * _energy_price(scenario, energy)
+        for energy, energy_kwh in energy_kwh_by_energy.items()
     )
-    return heating_power_w, electric_power_w
+
+
+def _energy_co2(energy_kwh_by_energy: dict[str, float], scenario: dict[str, Any]) -> float:
+    return sum(
+        energy_kwh * _co2_factor(scenario, energy)
+        for energy, energy_kwh in energy_kwh_by_energy.items()
+    )
+
+
+def _energy_price(scenario: dict[str, Any], energy: str) -> float:
+    defaults = {
+        "electricity": 0.25,
+        "gas": 0.11,
+        "fuel_oil": 0.13,
+        "wood": 0.07,
+    }
+    return scenario["energy_prices"].get(f"{energy}_eur_kwh", defaults[energy])
+
+
+def _co2_factor(scenario: dict[str, Any], energy: str) -> float:
+    defaults = {
+        "electricity": 0.06,
+        "gas": 0.227,
+        "fuel_oil": 0.324,
+        "wood": 0.03,
+    }
+    return scenario["co2_factors"].get(f"{energy}_kg_kwh", defaults[energy])
 
 
 def _compute_cooling(

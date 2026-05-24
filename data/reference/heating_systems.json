@@ -7,67 +7,102 @@
     "efficiency": "thermal W / final energy W"
   },
   "systems": [
-    {
-      "id": "electric_radiator",
-      "name": "Radiateur electrique",
-      "type": "electric_radiator",
-      "performance_ref": {
-        "mode": "constant",
-        "cop": 1.0
+        {
+            "id": "electric_radiator",
+            "name": "Convecteur ou radiateur electrique",
+            "type": "electric_radiator",
+            "energy_vector": "electricity",
+            "performance_ref": {
+                "mode": "constant",
+                "cop": 1.0
+            }
+        },
+        {
+            "id": "air_air_heat_pump_standard",
+            "name": "PAC air-air standard",
+            "type": "heat_pump",
+            "energy_vector": "electricity",
+            "performance_ref": {
+                "mode": "temperature_curve",
+                "cop": 3.2,
+                "points": [
+                    {
+                        "outdoor_temperature_c": -7.0,
+                        "cop": 2.0
+                    },
+                    {
+                        "outdoor_temperature_c": 7.0,
+                        "cop": 3.2
+                    },
+                    {
+                        "outdoor_temperature_c": 15.0,
+                        "cop": 4.0
+                    }
+                ]
+            }
+        },
+        {
+            "id": "air_water_heat_pump_standard",
+            "name": "PAC air-eau standard",
+            "type": "heat_pump",
+            "energy_vector": "electricity",
+            "performance_ref": {
+                "mode": "temperature_curve",
+                "cop": 3.0,
+                "points": [
+                    {
+                        "outdoor_temperature_c": -7.0,
+                        "cop": 1.9
+                    },
+                    {
+                        "outdoor_temperature_c": 7.0,
+                        "cop": 3.0
+                    },
+                    {
+                        "outdoor_temperature_c": 15.0,
+                        "cop": 3.6
+                    }
+                ]
+            }
+        },
+        {
+            "id": "gas_boiler_standard",
+            "name": "Chaudiere gaz standard",
+            "type": "boiler",
+            "energy_vector": "gas",
+            "performance_ref": {
+                "mode": "constant",
+                "cop": 0.9
       }
     },
     {
-      "id": "air_air_heat_pump_standard",
-      "name": "PAC air-air standard",
-      "type": "heat_pump",
-      "performance_ref": {
-        "mode": "constant",
-        "cop": 3.2
+            "id": "gas_boiler_condensing",
+            "name": "Chaudiere gaz condensation",
+            "type": "boiler",
+            "energy_vector": "gas",
+            "performance_ref": {
+                "mode": "constant",
+                "cop": 1.0
       }
     },
     {
-      "id": "air_water_heat_pump_standard",
-      "name": "PAC air-eau standard",
-      "type": "heat_pump",
-      "performance_ref": {
-        "mode": "constant",
-        "cop": 3.0
+            "id": "fuel_oil_boiler_standard",
+            "name": "Chaudiere fioul standard",
+            "type": "boiler",
+            "energy_vector": "fuel_oil",
+            "performance_ref": {
+                "mode": "constant",
+                "cop": 0.85
       }
     },
     {
-      "id": "gas_boiler_standard",
-      "name": "Chaudiere gaz standard",
-      "type": "boiler",
-      "performance_ref": {
-        "mode": "constant",
-        "cop": 0.9
-      }
-    },
-    {
-      "id": "gas_boiler_condensing",
-      "name": "Chaudiere gaz condensation",
-      "type": "boiler",
-      "performance_ref": {
-        "mode": "constant",
-        "cop": 1.0
-      }
-    },
-    {
-      "id": "fuel_oil_boiler_standard",
-      "name": "Chaudiere fioul standard",
-      "type": "boiler",
-      "performance_ref": {
-        "mode": "constant",
-        "cop": 0.85
-      }
-    },
-    {
-      "id": "wood_stove_standard",
-      "name": "Chauffage bois standard",
-      "type": "boiler",
-      "performance_ref": {
-        "mode": "constant",
-        "cop": 0.75
+            "id": "wood_stove_standard",
+            "name": "Chauffage bois standard",
+            "type": "boiler",
+            "energy_vector": "wood",
+            "performance_ref": {
+                "mode": "constant",
+                "cop": 0.75
       }
     }
   ]

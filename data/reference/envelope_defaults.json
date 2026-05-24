@@ -2,12 +2,39 @@
   "schema_version": "0.1",
   "data_quality": "mvp_working_assumptions_to_calibrate",
   "description": "Default U-values and inertia assumptions by broad building period for quick first tests.",
-  "units": {
-    "u_value_w_m2k": "W/m2.K",
-    "equivalent_capacity_j_m2k": "J/m2.K",
-    "thermal_bridge_factor": "ratio"
-  },
-  "building_periods": [
+    "units": {
+        "u_value_w_m2k": "W/m2.K",
+        "equivalent_capacity_j_m2k": "J/m2.K",
+        "thermal_bridge_factor": "ratio"
+    },
+    "isolation_levels": [
+        {
+            "id": "none",
+            "name": "Non isole",
+            "u_factor": 1.25
+        },
+        {
+            "id": "poor",
+            "name": "Isolation faible ou degradee",
+            "u_factor": 1.1
+        },
+        {
+            "id": "standard",
+            "name": "Isolation standard pour la periode",
+            "u_factor": 1.0
+        },
+        {
+            "id": "renovated",
+            "name": "Isolation renovee",
+            "u_factor": 0.65
+        },
+        {
+            "id": "high_performance",
+            "name": "Isolation performante",
+            "u_factor": 0.45
+        }
+    ],
+    "building_periods": [
     {
       "id": "pre_1975_uninsulated",
       "name": "Avant 1975 non isole",

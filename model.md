@@ -125,10 +125,17 @@ Coefficients `b_boundary` actuellement codés :
 Pour les fenêtres :
 
 ```text
-UA_window = U_window * A_window
+U_window_effective = U_window * shutter_u_factor_effective
+UA_window = U_window_effective * A_window
 ```
 
 Les fenêtres ne reçoivent pas de coefficient `b_boundary` dans le calcul actuel.
+Quand un volet ou une protection possède `u_factor_closed`, le facteur U est
+interpolé avec le même `opening_ratio` que les apports solaires :
+
+```text
+u_factor_effective = u_factor_closed + opening_ratio * (1 - u_factor_closed)
+```
 
 Le coefficient de transmission total avant ponts thermiques est :
 
@@ -248,10 +255,14 @@ Protections solaires :
 |---|---:|---:|---:|
 | `none` | 1.00 | 1.00 | 1.00 |
 | `roller_shutter_standard` | 0.15 | 1.00 | 0.80 |
+| `roller_shutter_insulating` | 0.10 | 1.00 | 0.65 |
 | `external_blind` | 0.25 | 1.00 | 0.95 |
+| `fixed_south_overhang` | 0.35 | 0.55 | 1.00 |
 | `interior_blind` | 0.55 | 1.00 | 1.00 |
 
-Important : `u_factor_closed` existe dans les données mais n’est pas utilisé aujourd’hui dans le calcul de transmission horaire. Les volets agissent actuellement sur les apports solaires, pas sur le U des fenêtres.
+`u_factor_closed` est maintenant utilisé dans le calcul de transmission horaire.
+Les volets fermés réduisent donc à la fois les apports solaires et le U effectif
+des fenêtres.
 
 Le facteur solaire effectif des volets est interpolé :
 
@@ -346,7 +357,10 @@ Catalogues ACH :
 | `natural_leaky_old` | 0.90 | 0.00 |
 | `natural_average` | 0.60 | 0.00 |
 | `simple_flow` | 0.50 | 0.00 |
+| `simple_flow_hygro_a` | 0.42 | 0.00 |
+| `simple_flow_hygro_b` | 0.35 | 0.00 |
 | `double_flow_standard` | 0.45 | 0.75 |
+| `double_flow_high_efficiency` | 0.40 | 0.85 |
 | `airtight_recent` | 0.35 | 0.00 |
 
 La séparation infiltration / mécanique est faite ainsi :
@@ -478,13 +492,19 @@ P_heat_max = sum(max_power_w des systèmes desservant la pièce)
 P_heat = min(P_heat_required, P_heat_max)
 ```
 
-Consommation finale appelée `heating_electric_kwh` dans les sorties :
+Consommation finale de chauffage par vecteur énergétique :
 
 ```text
-P_heat_final = sum((P_heat * system.max_power_w / P_heat_max) / COP_system)
+P_heat_final_system = (P_heat * system.max_power_w / P_heat_max) / performance_system
+heating_final_kwh_by_energy[energy_vector] += P_heat_final_system * timestep_h / 1000
 ```
 
-Remarque importante : le champ de sortie s’appelle `heating_electric_kwh`, mais il représente en pratique une énergie finale normalisée par `cop`. Pour une chaudière gaz ou fioul, le modèle utilise aussi `cop` comme rendement simplifié.
+`heating_electric_kwh` ne contient plus que la part électrique du chauffage.
+Les autres vecteurs sont exposés dans `heating_final_kwh_by_energy`, puis agrégés
+dans `heating_final_kwh` et `final_energy_kwh_by_energy`.
+
+Pour les PAC, `performance_ref.mode = temperature_curve` interpole le COP selon
+la température extérieure. Le champ `cop` reste le COP nominal de lecture rapide.
 
 Puissance chauffage générée par défaut :
 
@@ -494,15 +514,15 @@ max_power_w = max(1500, total_area_m2 * 95)
 
 Systèmes de chauffage :
 
-| Référence | Type | COP/rendement |
-|---|---|---:|
-| `electric_radiator` | `electric_radiator` | 1.00 |
-| `air_air_heat_pump_standard` | `heat_pump` | 3.20 |
-| `air_water_heat_pump_standard` | `heat_pump` | 3.00 |
-| `gas_boiler_standard` | `boiler` | 0.90 |
-| `gas_boiler_condensing` | `boiler` | 1.00 |
-| `fuel_oil_boiler_standard` | `boiler` | 0.85 |
-| `wood_stove_standard` | `boiler` | 0.75 |
+| Référence | Type | Énergie | Performance |
+|---|---|---|---:|
+| `electric_radiator` | `electric_radiator` | électricité | COP 1.00 |
+| `air_air_heat_pump_standard` | `heat_pump` | électricité | COP 2.0 à -7 °C, 3.2 à 7 °C, 4.0 à 15 °C |
+| `air_water_heat_pump_standard` | `heat_pump` | électricité | COP 1.9 à -7 °C, 3.0 à 7 °C, 3.6 à 15 °C |
+| `gas_boiler_standard` | `boiler` | gaz | rendement 0.90 |
+| `gas_boiler_condensing` | `boiler` | gaz | rendement 1.00 |
+| `fuel_oil_boiler_standard` | `boiler` | fioul | rendement 0.85 |
+| `wood_stove_standard` | `boiler` | bois | rendement 0.75 |
 
 Pour le profil `heat_pump_seller`, le dwelling initial utilise le chauffage existant :
 
@@ -517,7 +537,7 @@ Pour le profil `heat_pump_seller`, le dwelling initial utilise le chauffage exis
 Le retrofit PAC remplace le système par :
 
 ```text
-air_air_heat_pump_standard, COP = 3.2
+air_air_heat_pump_standard, energy_vector = electricity, COP courbe temperature_curve
 ```
 
 ## 16. Climatisation
@@ -582,13 +602,28 @@ Totaux scénario :
 
 ```text
 heating_thermal_kwh
-heating_electric_kwh
+heating_final_kwh_by_energy
+heating_final_kwh
+heating_electric_kwh = heating_final_kwh_by_energy["electricity"]
 cooling_thermal_kwh
 cooling_electric_kwh
 electricity_kwh = heating_electric_kwh + cooling_electric_kwh
+final_energy_kwh_by_energy = heating_final_kwh_by_energy + cooling_electricity
+final_energy_kwh
 electricity_cost_eur = electricity_kwh * 0.25
 electricity_co2_kg = electricity_kwh * 0.06
+energy_cost_eur = sum(final_energy_kwh_by_energy[energy] * price_energy)
+energy_co2_kg = sum(final_energy_kwh_by_energy[energy] * co2_factor_energy)
 ```
+
+Prix et facteurs CO2 par défaut utilisés si le scénario ne fournit pas le vecteur :
+
+| Énergie | Prix €/kWh | kgCO2/kWh |
+|---|---:|---:|
+| électricité | 0.25 | 0.060 |
+| gaz | 0.11 | 0.227 |
+| fioul | 0.13 | 0.324 |
+| bois | 0.07 | 0.030 |
 
 ## 18. Inconfort
 
@@ -735,7 +770,8 @@ solar_factor_open_after = 1.0
 ```text
 system_ref_after = air_air_heat_pump_standard
 type_after = heat_pump
-COP_after = 3.2
+energy_vector_after = electricity
+performance_after = temperature_curve
 ```
 
 ## 22. Contrôles De Volets En Été
@@ -814,12 +850,8 @@ Le modèle actuel est volontairement simplifié :
 - pas d’ombrage géométrique ;
 - pas de débit VMC pièce par pièce réel ;
 - pas de réseau aéraulique ;
-- pas de loi de performance PAC dépendante de la température extérieure ;
 - pas de puissance système saisie finement par pièce ;
 - les chaudières gaz/fioul/bois utilisent le champ `cop` comme rendement simplifié ;
-- les consommations non électriques sont agrégées dans le champ `heating_electric_kwh`, ce nom est donc trompeur ;
-- les volets ne modifient pas encore le U des fenêtres malgré `u_factor_closed` ;
 - les ponts thermiques sont un facteur global, pas des longueurs `psi * L` ;
 - les pièces sont couplées par une conductance simple, sans modèle de porte ni débit d’air réel ;
 - la météo synthétique est un ordre de grandeur, pas une météo réglementaire.
-

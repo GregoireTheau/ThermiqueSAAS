@@ -11,6 +11,7 @@ from thermal_model import (
     build_report_model,
     build_thermal_weather,
     city_slug,
+    collect_model_warnings,
     combine_weather_years,
     compare_scenarios,
     ensure_openmeteo_thermal_weather,
@@ -97,6 +98,22 @@ def run_profile_experience(
             "before_scenario": before,
             "after_scenario": after,
             "comparison": comparison,
+            "model_warnings": {
+                "before": collect_model_warnings(
+                    resolved_dwelling,
+                    before,
+                    comparison["before"],
+                    air_density_kg_m3=air_density_kg_m3,
+                    air_heat_capacity_j_kgk=air_heat_capacity_j_kgk,
+                ),
+                "after": collect_model_warnings(
+                    resolved_dwelling,
+                    after,
+                    comparison["after"],
+                    air_density_kg_m3=air_density_kg_m3,
+                    air_heat_capacity_j_kgk=air_heat_capacity_j_kgk,
+                ),
+            },
             "report": report,
         }
         if include_report_html:
@@ -187,7 +204,7 @@ def build_customer(
         "ventilation_id": answers.get("ventilation_id", "simple_flow"),
         "window_ref": answers.get("window_ref", "double_glazing_standard"),
         "shutter_ref": answers.get("shutter_ref", "roller_shutter_standard"),
-        "shutter_usage": _shutter_usage(answers),
+        "shutter_usage": _shutter_usage(answers, adaptation_id),
         "heating_ref": _initial_heating_ref(profile["id"], answers),
         "has_cooling": _answer_bool(answers.get("has_cooling"), False),
         "setpoints": {"heating_c": heating_setpoint_c, "cooling_c": cooling_setpoint_c},
@@ -397,10 +414,15 @@ def _thermal_layout(
     return {"type": "open_living", "connections": []}
 
 
-def _shutter_usage(answers: dict[str, Any]) -> dict[str, Any]:
+def _shutter_usage(answers: dict[str, Any], adaptation_id: str) -> dict[str, Any]:
     shutter_usage_id = answers.get("shutter_usage_id")
     if not shutter_usage_id:
-        return {"id": "none", "label": "Non precise"}
+        if (
+            adaptation_id != "solar_protection"
+            and answers.get("shutter_ref", "roller_shutter_standard") == "none"
+        ):
+            return {"id": "none", "label": "Pas de protection solaire actuelle"}
+        return _option_by_id(customer_experience.SHUTTER_USAGE_LEVELS, "partial")
     return _option_by_id(customer_experience.SHUTTER_USAGE_LEVELS, shutter_usage_id)
 
 

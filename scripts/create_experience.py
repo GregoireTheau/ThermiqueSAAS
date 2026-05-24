@@ -282,7 +282,16 @@ def build_retrofit(
                     "system_id": system["id"],
                     "system_ref": "air_air_heat_pump_standard",
                     "type": "heat_pump",
-                    "performance_ref": {"mode": "constant", "cop": 3.2},
+                    "energy_vector": "electricity",
+                    "performance_ref": {
+                        "mode": "temperature_curve",
+                        "cop": 3.2,
+                        "points": [
+                            {"outdoor_temperature_c": -7.0, "cop": 2.0},
+                            {"outdoor_temperature_c": 7.0, "cop": 3.2},
+                            {"outdoor_temperature_c": 15.0, "cop": 4.0},
+                        ],
+                    },
                 }
                 for system in dwelling["systems"]["heating"]
                 if room_id in system["served_rooms"]

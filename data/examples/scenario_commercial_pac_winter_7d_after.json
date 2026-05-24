@@ -701,27 +701,59 @@
       {
         "category": "heating",
         "id": "bedroom_heat_pump_unit",
+        "system_ref": "air_air_heat_pump_standard",
         "type": "heat_pump",
+        "energy_vector": "electricity",
         "served_rooms": [
           "bedroom"
         ],
         "max_power_w": 1800,
         "performance_ref": {
-          "mode": "constant",
-          "cop": 3.2
+          "mode": "temperature_curve",
+          "cop": 3.2,
+          "points": [
+            {
+              "outdoor_temperature_c": -7.0,
+              "cop": 2.0
+            },
+            {
+              "outdoor_temperature_c": 7.0,
+              "cop": 3.2
+            },
+            {
+              "outdoor_temperature_c": 15.0,
+              "cop": 4.0
+            }
+          ]
         }
       },
       {
         "category": "heating",
         "id": "bathroom_heat_pump_unit",
+        "system_ref": "air_air_heat_pump_standard",
         "type": "heat_pump",
+        "energy_vector": "electricity",
         "served_rooms": [
           "bathroom"
         ],
         "max_power_w": 1200,
         "performance_ref": {
-          "mode": "constant",
-          "cop": 3.2
+          "mode": "temperature_curve",
+          "cop": 3.2,
+          "points": [
+            {
+              "outdoor_temperature_c": -7.0,
+              "cop": 2.0
+            },
+            {
+              "outdoor_temperature_c": 7.0,
+              "cop": 3.2
+            },
+            {
+              "outdoor_temperature_c": 15.0,
+              "cop": 4.0
+            }
+          ]
         }
       }
     ]

@@ -34,7 +34,7 @@ def test_commercial_roof_retrofit_heatwave_3d():
 
     assert len(before["weather"]["hourly"]) == 72
     assert len(after["weather"]["hourly"]) == 72
-    assert round(comparison["deltas"]["electricity_kwh"], 2) == 3.73
+    assert round(comparison["deltas"]["electricity_kwh"], 2) == 3.75
     assert round(comparison["deltas"]["rooms"]["bedroom"]["delta_max_temperature_c"], 1) == 1.6
     assert comparison["summary"]["main_gain_driver"]["key"] == "solar_gains"
     assert comparison["summary"]["comfort_gain"]["room_name"] == "Chambre"
@@ -46,8 +46,8 @@ def test_commercial_window_shutter_summer_3d():
         "data/examples/scenario_commercial_window_shutter_summer_after.json",
     )
 
-    assert round(comparison["deltas"]["electricity_kwh"], 2) == 9.94
-    assert round(comparison["deltas"]["rooms"]["living_room"]["delta_max_temperature_c"], 1) == 3.8
+    assert round(comparison["deltas"]["electricity_kwh"], 2) == 10.14
+    assert round(comparison["deltas"]["rooms"]["living_room"]["delta_max_temperature_c"], 1) == 3.7
     assert comparison["summary"]["main_gain_driver"]["key"] == "solar_gains"
 
 
@@ -62,6 +62,6 @@ def test_commercial_heat_pump_winter_7d():
 
     assert len(before["weather"]["hourly"]) == 168
     assert len(after["weather"]["hourly"]) == 168
-    assert round(comparison["deltas"]["electricity_kwh"], 2) == 141.09
-    assert round(comparison["deltas"]["electricity_cost_eur"], 2) == 35.27
+    assert round(comparison["deltas"]["electricity_kwh"], 2) == 129.21
+    assert round(comparison["deltas"]["electricity_cost_eur"], 2) == 32.30
     assert comparison["summary"]["main_gain_driver"]["key"] == "system_efficiency"

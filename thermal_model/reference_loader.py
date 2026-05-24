@@ -19,6 +19,7 @@ DEFAULT_REFERENCE_DIR = Path(__file__).resolve().parents[1] / "data" / "referenc
 REFERENCE_COLLECTIONS = {
     "materials": ("materials.json", "materials"),
     "envelope_defaults": ("envelope_defaults.json", "building_periods"),
+    "isolation_levels": ("envelope_defaults.json", "isolation_levels"),
     "windows": ("windows.json", "windows"),
     "shutters": ("windows.json", "shutters"),
     "ventilation": ("ventilation.json", "ventilation_types"),

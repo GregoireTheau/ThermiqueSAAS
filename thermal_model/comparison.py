@@ -108,6 +108,11 @@ def compare_scenarios(
             after_results,
             "heating_electric_kwh",
         ),
+        "heating_final_kwh": _delta_total(
+            before_results,
+            after_results,
+            "heating_final_kwh",
+        ),
         "cooling_thermal_kwh": _delta_total(
             before_results,
             after_results,
@@ -119,15 +124,26 @@ def compare_scenarios(
             "cooling_electric_kwh",
         ),
         "electricity_kwh": _delta_total(before_results, after_results, "electricity_kwh"),
+        "final_energy_kwh": _delta_total(before_results, after_results, "final_energy_kwh"),
         "electricity_cost_eur": _delta_total(
             before_results,
             after_results,
             "electricity_cost_eur",
         ),
+        "energy_cost_eur": _delta_total(
+            before_results,
+            after_results,
+            "energy_cost_eur",
+        ),
         "electricity_co2_kg": _delta_total(
             before_results,
             after_results,
             "electricity_co2_kg",
+        ),
+        "energy_co2_kg": _delta_total(
+            before_results,
+            after_results,
+            "energy_co2_kg",
         ),
         "rooms": room_deltas,
     }
@@ -259,8 +275,9 @@ def _build_summary(
     return {
         "headline_metrics": {
             "electricity_saved_kwh": deltas["electricity_kwh"],
-            "cost_saved_eur": deltas["electricity_cost_eur"],
-            "co2_saved_kg": deltas["electricity_co2_kg"],
+            "final_energy_saved_kwh": deltas["final_energy_kwh"],
+            "cost_saved_eur": deltas["energy_cost_eur"],
+            "co2_saved_kg": deltas["energy_co2_kg"],
             "max_temperature_reduction_c": max(
                 room["delta_max_temperature_c"] for room in room_deltas.values()
             ),
@@ -283,8 +300,11 @@ def _build_summary(
             "electricity_before_kwh": before_results["totals"]["electricity_kwh"],
             "electricity_after_kwh": after_results["totals"]["electricity_kwh"],
             "electricity_saved_kwh": deltas["electricity_kwh"],
-            "cost_saved_eur": deltas["electricity_cost_eur"],
-            "co2_saved_kg": deltas["electricity_co2_kg"],
+            "final_energy_before_kwh": before_results["totals"]["final_energy_kwh"],
+            "final_energy_after_kwh": after_results["totals"]["final_energy_kwh"],
+            "final_energy_saved_kwh": deltas["final_energy_kwh"],
+            "cost_saved_eur": deltas["energy_cost_eur"],
+            "co2_saved_kg": deltas["energy_co2_kg"],
         },
         "main_gain_driver": _main_gain_driver(deltas),
         "room_cards": [
@@ -322,15 +342,15 @@ def _comfort_gain_label(room_delta: dict[str, Any]) -> str:
 
 
 def _energy_savings_label(deltas: dict[str, Any]) -> str:
-    if deltas["electricity_kwh"] > 0:
+    if deltas["final_energy_kwh"] > 0:
         return (
-            f"{deltas['electricity_kwh']:.2f} kWh, "
-            f"{deltas['electricity_cost_eur']:.2f} EUR et "
-            f"{deltas['electricity_co2_kg']:.2f} kg CO2 economises"
+            f"{deltas['final_energy_kwh']:.2f} kWh finaux, "
+            f"{deltas['energy_cost_eur']:.2f} EUR et "
+            f"{deltas['energy_co2_kg']:.2f} kg CO2 economises"
         )
-    if deltas["electricity_kwh"] < 0:
-        return f"{abs(deltas['electricity_kwh']):.2f} kWh electriques supplementaires"
-    return "Consommation electrique inchangee"
+    if deltas["final_energy_kwh"] < 0:
+        return f"{abs(deltas['final_energy_kwh']):.2f} kWh finaux supplementaires"
+    return "Consommation d'energie finale inchangee"
 
 
 def _main_gain_driver(deltas: dict[str, Any]) -> dict[str, Any]:
@@ -351,8 +371,8 @@ def _main_gain_driver(deltas: dict[str, Any]) -> dict[str, Any]:
         (
             "system_efficiency",
             "meilleure efficacite des equipements",
-            max(deltas["heating_electric_kwh"], deltas["cooling_electric_kwh"]),
-            "kWh electriques",
+            max(deltas["heating_final_kwh"], deltas["cooling_electric_kwh"]),
+            "kWh finaux",
         ),
         (
             "solar_gains",

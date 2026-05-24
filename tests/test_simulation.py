@@ -26,7 +26,10 @@ def test_winter_simulation_energy_totals():
     )
 
     assert round(results["totals"]["heating_thermal_kwh"], 2) == 29.35
-    assert round(results["totals"]["heating_electric_kwh"], 2) == 17.74
+    assert round(results["totals"]["heating_electric_kwh"], 2) == 18.36
+    assert results["totals"]["heating_final_kwh_by_energy"] == {
+        "electricity": results["totals"]["heating_electric_kwh"]
+    }
     assert round(results["totals"]["cooling_electric_kwh"], 2) == 0.0
     assert set(results) == {"hourly", "rooms_summary", "totals"}
     assert set(results["rooms_summary"]) == {"living_room", "bedroom", "bathroom"}
@@ -53,11 +56,11 @@ def test_heatwave_after_reflective_roof_simulation():
         air_heat_capacity_j_kgk=1005.0,
     )
 
-    assert round(results["totals"]["cooling_electric_kwh"], 2) == 10.03
-    assert round(results["rooms_summary"]["living_room"]["cooling_thermal_kwh"], 2) == 30.08
-    assert round(results["rooms_summary"]["bedroom"]["hot_degree_hours"], 1) == 111.4
+    assert round(results["totals"]["cooling_electric_kwh"], 2) == 9.96
+    assert round(results["rooms_summary"]["living_room"]["cooling_thermal_kwh"], 2) == 29.89
+    assert round(results["rooms_summary"]["bedroom"]["hot_degree_hours"], 1) == 111.1
     assert round(results["rooms_summary"]["bedroom"]["solar_gain_kwh"], 2) == 3.95
-    assert round(results["rooms_summary"]["bedroom"]["transmission_exchange_kwh"], 2) == 0.94
+    assert round(results["rooms_summary"]["bedroom"]["transmission_exchange_kwh"], 2) == 0.92
     assert round(results["rooms_summary"]["bedroom"]["ventilation_exchange_kwh"], 2) == 0.19
     bedroom_max = max(
         hour["rooms"]["bedroom"]["temperature_c"]

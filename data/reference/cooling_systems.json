@@ -15,13 +15,13 @@
         "eer": 2.6
       }
     },
-    {
-      "id": "air_conditioner_standard",
-      "name": "Climatisation air-air standard",
-      "type": "air_conditioner",
-      "performance_ref": {
-        "mode": "constant",
-        "eer": 3.0
+        {
+            "id": "air_conditioner_standard",
+            "name": "Clim split air-air standard",
+            "type": "air_conditioner",
+            "performance_ref": {
+                "mode": "constant",
+                "eer": 3.0
       }
     },
     {

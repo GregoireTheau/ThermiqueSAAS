@@ -7,7 +7,9 @@ from typing import Any
 from utils import (
     airflow_from_ach,
     corrected_transmission_coefficient,
+    shutter_factor,
     sum_ua,
+    window_u_with_shutter,
     ventilation_heat_transfer_coefficient,
 )
 
@@ -30,6 +32,7 @@ def compute_room_static_losses(
     air_density_kg_m3: float,
     air_heat_capacity_j_kgk: float,
     natural_ventilation_ach: float = 0.0,
+    shutter_opening_ratio: float = 1.0,
 ) -> dict[str, float]:
     """Return static loss coefficients and losses for one room."""
     defaults = dwelling["defaults"]
@@ -44,7 +47,7 @@ def compute_room_static_losses(
     )
     window_ua_w_k = sum_ua(
         (
-            window["u_value_w_m2k"],
+            _effective_window_u_value(window, shutter_opening_ratio),
             window["area_m2"],
         )
         for window in room["windows"]
@@ -123,6 +126,22 @@ def compute_room_static_losses(
         "ventilation_loss_w": ventilation_h_w_k * delta_t_k,
         "total_loss_w": total_h_w_k * delta_t_k,
     }
+
+
+def _effective_window_u_value(
+    window: dict[str, Any],
+    shutter_opening_ratio: float,
+) -> float:
+    shutter = window.get("shutter")
+    if not shutter:
+        return window["u_value_w_m2k"]
+
+    u_factor = shutter_factor(
+        shutter["u_factor_closed"],
+        1.0,
+        shutter_opening_ratio,
+    )
+    return window_u_with_shutter(window["u_value_w_m2k"], u_factor)
 
 
 def compute_dwelling_static_losses(

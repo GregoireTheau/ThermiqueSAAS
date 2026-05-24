@@ -399,6 +399,9 @@
         "max_power_w": {
           "$ref": "#/$defs/positive_number"
         },
+        "energy_vector": {
+          "$ref": "#/$defs/energy_vector"
+        },
         "performance_ref": {
           "$ref": "#/$defs/system_performance_ref"
         }
@@ -432,6 +435,9 @@
         "max_power_w": {
           "$ref": "#/$defs/positive_number"
         },
+        "energy_vector": {
+          "$ref": "#/$defs/energy_vector"
+        },
         "performance_ref": {
           "$ref": "#/$defs/system_performance_ref"
         }
@@ -450,6 +456,14 @@
         "$ref": "#/$defs/id"
       },
       "uniqueItems": true
+    },
+    "energy_vector": {
+      "enum": [
+        "electricity",
+        "gas",
+        "fuel_oil",
+        "wood"
+      ]
     },
     "system_performance_ref": {
       "oneOf": [
@@ -470,7 +484,33 @@
       ],
       "properties": {
         "mode": {
-          "const": "constant"
+          "enum": [
+            "constant",
+            "temperature_curve"
+          ]
+        },
+        "cop": {
+          "$ref": "#/$defs/positive_number"
+        },
+        "points": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/heating_performance_point"
+          }
+        }
+      }
+    },
+    "heating_performance_point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outdoor_temperature_c",
+        "cop"
+      ],
+      "properties": {
+        "outdoor_temperature_c": {
+          "type": "number"
         },
         "cop": {
           "$ref": "#/$defs/positive_number"
@@ -575,6 +615,15 @@
       "properties": {
         "electricity_eur_kwh": {
           "$ref": "#/$defs/non_negative_number"
+        },
+        "gas_eur_kwh": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "fuel_oil_eur_kwh": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "wood_eur_kwh": {
+          "$ref": "#/$defs/non_negative_number"
         }
       }
     },
@@ -586,6 +635,15 @@
       ],
       "properties": {
         "electricity_kg_kwh": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "gas_kg_kwh": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "fuel_oil_kg_kwh": {
+          "$ref": "#/$defs/non_negative_number"
+        },
+        "wood_kg_kwh": {
           "$ref": "#/$defs/non_negative_number"
         }
       }

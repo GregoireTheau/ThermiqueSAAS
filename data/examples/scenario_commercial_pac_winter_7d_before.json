@@ -702,6 +702,7 @@
         "category": "heating",
         "system_id": "living_heat_pump_unit",
         "type": "electric_radiator",
+        "energy_vector": "electricity",
         "max_power_w": 3500,
         "performance_ref": {
           "mode": "constant",

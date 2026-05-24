@@ -1623,6 +1623,7 @@ def build_retrofit(
                     "system_id": system["id"],
                     "system_ref": "air_air_heat_pump_standard",
                     "type": reference["type"],
+                    "energy_vector": reference["energy_vector"],
                     "performance_ref": reference["performance_ref"],
                 }
                 for system in dwelling["systems"]["heating"]
