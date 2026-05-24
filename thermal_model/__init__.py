@@ -23,6 +23,7 @@ from .reference_loader import (
     get_reference,
     get_shutter_reference,
     get_ventilation_reference,
+    get_weather_profile_reference,
     get_window_reference,
     load_reference_catalog,
 )
@@ -77,6 +78,7 @@ __all__ = [
     "get_rooms_by_id",
     "get_shutter_reference",
     "get_ventilation_reference",
+    "get_weather_profile_reference",
     "get_window_reference",
     "iter_external_surfaces",
     "iter_thermal_links",

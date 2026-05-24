@@ -1,11 +1,11 @@
 {
   "schema_version": "0.1",
-  "data_quality": "zone_ids_verified_department_mapping_todo",
-  "description": "French RT2012/RE2020 climate zone identifiers. Department-level mapping will be added later.",
+  "data_quality": "zone_ids_verified_partial_department_mapping",
+  "description": "French RT2012/RE2020 climate zone identifiers with department-level mapping for the first commercial reference cities.",
   "sources": [
     {
-      "name": "Legifrance - Arrete du 28 decembre 2012, annexe zones climatiques",
-      "url": "https://www.legifrance.gouv.fr/jorf/id/JORFSCTA000026871766"
+      "name": "Legifrance - Arrete du 26 octobre 2010, annexe I zones climatiques",
+      "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000022959397"
     },
     {
       "name": "Ministere de la Transition ecologique - RT2012",
@@ -71,6 +71,15 @@
     }
   ],
   "department_zone_map": {
-    "33": "FR_H2c"
+    "06": "FR_H3",
+    "13": "FR_H3",
+    "31": "FR_H2c",
+    "33": "FR_H2c",
+    "38": "FR_H1c",
+    "44": "FR_H2b",
+    "59": "FR_H1a",
+    "67": "FR_H1b",
+    "69": "FR_H1c",
+    "75": "FR_H1a"
   }
 }

@@ -20,6 +20,7 @@ from thermal_model import (  # noqa: E402
     build_report_model,
     compare_scenarios,
     ensure_openmeteo_thermal_weather,
+    get_weather_profile_reference,
     load_reference_catalog,
     render_report_html,
     resolve_scenario_weather_reference,
@@ -1382,6 +1383,7 @@ def build_scenario(
         "weather": build_scenario_weather(
             experiment_spec,
             dwelling,
+            catalog,
             weather_city,
             annual_weather_year,
             annual_weather_dir,
@@ -1433,6 +1435,7 @@ def initial_temperature_for_experiment(experiment_spec: dict[str, Any]) -> float
 def build_scenario_weather(
     experiment_spec: dict[str, Any],
     dwelling: dict[str, Any],
+    catalog: dict[str, Any],
     weather_city: dict[str, str],
     annual_weather_year: int,
     annual_weather_dir: str | Path,
@@ -1447,81 +1450,113 @@ def build_scenario_weather(
                 output_dir=annual_weather_dir,
             ),
         }
-    return build_weather(experiment_spec, dwelling["location"]["climate_zone_id"])
+    return build_weather(experiment_spec, dwelling["location"]["climate_zone_id"], catalog)
 
 
-def build_weather(experiment_spec: dict[str, Any], climate_zone_id: str) -> dict[str, Any]:
+def build_weather(
+    experiment_spec: dict[str, Any],
+    climate_zone_id: str,
+    catalog: dict[str, Any],
+) -> dict[str, Any]:
     weather_variant = experiment_spec["weather_variant"]
     duration_days = experiment_spec["duration_days"]
-    if weather_variant == "summer_heatwave":
-        base_temp, amplitude = summer_temperature_profile(climate_zone_id)
-    elif weather_variant == "summer_long_with_heatwave":
-        base_temp, amplitude = summer_typical_temperature_profile(climate_zone_id)
-    else:
-        base_temp, amplitude = winter_temperature_profile(climate_zone_id)
+    default_profile = weather_profile_for_variant(climate_zone_id, weather_variant)
 
     hourly = []
     for hour in range(duration_days * 24):
         day = hour // 24
         hour_in_day = hour % 24
         if weather_variant == "summer_long_with_heatwave" and 27 <= day <= 29:
-            base_temp, amplitude = summer_temperature_profile(climate_zone_id)
-        elif weather_variant == "summer_long_with_heatwave":
-            base_temp, amplitude = summer_typical_temperature_profile(climate_zone_id)
+            profile_id = weather_profile_for_variant(climate_zone_id, "summer_heatwave")
+        else:
+            profile_id = default_profile
+        weather_profile = get_weather_profile_reference(catalog, profile_id)
+        temperature_profile = weather_profile["temperature_profile"]
+        base_temp = temperature_profile["base_temp_c"]
+        amplitude = temperature_profile["amplitude_c"]
+        phase_hour = temperature_profile.get("phase_hour", 8)
         outdoor_temperature_c = base_temp + amplitude * math.sin(
-            2.0 * math.pi * (hour_in_day - 8) / 24.0,
+            2.0 * math.pi * (hour_in_day - phase_hour) / 24.0,
         )
         weather_point = {
             "hour": hour,
             "outdoor_temperature_c": round(outdoor_temperature_c, 2),
-            "solar_irradiance_w_m2": solar_profile(experiment_spec["season"], hour_in_day),
+            "solar_irradiance_w_m2": solar_profile(weather_profile, hour_in_day),
         }
         hourly.append(weather_point)
-    return {"source": f"generated_{weather_variant}_{climate_zone_id}", "hourly": hourly}
+    return {"source": f"generated_{default_profile}_{climate_zone_id}", "hourly": hourly}
 
 
-def summer_temperature_profile(climate_zone_id: str) -> tuple[float, float]:
+def weather_profile_for_variant(climate_zone_id: str, weather_variant: str) -> str:
+    climate_family = climate_family_for_zone(climate_zone_id)
+    if weather_variant == "summer_heatwave":
+        profile_type = "heatwave_reference"
+    elif weather_variant == "summer_long_with_heatwave":
+        profile_type = "summer_typical"
+    else:
+        profile_type = "winter_design"
+    return f"{climate_family}_{profile_type}"
+
+
+def climate_family_for_zone(climate_zone_id: str) -> str:
     if climate_zone_id == "FR_H3":
-        return 31.0, 8.0
+        return "H3"
     if climate_zone_id.startswith("FR_H1"):
-        return 26.5, 6.0
-    return 29.0, 7.0
+        return "H1"
+    return "H2"
 
 
-def summer_typical_temperature_profile(climate_zone_id: str) -> tuple[float, float]:
-    if climate_zone_id == "FR_H3":
-        return 26.0, 6.0
-    if climate_zone_id.startswith("FR_H1"):
-        return 22.5, 5.0
-    return 24.5, 5.5
-
-
-def winter_temperature_profile(climate_zone_id: str) -> tuple[float, float]:
-    if climate_zone_id.startswith("FR_H1"):
-        return 0.0, 4.0
-    if climate_zone_id == "FR_H3":
-        return 7.0, 4.0
-    return 3.0, 4.0
-
-
-def solar_profile(season: str, hour_in_day: int) -> dict[str, float]:
-    if season == "winter":
+def solar_profile(weather_profile: dict[str, Any], hour_in_day: int) -> dict[str, float]:
+    profile = weather_profile["solar_profile"]
+    if profile["mode"] == "winter_reference":
         peak = max(0.0, math.sin(math.pi * (hour_in_day - 8) / 8.0))
         return {
-            "north": 0.0,
-            "east": round(120.0 * peak if hour_in_day < 13 else 30.0 * peak, 2),
-            "south": round(280.0 * peak, 2),
-            "west": round(120.0 * peak if hour_in_day > 12 else 30.0 * peak, 2),
-            "roof": round(240.0 * peak, 2),
+            "north": round(profile["north_peak_w_m2"] * peak, 2),
+            "east": round(
+                (
+                    profile["east_morning_peak_w_m2"]
+                    if hour_in_day < 13
+                    else profile["east_afternoon_peak_w_m2"]
+                )
+                * peak,
+                2,
+            ),
+            "south": round(profile["south_peak_w_m2"] * peak, 2),
+            "west": round(
+                (
+                    profile["west_afternoon_peak_w_m2"]
+                    if hour_in_day > 12
+                    else profile["west_morning_peak_w_m2"]
+                )
+                * peak,
+                2,
+            ),
+            "roof": round(profile["roof_peak_w_m2"] * peak, 2),
         }
 
     peak = max(0.0, math.sin(math.pi * (hour_in_day - 6) / 13.0))
     return {
-        "north": round(80.0 * peak, 2),
-        "east": round((520.0 if hour_in_day < 13 else 160.0) * peak, 2),
-        "south": round(620.0 * peak, 2),
-        "west": round((520.0 if hour_in_day > 12 else 160.0) * peak, 2),
-        "roof": round(760.0 * peak, 2),
+        "north": round(profile["north_peak_w_m2"] * peak, 2),
+        "east": round(
+            (
+                profile["east_morning_peak_w_m2"]
+                if hour_in_day < 13
+                else profile["east_afternoon_peak_w_m2"]
+            )
+            * peak,
+            2,
+        ),
+        "south": round(profile["south_peak_w_m2"] * peak, 2),
+        "west": round(
+            (
+                profile["west_afternoon_peak_w_m2"]
+                if hour_in_day > 12
+                else profile["west_morning_peak_w_m2"]
+            )
+            * peak,
+            2,
+        ),
+        "roof": round(profile["roof_peak_w_m2"] * peak, 2),
     }
 
 

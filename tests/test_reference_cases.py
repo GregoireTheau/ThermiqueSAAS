@@ -150,6 +150,12 @@ def _build_scenario(case):
         "energy_prices": {"electricity_eur_kwh": 0.25},
         "co2_factors": {"electricity_kg_kwh": 0.06},
     }
+    if "shutter_hourly" in scenario_data:
+        scenario["controls"]["shutters"]["hourly"] = [
+            {"hour": hour, "opening_ratio": entry["opening_ratio"]}
+            for entry in scenario_data["shutter_hourly"]
+            for hour in range(entry["start_hour"], entry["end_hour"] + 1)
+        ]
     resolve_scenario_weather_reference(scenario, REFERENCE_CASES_DIR)
     return scenario
 
@@ -229,3 +235,54 @@ def test_reference_cases_keep_expected_physical_ordering():
             "max_temperature_c"
         ]
     )
+
+
+def test_heatwave_reference_cases_define_protected_and_unprotected_variants():
+    heatwave_cases = [
+        case
+        for case in _load_reference_cases()
+        if case["scenario"]["weather_ref"] == "weather_heatwave_24h.json"
+    ]
+
+    assert heatwave_cases
+    for case in heatwave_cases:
+        assert set(case["scenario_variants"]) == {
+            "canicule_sans_protection",
+            "canicule_occupant_raisonnable",
+        }
+        for window in case["windows"]:
+            assert window["shutter"]["solar_factor_closed"] == 0.15
+            assert window["shutter"]["solar_factor_open"] == 1.0
+
+
+def test_reasonable_occupant_heatwave_variant_reduces_temperature_at_20h():
+    for case in _load_reference_cases():
+        if case["scenario"]["weather_ref"] != "weather_heatwave_24h.json":
+            continue
+
+        unprotected_case = deepcopy(case)
+        unprotected_case["scenario"].update(
+            case["scenario_variants"]["canicule_sans_protection"]
+        )
+        protected_case = deepcopy(case)
+        protected_case["scenario"].update(
+            case["scenario_variants"]["canicule_occupant_raisonnable"]
+        )
+        dwelling = _build_dwelling(case)
+        unprotected_results = simulate_1r1c(
+            dwelling,
+            _build_scenario(unprotected_case),
+            air_density_kg_m3=1.2,
+            air_heat_capacity_j_kgk=1005.0,
+        )
+        protected_results = simulate_1r1c(
+            dwelling,
+            _build_scenario(protected_case),
+            air_density_kg_m3=1.2,
+            air_heat_capacity_j_kgk=1005.0,
+        )
+
+        assert (
+            protected_results["hourly"][20]["rooms"]["main_room"]["temperature_c"]
+            < unprotected_results["hourly"][20]["rooms"]["main_room"]["temperature_c"]
+        )

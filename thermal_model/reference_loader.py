@@ -26,6 +26,7 @@ REFERENCE_COLLECTIONS = {
     "heating_systems": ("heating_systems.json", "systems"),
     "cooling_systems": ("cooling_systems.json", "systems"),
     "climate_zones": ("climate_zones_france.json", "climate_zones"),
+    "weather_profiles": ("weather_profiles.json", "profiles"),
 }
 
 
@@ -137,6 +138,14 @@ def get_climate_zone_reference(
 ) -> ReferenceItem:
     """Return a climate zone reference."""
     return get_reference(catalog, "climate_zones", climate_zone_id)
+
+
+def get_weather_profile_reference(
+    catalog: ReferenceCatalog,
+    profile_id: str,
+) -> ReferenceItem:
+    """Return a synthetic weather profile reference."""
+    return get_reference(catalog, "weather_profiles", profile_id)
 
 
 def get_climate_zone_for_department(
