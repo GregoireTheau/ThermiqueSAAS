@@ -173,3 +173,69 @@ def test_init_db_migrates_legacy_schema(tmp_path):
     assert organization["normalized_name"] == "legacy org"
     assert session["expires_at"] is not None
     assert branding_table is not None
+
+
+def test_init_db_merges_legacy_duplicate_organizations(tmp_path):
+    db_path = tmp_path / "legacy_duplicates.sqlite"
+    with sqlite3.connect(db_path) as connection:
+        connection.executescript(
+            """
+            create table organizations (
+                id text primary key,
+                name text not null,
+                business_profile_id text not null,
+                created_at text not null
+            );
+
+            create table users (
+                id text primary key,
+                organization_id text not null,
+                email text not null unique,
+                name text not null,
+                password_hash text not null,
+                created_at text not null
+            );
+
+            create table sessions (
+                id text primary key,
+                user_id text not null,
+                token_hash text not null unique,
+                created_at text not null,
+                revoked_at text
+            );
+
+            insert into organizations
+                (id, name, business_profile_id, created_at)
+            values
+                ('org_a', 'Demo Thermal Pro', 'heat_pump_seller', '2026-05-22T10:00:00+00:00'),
+                ('org_b', ' demo thermal pro ', 'heat_pump_seller', '2026-05-22T11:00:00+00:00');
+
+            insert into users
+                (id, organization_id, email, name, password_hash, created_at)
+            values
+                ('usr_a', 'org_a', 'a@example.com', 'A', 'hash', '2026-05-22T10:00:00+00:00'),
+                ('usr_b', 'org_b', 'b@example.com', 'B', 'hash', '2026-05-22T11:00:00+00:00');
+            """
+        )
+
+    init_db(db_path)
+
+    with sqlite3.connect(db_path) as connection:
+        connection.row_factory = sqlite3.Row
+        organizations = connection.execute("select * from organizations").fetchall()
+        users = connection.execute(
+            "select organization_id from users order by email",
+        ).fetchall()
+        duplicate_names = connection.execute(
+            """
+            select normalized_name
+            from organizations
+            group by normalized_name
+            having count(*) > 1
+            """,
+        ).fetchall()
+
+    assert len(organizations) == 1
+    assert organizations[0]["normalized_name"] == "demo thermal pro"
+    assert [row["organization_id"] for row in users] == ["org_a", "org_a"]
+    assert duplicate_names == []

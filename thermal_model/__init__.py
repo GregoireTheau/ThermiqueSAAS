@@ -32,6 +32,7 @@ from .scenario_loader import (
     ScenarioValidationError,
     load_scenario,
     resolve_scenario_weather_reference,
+    validate_scenario_against_dwelling,
     validate_scenario,
 )
 from .simulation import apply_scenario_overrides, simulate_1r1c
@@ -94,6 +95,7 @@ __all__ = [
     "simulate_1r1c",
     "thermal_weather_ref",
     "validate_scenario",
+    "validate_scenario_against_dwelling",
     "validate_dwelling",
     "write_parquet",
     "write_thermal_weather_json",

@@ -14,6 +14,7 @@ from thermal_model import (
     load_scenario,
     resolve_dwelling_references,
     validate_scenario,
+    validate_scenario_against_dwelling,
     validate_dwelling,
 )
 
@@ -125,6 +126,71 @@ def test_validate_scenario_requires_resolved_weather_ref():
         assert "must be resolved" in str(exc)
     else:
         raise AssertionError("validate_scenario accepted an unresolved weather_ref")
+
+
+def test_validate_scenario_rejects_absurd_setpoints_and_timestep_mismatch():
+    scenario = deepcopy(load_scenario("data/examples/scenario_simple.json"))
+    scenario["setpoints"] = {"heating_c": 19.0, "cooling_c": 15.0}
+
+    try:
+        validate_scenario(scenario)
+    except ScenarioValidationError as exc:
+        assert "heating_c" in str(exc)
+        assert "cooling_c" in str(exc)
+    else:
+        raise AssertionError("validate_scenario accepted inverted setpoints")
+
+    scenario = deepcopy(load_scenario("data/examples/scenario_simple.json"))
+    scenario["timestep_h"] = 0.5
+
+    try:
+        validate_scenario(scenario)
+    except ScenarioValidationError as exc:
+        assert "timestep_h" in str(exc)
+    else:
+        raise AssertionError("validate_scenario accepted mismatched timestep")
+
+
+def test_validate_scenario_against_dwelling_rejects_unknown_retrofit_targets():
+    dwelling = load_dwelling("data/examples/house_simple.json")
+    scenario = deepcopy(load_scenario("data/examples/scenario_simple.json"))
+    scenario["retrofit"] = {
+        "surface_overrides": [
+            {"surface_id": "missing_wall", "u_value_w_m2k": 0.2},
+        ],
+    }
+
+    try:
+        validate_scenario_against_dwelling(scenario, dwelling)
+    except ScenarioValidationError as exc:
+        assert "surface_overrides" in str(exc)
+        assert "missing_wall" in str(exc)
+    else:
+        raise AssertionError("validate_scenario_against_dwelling accepted unknown surface")
+
+
+def test_validate_scenario_against_dwelling_rejects_added_system_unknown_room():
+    dwelling = load_dwelling("data/examples/house_simple.json")
+    scenario = deepcopy(load_scenario("data/examples/scenario_simple.json"))
+    scenario["retrofit"] = {
+        "add_systems": [
+            {
+                "category": "heating",
+                "id": "extra_heater",
+                "type": "electric_radiator",
+                "served_rooms": ["missing_room"],
+                "max_power_w": 1200,
+                "performance_ref": {"mode": "constant", "cop": 1.0},
+            },
+        ],
+    }
+
+    try:
+        validate_scenario_against_dwelling(scenario, dwelling)
+    except ScenarioValidationError as exc:
+        assert "served_rooms" in str(exc) or "missing_room" in str(exc)
+    else:
+        raise AssertionError("validate_scenario_against_dwelling accepted unknown room")
 
 
 def test_scenario_schema_accepts_retrofit_equipment_overrides():
@@ -244,3 +310,27 @@ def test_validate_dwelling_rejects_duplicate_reversed_thermal_links():
         assert "thermal link room pairs" in str(exc)
     else:
         raise AssertionError("validate_dwelling accepted duplicate reversed thermal links")
+
+
+def test_validate_dwelling_rejects_absurd_room_height_and_low_cop():
+    dwelling = load_dwelling("data/examples/house_simple.json", validate=False)
+    dwelling["rooms"][0]["height_m"] = 15.0
+
+    try:
+        validate_dwelling(dwelling)
+    except DwellingValidationError as exc:
+        assert "height_m" in str(exc)
+    else:
+        raise AssertionError("validate_dwelling accepted absurd room height")
+
+    dwelling = load_dwelling("data/examples/house_simple.json", validate=False)
+    dwelling["systems"]["heating"][0]["type"] = "heat_pump"
+    dwelling["systems"]["heating"][0]["performance_ref"]["cop"] = 0.8
+
+    try:
+        validate_dwelling(dwelling)
+    except DwellingValidationError as exc:
+        assert "cop" in str(exc)
+        assert ">= 1" in str(exc)
+    else:
+        raise AssertionError("validate_dwelling accepted COP below 1")

@@ -1,4 +1,5 @@
 from thermal_saas.business_flow import (
+    BusinessFlowError,
     build_customer,
     ensure_annual_weather,
     get_profile_questionnaire,
@@ -182,6 +183,79 @@ def test_window_profile_runs_window_replacement_experiences():
     for run in result["simulation_runs"]:
         assert run["after_scenario"]["retrofit"]["window_overrides"]
     _assert_annual_run(result["simulation_runs"][-1])
+
+
+def test_business_flow_rejects_window_larger_than_facade():
+    answers = _base_answers()
+    answers["rooms"][0]["facades"][0] = {
+        "orientation": "S",
+        "window_area_m2": 20.0,
+        "wall_length_m": 3.0,
+    }
+
+    try:
+        run_profile_experience("window_seller", answers)
+    except BusinessFlowError as exc:
+        assert "window_area_m2" in str(exc)
+        assert "surface de façade" in str(exc)
+    else:
+        raise AssertionError("run_profile_experience accepted a window larger than facade")
+
+
+def test_business_flow_rejects_empty_exterior_facades_and_invalid_orientation():
+    answers = _base_answers()
+    answers["rooms"][0]["facades"] = []
+
+    try:
+        run_profile_experience("window_seller", answers)
+    except BusinessFlowError as exc:
+        assert "facades" in str(exc)
+    else:
+        raise AssertionError("run_profile_experience accepted an exterior room without facade")
+
+    answers = _base_answers()
+    answers["rooms"][0]["facades"][0]["orientation"] = "BAD"
+
+    try:
+        run_profile_experience("window_seller", answers)
+    except BusinessFlowError as exc:
+        assert "orientation" in str(exc)
+    else:
+        raise AssertionError("run_profile_experience accepted an invalid orientation")
+
+
+def test_business_flow_rejects_absurd_height_setpoints_and_incompatible_adaptation():
+    answers = _base_answers()
+    answers["rooms"][0]["height_m"] = 0.5
+
+    try:
+        run_profile_experience("window_seller", answers)
+    except BusinessFlowError as exc:
+        assert "height_m" in str(exc)
+    else:
+        raise AssertionError("run_profile_experience accepted absurd room height")
+
+    try:
+        run_profile_experience(
+            "window_seller",
+            _base_answers() | {"heating_setpoint_c": 19.0, "cooling_setpoint_c": 15.0},
+        )
+    except BusinessFlowError as exc:
+        assert "chauffage" in str(exc)
+        assert "climatisation" in str(exc)
+    else:
+        raise AssertionError("run_profile_experience accepted inverted setpoints")
+
+    try:
+        run_profile_experience(
+            "window_seller",
+            _base_answers() | {"adaptation_id": "heat_pump"},
+        )
+    except BusinessFlowError as exc:
+        assert "compatible" in str(exc)
+        assert "window_seller" in str(exc)
+    else:
+        raise AssertionError("run_profile_experience accepted incompatible adaptation")
 
 
 def test_annual_weather_can_be_created_from_local_2023_raw(tmp_path):

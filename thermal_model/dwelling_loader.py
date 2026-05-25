@@ -109,8 +109,8 @@ def _validate_rooms(rooms: list[Mapping[str, Any]]) -> set[str]:
         )
         _validate_positive(room["floor_area_m2"], f"room {room['id']}.floor_area_m2")
         _validate_positive(room["height_m"], f"room {room['id']}.height_m")
+        _validate_between(room["height_m"], 1.8, 5.0, f"room {room['id']}.height_m")
         _validate_positive(room["volume_m3"], f"room {room['id']}.volume_m3")
-
         if "equivalent_capacity_j_m2k" in room:
             _validate_positive(
                 room["equivalent_capacity_j_m2k"],
@@ -282,6 +282,7 @@ def _validate_systems(systems: Mapping[str, Any], room_ids: set[str]) -> None:
                 system["performance_ref"],
                 system_type,
                 system["id"],
+                system["type"],
             )
 
     _validate_unique(system_ids, "system ids")
@@ -324,6 +325,7 @@ def _validate_performance_ref(
     performance_ref: Mapping[str, Any],
     system_type: str,
     system_id: str,
+    system_kind: str,
 ) -> None:
     _require_keys(performance_ref, ("mode",), f"system {system_id}.performance_ref")
     if performance_ref["mode"] not in {"constant", "temperature_curve"}:
@@ -337,10 +339,17 @@ def _validate_performance_ref(
         (performance_key,),
         f"system {system_id}.performance_ref",
     )
-    _validate_positive(
-        performance_ref[performance_key],
-        f"system {system_id}.performance_ref.{performance_key}",
-    )
+    if _requires_performance_at_least_one(system_type, system_kind):
+        _validate_minimum(
+            performance_ref[performance_key],
+            1.0,
+            f"system {system_id}.performance_ref.{performance_key}",
+        )
+    else:
+        _validate_positive(
+            performance_ref[performance_key],
+            f"system {system_id}.performance_ref.{performance_key}",
+        )
     if performance_ref["mode"] == "temperature_curve":
         if system_type != "heating":
             raise DwellingValidationError(
@@ -357,10 +366,15 @@ def _validate_performance_ref(
                 ("outdoor_temperature_c", "cop"),
                 f"system {system_id}.performance_ref point",
             )
-            _validate_positive(
+            _validate_minimum(
                 point["cop"],
+                1.0,
                 f"system {system_id}.performance_ref point.cop",
             )
+
+
+def _requires_performance_at_least_one(system_type: str, system_kind: str) -> bool:
+    return system_type == "cooling" or "heat_pump" in system_kind
 
 
 def _require_keys(
@@ -386,6 +400,11 @@ def _validate_unique(values: list[str], context: str) -> None:
 def _validate_positive(value: float, context: str) -> None:
     if value <= 0:
         raise DwellingValidationError(f"{context} must be > 0")
+
+
+def _validate_minimum(value: float, min_value: float, context: str) -> None:
+    if value < min_value:
+        raise DwellingValidationError(f"{context} must be >= {min_value}")
 
 
 def _validate_non_negative(value: float, context: str) -> None:

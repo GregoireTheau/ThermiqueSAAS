@@ -61,6 +61,42 @@ def test_health_endpoint(tmp_path, monkeypatch):
     assert response.json()["service"] == "thermal-saas"
 
 
+def test_profile_experience_api_returns_clear_user_error(tmp_path, monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
+    client = TestClient(app)
+
+    response = client.post(
+        "/business-profiles/window_seller/experiences",
+        json={
+            "project_name": "Erreur claire",
+            "city": "Bordeaux",
+            "postal_code": "33000",
+            "dwelling_type": "house",
+            "position_id": "single_storey_house",
+            "period_id": "2001_2012_good_insulation",
+            "rooms": [
+                {
+                    "name": "Salon",
+                    "type": "living",
+                    "floor_area_m2": 30.0,
+                    "height_m": 2.5,
+                    "facades": [
+                        {
+                            "orientation": "S",
+                            "window_area_m2": 20.0,
+                            "wall_length_m": 3.0,
+                        },
+                    ],
+                },
+            ],
+        },
+    )
+
+    assert response.status_code == 400
+    assert "window_area_m2" in response.json()["detail"]
+    assert "surface de façade" in response.json()["detail"]
+
+
 def test_startup_initializes_empty_database(tmp_path, monkeypatch):
     db_path = tmp_path / "thermal_saas.sqlite"
     monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(db_path))

@@ -154,18 +154,18 @@ def build_customer(
     adaptation_id = answers.get("adaptation_id", profile["default_adaptation"])
     if adaptation_id not in profile["allowed_adaptations"]:
         raise BusinessFlowError(
-            f"Adaptation {adaptation_id} is not allowed for profile {profile['id']}.",
+            f"Le changement '{adaptation_id}' n'est pas compatible avec le profil métier '{profile['id']}'.",
         )
 
     change = _change_by_id(adaptation_id)
     dwelling_type = answers["dwelling_type"]
     position = _option_by_id(customer_experience.DWELLING_POSITIONS, answers["position_id"])
+    if not answers["rooms"]:
+        raise BusinessFlowError("At least one room is required.")
     rooms = [
         _normalize_room(room, index, dwelling_type, position["id"])
         for index, room in enumerate(answers["rooms"], start=1)
     ]
-    if not rooms:
-        raise BusinessFlowError("At least one room is required.")
     customer_experience.ensure_unique_room_ids(rooms)
 
     postal_code = str(answers["postal_code"])
@@ -178,9 +178,11 @@ def build_customer(
 
     heating_setpoint_c = float(answers.get("heating_setpoint_c", 19.0))
     cooling_setpoint_c = float(answers.get("cooling_setpoint_c", 26.0))
+    _validate_setpoint(heating_setpoint_c, "heating_setpoint_c")
+    _validate_setpoint(cooling_setpoint_c, "cooling_setpoint_c")
     if cooling_setpoint_c < heating_setpoint_c:
         raise BusinessFlowError(
-            "cooling_setpoint_c must be greater than or equal to heating_setpoint_c.",
+            "La consigne de chauffage ne peut pas être supérieure à la consigne de climatisation.",
         )
 
     return {
@@ -341,11 +343,24 @@ def _normalize_room(
     dwelling_position: str,
 ) -> dict[str, Any]:
     _require_fields(room, ["name", "type", "floor_area_m2"])
+    floor_area_m2 = _float_field(room["floor_area_m2"], f"rooms[{index}].floor_area_m2")
+    height_m = _float_field(room.get("height_m", 2.5), f"rooms[{index}].height_m")
+    if floor_area_m2 <= 0:
+        raise BusinessFlowError(f"rooms[{index}].floor_area_m2 doit être > 0.")
+    if height_m < 1.8 or height_m > 5.0:
+        raise BusinessFlowError(f"rooms[{index}].height_m doit être entre 1.8 m et 5.0 m.")
+
     room_id = room.get("id") or customer_experience.slugify(room["name"], f"room_{index}")
     exterior_contact = room.get("exterior_contact", "exterior")
+    if exterior_contact not in {"exterior", "interior", "unheated_space", "party"}:
+        raise BusinessFlowError(f"rooms[{index}].exterior_contact est invalide.")
+    if exterior_contact == "exterior" and "facades" in room and not room["facades"]:
+        raise BusinessFlowError(
+            f"rooms[{index}].facades doit contenir au moins une façade extérieure."
+        )
     facades = [
-        _normalize_facade(facade, room["type"], float(room["floor_area_m2"]))
-        for facade in room.get("facades", [])
+        _normalize_facade(facade, room["type"], floor_area_m2, height_m, index, facade_index)
+        for facade_index, facade in enumerate(room.get("facades", []), start=1)
     ]
     if exterior_contact == "exterior" and not facades:
         facades = [
@@ -355,7 +370,10 @@ def _normalize_room(
                     "window_area_m2": room.get("window_area_m2", 0.0),
                 },
                 room["type"],
-                float(room["floor_area_m2"]),
+                floor_area_m2,
+                height_m,
+                index,
+                1,
             ),
         ]
 
@@ -363,8 +381,8 @@ def _normalize_room(
         "id": room_id,
         "name": room["name"],
         "type": room["type"],
-        "floor_area_m2": float(room["floor_area_m2"]),
-        "height_m": float(room.get("height_m", 2.5)),
+        "floor_area_m2": floor_area_m2,
+        "height_m": height_m,
         "exterior_contact": exterior_contact,
         "facades": facades,
         "has_roof": bool(
@@ -389,8 +407,15 @@ def _normalize_facade(
     facade: dict[str, Any],
     room_type: str,
     room_area_m2: float,
+    room_height_m: float,
+    room_index: int,
+    facade_index: int,
 ) -> dict[str, Any]:
     orientation = facade.get("orientation", "S")
+    if orientation not in customer_experience.ORIENTATIONS:
+        raise BusinessFlowError(
+            f"rooms[{room_index}].facades[{facade_index}].orientation est invalide."
+        )
     window_area = facade.get("window_area_m2")
     if window_area is None:
         window_area = customer_experience.default_window_area(
@@ -398,11 +423,40 @@ def _normalize_facade(
             room_area_m2,
             orientation,
         )
+    window_area = _float_field(
+        window_area,
+        f"rooms[{room_index}].facades[{facade_index}].window_area_m2",
+    )
+    wall_length_m = _float_field(
+        facade.get("wall_length_m", room_area_m2**0.5),
+        f"rooms[{room_index}].facades[{facade_index}].wall_length_m",
+    )
+    mask_factor = _float_field(
+        facade.get("mask_factor", 1.0),
+        f"rooms[{room_index}].facades[{facade_index}].mask_factor",
+    )
+    if window_area < 0:
+        raise BusinessFlowError(
+            f"rooms[{room_index}].facades[{facade_index}].window_area_m2 doit être >= 0."
+        )
+    if wall_length_m <= 0:
+        raise BusinessFlowError(
+            f"rooms[{room_index}].facades[{facade_index}].wall_length_m doit être > 0."
+        )
+    if mask_factor < 0 or mask_factor > 1:
+        raise BusinessFlowError(
+            f"rooms[{room_index}].facades[{facade_index}].mask_factor doit être entre 0 et 1."
+        )
+    gross_facade_area = wall_length_m * room_height_m
+    if window_area > gross_facade_area:
+        raise BusinessFlowError(
+            f"rooms[{room_index}].facades[{facade_index}].window_area_m2 ne peut pas dépasser la surface de façade ({gross_facade_area:.2f} m²)."
+        )
     return {
         "orientation": orientation,
-        "window_area_m2": float(window_area),
-        "wall_length_m": float(facade.get("wall_length_m", room_area_m2**0.5)),
-        "mask_factor": float(facade.get("mask_factor", 1.0)),
+        "window_area_m2": window_area,
+        "wall_length_m": wall_length_m,
+        "mask_factor": mask_factor,
         "window_ref": facade.get("window_ref"),
     }
 
@@ -471,6 +525,18 @@ def _option_by_id(options: list[dict[str, Any]], option_id: str) -> dict[str, An
         return next(option for option in options if option["id"] == option_id)
     except StopIteration as exc:
         raise BusinessFlowError(f"Unknown option id: {option_id}") from exc
+
+
+def _validate_setpoint(value: float, field_name: str) -> None:
+    if value < 10 or value > 35:
+        raise BusinessFlowError(f"{field_name} doit être entre 10 °C et 35 °C.")
+
+
+def _float_field(value: Any, field_name: str) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError) as exc:
+        raise BusinessFlowError(f"{field_name} doit être un nombre.") from exc
 
 
 def _require_fields(payload: dict[str, Any], field_names: list[str]) -> None:

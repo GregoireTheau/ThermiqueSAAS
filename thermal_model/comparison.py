@@ -6,6 +6,7 @@ from copy import deepcopy
 from typing import Any
 
 from .dwelling_loader import get_rooms_by_id
+from .scenario_loader import validate_scenario_against_dwelling
 from .simulation import apply_scenario_overrides, simulate_1r1c
 
 
@@ -19,6 +20,8 @@ def compare_scenarios(
     """Run two scenario simulations and return comparison metrics."""
     before_dwelling = deepcopy(dwelling)
     after_dwelling = deepcopy(dwelling)
+    validate_scenario_against_dwelling(before_scenario, before_dwelling)
+    validate_scenario_against_dwelling(after_scenario, after_dwelling)
     apply_scenario_overrides(before_dwelling, before_scenario)
     apply_scenario_overrides(after_dwelling, after_scenario)
 

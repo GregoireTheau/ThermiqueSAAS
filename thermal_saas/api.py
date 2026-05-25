@@ -16,6 +16,7 @@ import unicodedata
 from .backup import BackupError, backup_sqlite_to_object_storage
 from .business_flow import BusinessFlowError, run_profile_experience
 from .business_profiles import (
+    BusinessProfileError,
     build_questionnaire,
     list_business_profiles as load_all_business_profiles,
     load_business_profile,
@@ -46,7 +47,7 @@ from .storage import (
     simulation_belongs_to_organization,
     upsert_organization_branding,
 )
-from thermal_model import load_reference_catalog
+from thermal_model import DwellingValidationError, ScenarioValidationError, load_reference_catalog
 from .pdf_export import PdfExportError, render_pdf_from_html
 
 try:
@@ -370,10 +371,12 @@ def logout_endpoint(
 def create_profile_experience(profile_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     try:
         return run_profile_experience(profile_id, payload)
-    except BusinessFlowError as exc:
+    except (BusinessFlowError, DwellingValidationError, ScenarioValidationError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except ValueError as exc:
+    except BusinessProfileError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/organizations")
@@ -507,7 +510,7 @@ def create_project_simulations_endpoint(
     try:
         require_project_access(project_id, user)
         return create_simulation_runs(project_id)
-    except BusinessFlowError as exc:
+    except (BusinessFlowError, DwellingValidationError, ScenarioValidationError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except StorageError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
