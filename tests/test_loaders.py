@@ -32,6 +32,25 @@ def test_reference_catalog_loads_expected_refs():
 
     assert get_window_reference(catalog, "double_glazing_standard")["u_value_w_m2k"] == 1.6
     assert get_climate_zone_for_department(catalog, "33") == "FR_H2c"
+    assert get_climate_zone_for_department(catalog, "83") == "FR_H3"
+
+
+def test_reference_catalog_maps_all_metropolitan_departments():
+    catalog = load_reference_catalog()
+    department_codes = [
+        *(f"{department:02d}" for department in range(1, 20)),
+        "2A",
+        "2B",
+        *(str(department) for department in range(21, 96)),
+    ]
+
+    missing = [
+        department
+        for department in department_codes
+        if department not in catalog["department_zone_map"]
+    ]
+
+    assert missing == []
 
 
 def test_resolve_dwelling_references_keeps_explicit_values():

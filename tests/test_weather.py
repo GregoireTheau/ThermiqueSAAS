@@ -34,6 +34,8 @@ def _weather_frame(year, temperatures):
 
 def test_city_coordinates_accept_supported_city():
     assert city_coordinates("Bordeaux") == (44.8378, -0.5792)
+    assert city_coordinates("Toulon") == (43.1242, 5.9280)
+    assert city_coordinates("Biarritz") == (43.4832, -1.5586)
 
 
 def test_resolve_weather_city_uses_exact_department_then_climate_zone():
@@ -42,6 +44,14 @@ def test_resolve_weather_city_uses_exact_department_then_climate_zone():
         "weather_city": "Bordeaux",
         "match_mode": "exact_city",
     }
+    assert resolve_weather_city("Toulon", "83000", "FR_H3") == {
+        "requested_city": "Toulon",
+        "weather_city": "Toulon",
+        "match_mode": "exact_city",
+    }
+    assert resolve_weather_city("Ville inconnue", "83000", "FR_H3")["weather_city"] == "Toulon"
+    assert resolve_weather_city("Ville inconnue", "29000", "FR_H2a")["weather_city"] == "Brest"
+    assert resolve_weather_city("Ville inconnue", "2A000", "FR_H3")["weather_city"] == "Ajaccio"
     assert resolve_weather_city("Angers", "49000", "FR_H2b")["weather_city"] == "Nantes"
     assert resolve_weather_city("Ville inconnue", "", "FR_H2b")["weather_city"] == "Nantes"
 

@@ -1,7 +1,7 @@
 {
   "id": "reflective_roof_seller",
   "label": "Vendeur peinture réflective toiture",
-  "description": "Parcours specialise pour qualifier une toiture exposee et simuler l'ajout d'un revetement reflechissant contre la chaleur.",
+  "description": "Parcours spécialisé pour qualifier une toiture exposée et simuler l'ajout d'un revêtement réfléchissant contre la chaleur.",
   "allowed_adaptations": ["reflective_roof"],
   "default_adaptation": "reflective_roof",
   "include_annual_experiment": true,

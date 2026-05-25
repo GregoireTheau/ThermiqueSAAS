@@ -266,11 +266,22 @@ def test_business_report_presentation_is_profile_specific():
     ]
     assert "Impact été" in roof["report_html"]
 
-    reflective = run_profile_experience(
+    reflective_result = run_profile_experience(
         "reflective_roof_seller",
         answers,
         include_report_html=True,
-    )["simulation_runs"][-1]
+    )
+    reflective_long_summer = reflective_result["simulation_runs"][1]["report"]
+    assert reflective_long_summer["temperature_profiles"]["rooms"][0]["x_axis"]["type"] == "season_months"
+    assert reflective_long_summer["temperature_profiles"]["rooms"][0]["x_axis"]["labels"] == [
+        ("Juin", 0),
+        ("Juil", 720.0),
+        ("Aoû", 1440.0),
+    ]
+    assert ">h0<" not in reflective_result["simulation_runs"][1]["report_html"]
+    assert ">Juin<" in reflective_result["simulation_runs"][1]["report_html"]
+
+    reflective = reflective_result["simulation_runs"][-1]
     assert [kpi["label"] for kpi in reflective["report"]["primary_kpis"]] == [
         "Inconfort chaud évité",
         "Température maximale réduite",
@@ -301,7 +312,7 @@ def test_business_report_presentation_is_profile_specific():
     assert "Double effet" in windows["report_html"]
     assert (
         "Énergie finale = énergie facturée après rendement ou COP du système.<br>"
-        "Les deltas négatifs sont des hausses"
+        "Dans le tableau, la variation est calculée après - avant"
         in windows["report_html"]
     )
 
@@ -360,6 +371,6 @@ def test_annual_temperature_profile_uses_daily_points_and_month_labels():
 
     html = render_report_html(annual_report)
 
-    assert "La zone ombrée représente l&#x27;amplitude min/max journalière." in html
+    assert "Courbes en moyenne journalière" in html
     assert "<polygon" in html
     assert "<title>" in html

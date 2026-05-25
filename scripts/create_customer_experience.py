@@ -189,7 +189,7 @@ CHANGES = [
     },
     {
         "id": "reflective_roof",
-        "label": "Ajouter un revetement reflechissant sur la toiture contre la chaleur",
+        "label": "Ajouter un revêtement réfléchissant sur la toiture contre la chaleur",
         "experiments": ["summer_heatwave_primary", "summer_long_secondary"],
     },
     {
@@ -229,8 +229,8 @@ EXPERIMENT_SPECS = {
         "weather_mode": "synthetic",
         "duration_days": 3,
         "role": "primary",
-        "label": "Ete canicule",
-        "reason": "Experience principale pour mesurer le confort d'ete et les apports solaires.",
+        "label": "Été canicule",
+        "reason": "Expérience principale pour mesurer le confort d'été et les apports solaires.",
     },
     "summer_heatwave_secondary": {
         "id": "summer_heatwave",
@@ -240,8 +240,8 @@ EXPERIMENT_SPECS = {
         "weather_mode": "synthetic",
         "duration_days": 3,
         "role": "secondary",
-        "label": "Ete canicule",
-        "reason": "Experience secondaire pour verifier l'effet sur la surchauffe.",
+        "label": "Été canicule",
+        "reason": "Expérience secondaire pour vérifier l'effet sur la surchauffe.",
     },
     "summer_heatwave_if_exposed": {
         "id": "summer_heatwave",
@@ -252,8 +252,8 @@ EXPERIMENT_SPECS = {
         "duration_days": 3,
         "role": "secondary",
         "condition": "exposed_windows",
-        "label": "Ete canicule",
-        "reason": "Experience secondaire lancée si des vitrages exposes peuvent influencer les apports solaires.",
+        "label": "Été canicule",
+        "reason": "Expérience secondaire lancée si des vitrages exposés peuvent influencer les apports solaires.",
     },
     "summer_long_secondary": {
         "id": "summer_long",
@@ -263,8 +263,8 @@ EXPERIMENT_SPECS = {
         "weather_mode": "synthetic",
         "duration_days": 60,
         "role": "secondary",
-        "label": "Ete long avec canicule",
-        "reason": "Experience secondaire sur deux mois d'ete type avec un episode de canicule integre.",
+        "label": "Été long avec canicule",
+        "reason": "Expérience secondaire sur deux mois d'été type avec un épisode de canicule intégré.",
     },
     "annual_openmeteo": {
         "id": "annual",
@@ -274,8 +274,8 @@ EXPERIMENT_SPECS = {
         "weather_mode": "openmeteo_annual",
         "duration_days": 365,
         "role": "annual",
-        "label": "Annee complete",
-        "reason": "Experience annuelle pour estimer les besoins et gains sur une meteo representative.",
+        "label": "Année complète",
+        "reason": "Expérience annuelle pour estimer les besoins et gains sur une météo représentative.",
     },
 }
 

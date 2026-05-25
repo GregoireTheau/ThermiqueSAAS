@@ -532,7 +532,7 @@ def render_report_html(
     }}
     .context-grid {{
       display: grid;
-      grid-template-columns: 1.25fr .85fr;
+      grid-template-columns: minmax(0, 1.15fr) minmax(260px, .85fr);
       gap: 18px;
       align-items: start;
     }}
@@ -546,15 +546,19 @@ def render_report_html(
       border: 1px solid var(--c-border);
       border-radius: 8px;
       overflow: hidden;
+      min-width: 0;
     }}
     .params table, .data-table {{
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
+      table-layout: fixed;
     }}
     .params td {{
       border-bottom: 1px solid var(--c-border);
       padding: 9px 10px;
+      overflow-wrap: anywhere;
+      vertical-align: top;
     }}
     .params tr:last-child td {{ border-bottom: 0; }}
     .params td:first-child {{
@@ -693,6 +697,7 @@ def render_report_html(
       }}
       .print-action {{ display: none; }}
       body {{ font-size: 12px; }}
+      .context-grid {{ grid-template-columns: 1fr; }}
     }}
   </style>
 </head>
@@ -856,13 +861,12 @@ def _render_report_header(
 
 def _render_report_footer(branding: dict[str, Any] | None) -> str:
     if not branding:
-        return '<footer class="footer">Rapport généré automatiquement · Simulation non contractuelle · ThermalTwin</footer>'
+        return '<footer class="footer">Rapport généré automatiquement · ThermalTwin</footer>'
     parts = [
         branding.get("organization_name"),
         branding.get("phone"),
         branding.get("email_contact"),
         branding.get("website"),
-        "Rapport non contractuel",
         "ThermalTwin",
     ]
     legal = branding.get("legal_mention")
@@ -1018,6 +1022,10 @@ def _build_room_temperature_profile(
         "room_id": room_id,
         "room_name": room_name,
         "primary_discomfort": primary_discomfort,
+        "thresholds": {
+            "hot_c": round(hot_threshold_c, 2),
+            "cold_c": round(cold_threshold_c, 2),
+        },
         "x_axis": _temperature_x_axis(points, season),
         "critical_markers": critical_markers,
         "points": points,
@@ -1205,8 +1213,8 @@ def _temperature_x_axis(points: list[dict[str, Any]], season: str) -> dict[str, 
                 ("Mar", 1416),
                 ("Avr", 2160),
                 ("Mai", 2880),
-                ("Jun", 3624),
-                ("Jul", 4344),
+                ("Juin", 3624),
+                ("Juil", 4344),
                 ("Aoû", 5088),
                 ("Sep", 5832),
                 ("Oct", 6552),
@@ -1221,6 +1229,19 @@ def _temperature_x_axis(points: list[dict[str, Any]], season: str) -> dict[str, 
         return {"type": "hours", "min_hour": 0, "max_hour": 1, "labels": [], "zones": []}
     min_hour = points[0]["hour"]
     max_hour = points[-1]["hour"] + points[-1].get("duration_h", 1.0)
+    duration_h = max_hour - min_hour
+    if season == "summer" and duration_h >= 24 * 45:
+        return {
+            "type": "season_months",
+            "min_hour": min_hour,
+            "max_hour": max_hour,
+            "labels": [
+                ("Juin", min_hour),
+                ("Juil", min_hour + duration_h / 2),
+                ("Aoû", max_hour),
+            ],
+            "zones": [],
+        }
     return {
         "type": "hours",
         "min_hour": min_hour,
@@ -1235,7 +1256,9 @@ def _metric(before: float, after: float, delta: float, unit: str) -> dict[str, A
         "before": round(before, 2),
         "after": round(after, 2),
         "delta": round(delta, 2),
+        "variation": round(after - before, 2),
         "relative_delta_pct": _relative_delta_pct(before, delta),
+        "relative_variation_pct": _relative_variation_pct(before, after),
         "effect": _effect(delta),
         "unit": unit,
     }
@@ -1415,6 +1438,12 @@ def _relative_delta_pct(before: float, delta: float) -> float | None:
     return round(delta / before * 100.0, 1)
 
 
+def _relative_variation_pct(before: float, after: float) -> float | None:
+    if before == 0:
+        return None
+    return round((after - before) / before * 100.0, 1)
+
+
 def _effect(delta: float) -> str:
     if delta > 0:
         return "reduction"
@@ -1516,11 +1545,10 @@ def _format_intervention_title(intervention: dict[str, Any]) -> str:
 def _build_context_text(experiment: dict[str, Any], season: str) -> str:
     season_label = "un épisode d'été chaud" if season == "summer" else "une séquence d'hiver froid"
     weather = experiment["weather_summary"]
-    variant = experiment.get("weather_variant") or experiment["weather_source"]
     return (
         f"L'expérience reproduit {season_label} pendant "
         f"{_format_number(experiment['duration_days'])} jours ({_format_number(experiment['duration_hours'])} h). "
-        f"La météo utilisée ({variant}) fait varier l'extérieur de "
+        f"La météo utilisée fait varier l'extérieur de "
         f"{_format_temperature(weather['outdoor_temperature_min_c'])} à "
         f"{_format_temperature(weather['outdoor_temperature_max_c'])}. Le logement est ensuite "
         f"simulé deux fois, avant puis après intervention, avec les mêmes consignes "
@@ -1814,7 +1842,6 @@ def _render_context_params(
         (
             "Météo",
             (
-                f"{escape(experiment['weather_source'])}, "
                 f"{_format_temperature(weather['outdoor_temperature_min_c'])} → "
                 f"{_format_temperature(weather['outdoor_temperature_max_c'])}"
             ),
@@ -2023,7 +2050,8 @@ def _render_energy_cost_result_block(report: dict[str, Any]) -> str:
         ),
         (
             "Énergie finale = énergie facturée après rendement ou COP du système. "
-            "Les deltas négatifs sont des hausses à lire avec les notes de contexte."
+            "Dans le tableau, la variation est calculée après - avant : une valeur "
+            "positive indique une hausse, une valeur négative une baisse."
         ),
     )
 
@@ -2123,7 +2151,10 @@ def _render_temperature_profile_html(profile: dict[str, Any], comfort_mode: str)
     summary = profile["summary"]
     status_label, status_class = _room_status(profile, comfort_mode)
     if profile.get("x_axis", {}).get("type") == "annual":
-        discomfort_note = "La zone ombrée représente l'amplitude min/max journalière."
+        discomfort_note = (
+            "Courbes en moyenne journalière, extérieur inclus ; zone ombrée = "
+            "amplitude min/max simulée sur chaque journée."
+        )
     elif comfort_mode == "hot":
         before_value = summary["before_hot_degree_hours"]
         after_value = summary["after_hot_degree_hours"]
@@ -2178,6 +2209,8 @@ def _render_temperature_svg(profile: dict[str, Any], comfort_mode: str) -> str:
             point.get("after_max_temperature_c", point["after_temperature_c"]),
         )
     ]
+    threshold = _chart_threshold(profile, comfort_mode)
+    values.append(threshold["value"])
     y_min = min(values) - 1.0
     y_max = max(values) + 1.0
     if y_max == y_min:
@@ -2218,8 +2251,14 @@ def _render_temperature_svg(profile: dict[str, Any], comfort_mode: str) -> str:
     )
     season_zones = _svg_season_zones(x_axis, x_at_hour, top, plot_height)
     grid = _svg_grid_lines(y_min, y_max, left, top, plot_width, plot_height)
+    threshold_line = _svg_threshold_line(
+        threshold,
+        left,
+        left + plot_width,
+        y_at(threshold["value"]),
+    )
     x_labels = _svg_x_labels(points, x_axis, x_at_hour, height, bottom)
-    legend = _svg_legend(left + 18, top + 10, profile["primary_discomfort"])
+    legend = _svg_legend(left + 18, top + 10, profile["primary_discomfort"], threshold)
     annotations = get_svg_annotation(
         x_at_hour(points[before_peak_index]["hour"]),
         y_at(before_peak),
@@ -2238,6 +2277,7 @@ def _render_temperature_svg(profile: dict[str, Any], comfort_mode: str) -> str:
             {season_zones}
             {discomfort_rects}
             {grid}
+            {threshold_line}
             {range_bands}
             <polyline points="{outdoor_line}" fill="none" stroke="#64748b" stroke-width="2" stroke-dasharray="5 5"></polyline>
             <polyline points="{before_line}" fill="none" stroke="#1d4ed8" stroke-width="2.5"></polyline>
@@ -2254,8 +2294,39 @@ def _render_temperature_svg(profile: dict[str, Any], comfort_mode: str) -> str:
 """
 
 
+def _chart_threshold(profile: dict[str, Any], comfort_mode: str) -> dict[str, Any]:
+    primary = profile["primary_discomfort"]
+    if comfort_mode == "cold" or primary == "cold":
+        value = profile["thresholds"]["cold_c"]
+        return {
+            "value": value,
+            "label": f"Seuil froid {_format_temperature(value)}",
+            "color": "#2563eb",
+        }
+    value = profile["thresholds"]["hot_c"]
+    return {
+        "value": value,
+        "label": f"Seuil chaud {_format_temperature(value)}",
+        "color": "#dc2626",
+    }
+
+
 def _svg_polyline(points: Any) -> str:
     return " ".join(f"{x:.1f},{y:.1f}" for x, y in points)
+
+
+def _svg_threshold_line(
+    threshold: dict[str, Any],
+    x1: float,
+    x2: float,
+    y: float,
+) -> str:
+    return (
+        f'<line x1="{x1:.1f}" y1="{y:.1f}" x2="{x2:.1f}" y2="{y:.1f}" '
+        f'stroke="{threshold["color"]}" stroke-width="1.4" stroke-dasharray="6 5" opacity="0.85"></line>'
+        f'<text x="{x2 - 6:.1f}" y="{y - 6:.1f}" text-anchor="end" font-size="11" '
+        f'fill="{threshold["color"]}">{escape(threshold["label"])}</text>'
+    )
 
 
 def _svg_daily_range_bands(
@@ -2414,7 +2485,7 @@ def _svg_x_labels(
 ) -> str:
     if not points:
         return ""
-    if x_axis.get("type") == "annual":
+    if x_axis.get("type") in {"annual", "season_months"}:
         return "\n".join(
             f'<text x="{x_at_hour(hour):.1f}" y="{height - bottom + 24:.1f}" '
             f'text-anchor="middle" font-size="11" fill="#64748b">{escape(label)}</text>'
@@ -2430,11 +2501,11 @@ def _svg_x_labels(
     return "\n".join(labels)
 
 
-def _svg_legend(x: float, y: float, primary_discomfort: str) -> str:
+def _svg_legend(x: float, y: float, primary_discomfort: str, threshold: dict[str, Any]) -> str:
     zone_fill = "#fee2e2" if primary_discomfort == "hot" else "#dbeafe"
     return f"""
             <g aria-hidden="true">
-              <rect x="{x - 10:.1f}" y="{y - 14:.1f}" width="454" height="26" rx="5" fill="#ffffff" stroke="#e2e8f0"></rect>
+              <rect x="{x - 10:.1f}" y="{y - 14:.1f}" width="596" height="26" rx="5" fill="#ffffff" stroke="#e2e8f0"></rect>
               <line x1="{x:.1f}" y1="{y:.1f}" x2="{x + 24:.1f}" y2="{y:.1f}" stroke="#64748b" stroke-width="2" stroke-dasharray="5 5"></line>
               <text x="{x + 30:.1f}" y="{y + 4:.1f}" font-size="11" fill="#475569">Extérieur</text>
               <line x1="{x + 102:.1f}" y1="{y:.1f}" x2="{x + 126:.1f}" y2="{y:.1f}" stroke="#1d4ed8" stroke-width="2.5"></line>
@@ -2443,6 +2514,8 @@ def _svg_legend(x: float, y: float, primary_discomfort: str) -> str:
               <text x="{x + 214:.1f}" y="{y + 4:.1f}" font-size="11" fill="#475569">Après</text>
               <rect x="{x + 268:.1f}" y="{y - 7:.1f}" width="22" height="12" fill="{zone_fill}" opacity="0.8"></rect>
               <text x="{x + 296:.1f}" y="{y + 4:.1f}" font-size="11" fill="#475569">Zone d'inconfort</text>
+              <line x1="{x + 410:.1f}" y1="{y:.1f}" x2="{x + 434:.1f}" y2="{y:.1f}" stroke="{threshold["color"]}" stroke-width="1.4" stroke-dasharray="6 5"></line>
+              <text x="{x + 440:.1f}" y="{y + 4:.1f}" font-size="11" fill="#475569">{escape(threshold["label"])}</text>
             </g>
 """
 
@@ -2491,8 +2564,8 @@ def _render_metric_table(rows: list[tuple[str, dict[str, Any]]]) -> str:
         f"<td>{_format_value(metric['before'], metric['unit'])}</td>"
         f"<td>{_format_value(metric['after'], metric['unit'])}</td>"
         f"<td class=\"{_value_class(metric['delta'])}\">"
-        f"<span class=\"value-main\">{_format_pct(metric)}</span>"
-        f"<span class=\"value-sub\">{_format_delta(metric)}</span>"
+        f"<span class=\"value-main\">{_format_variation_pct(metric)}</span>"
+        f"<span class=\"value-sub\">{_format_variation(metric)}</span>"
         "</td>"
         "</tr>"
         for label, metric in rows
@@ -2525,7 +2598,7 @@ def _render_delta_table(rows: list[tuple[str, dict[str, Any]]]) -> str:
     table_rows = "\n".join(
         "<tr>"
         f"<td>{escape(label)}</td>"
-        f"<td class=\"{_value_class(metric['delta'])}\">{_format_delta(metric)}</td>"
+        f"<td class=\"{_value_class(metric['delta'])}\">{_format_variation(metric)}</td>"
         "</tr>"
         for label, metric in rows
     )
@@ -2566,6 +2639,13 @@ def _format_delta(metric: dict[str, Any]) -> str:
     return _format_value(metric["delta"], metric["unit"])
 
 
+def _format_variation(metric: dict[str, Any]) -> str:
+    variation = metric.get("variation")
+    if variation is None:
+        variation = -metric["delta"]
+    return _format_value(variation, metric["unit"])
+
+
 def _format_value(value: float, unit: str) -> str:
     display_unit = _display_unit(unit)
     if display_unit == "€":
@@ -2575,6 +2655,16 @@ def _format_value(value: float, unit: str) -> str:
 
 def _format_pct(metric: dict[str, Any]) -> str:
     value = metric["relative_delta_pct"]
+    if value is None:
+        return "n/a"
+    return f"{_format_number(value, 1)} %"
+
+
+def _format_variation_pct(metric: dict[str, Any]) -> str:
+    value = metric.get("relative_variation_pct")
+    if value is None:
+        relative_delta = metric.get("relative_delta_pct")
+        value = None if relative_delta is None else -relative_delta
     if value is None:
         return "n/a"
     return f"{_format_number(value, 1)} %"
@@ -2594,7 +2684,7 @@ def _display_unit(unit: str) -> str:
         "C.h": "°C·h",
         "EUR": "€",
         "kWh_th": "kWh therm.",
-        "kWh_final": "kWh fin.",
+        "kWh_final": "kWh final",
         "kgCO2": "kg CO₂",
     }
     return units.get(unit, unit)

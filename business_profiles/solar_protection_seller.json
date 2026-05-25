@@ -97,7 +97,7 @@
       },
       {
         "id": "summer_comfort",
-        "label": "Confort d'ete",
+        "label": "Confort d'été",
         "questions": [
           {
             "id": "window_ref",
@@ -126,7 +126,7 @@
           {
             "id": "shutter_usage_id",
             "type": "select",
-            "label": "Usage actuel des volets/stores en ete",
+            "label": "Usage actuel des volets/stores en été",
             "required": true,
             "options": [
               {"id": "day_closed", "label": "Fermes en journee quand il fait chaud"},
@@ -134,7 +134,7 @@
               {"id": "rare", "label": "Rarement fermes en journee"}
             ]
           },
-          {"id": "cooling_setpoint_c", "type": "number", "label": "Temperature de confort ete visee", "required": true, "default": 26.0}
+          {"id": "cooling_setpoint_c", "type": "number", "label": "Température de confort été visée", "required": true, "default": 26.0}
         ]
       },
       {

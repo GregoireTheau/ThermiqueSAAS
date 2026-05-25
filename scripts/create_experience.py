@@ -42,7 +42,7 @@ EXPERIENCE_TYPES = [
 INTERVENTIONS = [
     {
         "id": "reflective_roof",
-        "label": "Toiture reflechissante",
+        "label": "Toiture réfléchissante",
         "season": "summer",
     },
     {

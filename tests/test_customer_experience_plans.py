@@ -111,8 +111,8 @@ def test_report_exposes_experiment_role_and_reason():
     html = render_report_html(report)
 
     assert comparison["experiment"]["role"] == "primary"
-    assert report["experiment"]["label"] == "Ete canicule"
-    assert "Experience principale" in html
+    assert report["experiment"]["label"] == "Été canicule"
+    assert "Expérience principale" in html
     assert "apports solaires" in html
 
 

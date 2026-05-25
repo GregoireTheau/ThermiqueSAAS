@@ -23,11 +23,11 @@
         "west_afternoon_peak_w_m2": 120.0,
         "roof_peak_w_m2": 240.0
       },
-      "physical_rationale": "Semaine froide seche pour zones H1 : moyenne journaliere proche de 0 C, oscillation -4/+4 C pour tester les pertes et la puissance de chauffage.",
-      "client_description_fr": "Meteo froide de reference pour les zones H1, representative d'une semaine hivernale exigeante. Elle permet de comparer les besoins de chauffage et le confort avec une base stable, identique pour tous les dossiers.",
+      "physical_rationale": "Semaine froide seche pour zones H1 : moyenne journalière proche de 0 C, oscillation -4/+4 C pour tester les pertes et la puissance de chauffage.",
+      "client_description_fr": "Météo froide de référence pour les zones H1, représentative d'une semaine hivernale exigeante. Elle permet de comparer les besoins de chauffage et le confort avec une base stable, identique pour tous les dossiers.",
       "sources": [
         "Valeurs conservees depuis scripts/create_customer_experience.py avant externalisation Phase 5",
-        "Zonage climatique RT2012 H1 defini par l'arrete du 26 octobre 2010, annexe I"
+        "Zonage climatique RT2012 H1 défini par l'arrété du 26 octobre 2010, annexe I"
       ]
     },
     {
@@ -50,11 +50,11 @@
         "west_afternoon_peak_w_m2": 120.0,
         "roof_peak_w_m2": 240.0
       },
-      "physical_rationale": "Semaine froide temperee pour zones H2 : moyenne journaliere a 3 C, gardant le meme cycle journalier que H1 pour isoler l'effet de la zone climatique.",
-      "client_description_fr": "Meteo hivernale de reference pour les zones H2, avec un froid modere mais durable. Elle sert a quantifier les economies de chauffage sur un scenario comparable entre projets.",
+      "physical_rationale": "Semaine froide tempérée pour zones H2 : moyenne journalière a 3 C, gardant le même cycle journalier que H1 pour isoler l'effet de la zone climatique.",
+      "client_description_fr": "Météo hivernale de référence pour les zones H2, avec un froid modere mais durable. Elle sert a quantifier les économies de chauffage sur un scénario comparable entre projets.",
       "sources": [
         "Valeurs conservees depuis scripts/create_customer_experience.py avant externalisation Phase 5",
-        "Zonage climatique RT2012 H2 defini par l'arrete du 26 octobre 2010, annexe I"
+        "Zonage climatique RT2012 H2 défini par l'arrété du 26 octobre 2010, annexe I"
       ]
     },
     {
@@ -77,11 +77,11 @@
         "west_afternoon_peak_w_m2": 120.0,
         "roof_peak_w_m2": 240.0
       },
-      "physical_rationale": "Semaine hivernale mediterraneenne pour zones H3 : base a 7 C, suffisante pour tester le chauffage sans surrepresenter le froid continental.",
-      "client_description_fr": "Meteo d'hiver de reference pour les zones H3, adaptee aux climats mediterraneens. Elle donne une base prudente pour estimer les besoins de chauffage sans utiliser une vague de froid extreme.",
+      "physical_rationale": "Semaine hivernale méditerranéenne pour zones H3 : base a 7 C, suffisante pour tester le chauffage sans surreprésenter le froid continental.",
+      "client_description_fr": "Météo d'hiver de référence pour les zones H3, adaptee aux climats méditerranéens. Elle donne une base prudente pour estimer les besoins de chauffage sans utiliser une vague de froid extreme.",
       "sources": [
         "Valeurs conservees depuis scripts/create_customer_experience.py avant externalisation Phase 5",
-        "Zonage climatique RT2012 H3 defini par l'arrete du 26 octobre 2010, annexe I"
+        "Zonage climatique RT2012 H3 défini par l'arrété du 26 octobre 2010, annexe I"
       ]
     },
     {
@@ -104,11 +104,11 @@
         "west_afternoon_peak_w_m2": 520.0,
         "roof_peak_w_m2": 760.0
       },
-      "physical_rationale": "Journee estivale courante pour zones H1 : moyenne 22.5 C, amplitude 5 C, utile pour distinguer confort d'ete normal et episode caniculaire.",
-      "client_description_fr": "Meteo d'ete typique pour les zones H1. Elle montre le confort attendu hors canicule et met en evidence l'effet des vitrages, volets et inertie au quotidien.",
+      "physical_rationale": "Journée estivale courante pour zones H1 : moyenne 22.5 C, amplitude 5 C, utile pour distinguer confort d'été normal et épisode caniculaire.",
+      "client_description_fr": "Météo d'été typique pour les zones H1. Elle montre le confort attendu hors canicule et met en évidence l'effet des vitrages, volets et inertie au quotidien.",
       "sources": [
         "Valeurs conservees depuis scripts/create_customer_experience.py avant externalisation Phase 5",
-        "Profil solaire synthetique orientation par orientation conserve depuis le modele existant"
+        "Profil solaire synthétique orientation par orientation conserve depuis le modèle existant"
       ]
     },
     {
@@ -131,11 +131,11 @@
         "west_afternoon_peak_w_m2": 520.0,
         "roof_peak_w_m2": 760.0
       },
-      "physical_rationale": "Journee estivale temperee chaude pour zones H2 : moyenne 24.5 C et amplitude 5.5 C, entre H1 et H3 comme dans le profil existant.",
-      "client_description_fr": "Meteo d'ete typique pour les zones H2. Elle fournit une base commune pour comparer les solutions de confort d'ete sur un scenario chaud mais non exceptionnel.",
+      "physical_rationale": "Journée estivale tempérée chaude pour zones H2 : moyenne 24.5 C et amplitude 5.5 C, entre H1 et H3 comme dans le profil existant.",
+      "client_description_fr": "Météo d'été typique pour les zones H2. Elle fournit une base commune pour comparer les solutions de confort d'été sur un scénario chaud mais non exceptionnel.",
       "sources": [
         "Valeurs conservees depuis scripts/create_customer_experience.py avant externalisation Phase 5",
-        "Profil solaire synthetique orientation par orientation conserve depuis le modele existant"
+        "Profil solaire synthétique orientation par orientation conserve depuis le modèle existant"
       ]
     },
     {
@@ -158,11 +158,11 @@
         "west_afternoon_peak_w_m2": 520.0,
         "roof_peak_w_m2": 760.0
       },
-      "physical_rationale": "Journee estivale mediterraneenne pour zones H3 : moyenne 26 C et amplitude 6 C pour representer un ete chaud hors episode extreme.",
-      "client_description_fr": "Meteo d'ete typique pour les zones H3. Elle represente un ete mediterraneen chaud et sert a mesurer les gains de confort avant de tester la canicule.",
+      "physical_rationale": "Journée estivale méditerranéenne pour zones H3 : moyenne 26 C et amplitude 6 C pour représenter un été chaud hors épisode extreme.",
+      "client_description_fr": "Météo d'été typique pour les zones H3. Elle représente un été mediterraneen chaud et sert a mesurer les gains de confort avant de tester la canicule.",
       "sources": [
         "Valeurs conservees depuis scripts/create_customer_experience.py avant externalisation Phase 5",
-        "Profil solaire synthetique orientation par orientation conserve depuis le modele existant"
+        "Profil solaire synthétique orientation par orientation conserve depuis le modèle existant"
       ]
     },
     {
@@ -185,11 +185,11 @@
         "west_afternoon_peak_w_m2": 520.0,
         "roof_peak_w_m2": 760.0
       },
-      "physical_rationale": "Canicule de reference H1 : moyenne 26.5 C, pics autour de 32.5 C, coherente avec un episode chaud significatif en zone nord/est.",
-      "client_description_fr": "Canicule de reference pour les zones H1. Ce scenario teste la capacite du logement a limiter la surchauffe lors d'un episode chaud inhabituel mais plausible.",
+      "physical_rationale": "Canicule de référence H1 : moyenne 26.5 C, pics autour de 32.5 C, cohérente avec un épisode chaud significatif en zone nord/est.",
+      "client_description_fr": "Canicule de référence pour les zones H1. Ce scénario teste la capacité du logement a limiter la surchauffe lors d'un épisode chaud inhabituel mais plausible.",
       "sources": [
         "Valeurs conservees depuis scripts/create_customer_experience.py avant externalisation Phase 5",
-        "Profil calibre comme scenario commercial de canicule, non comme fichier meteorologique local historique"
+        "Profil calibré comme scénario commercial de canicule, non comme fichier météorologique local historique"
       ]
     },
     {
@@ -212,11 +212,11 @@
         "west_afternoon_peak_w_m2": 520.0,
         "roof_peak_w_m2": 760.0
       },
-      "physical_rationale": "Canicule de reference H2 : moyenne 29 C, pics autour de 36 C, representant un episode chaud marque dans les zones temperees.",
-      "client_description_fr": "Canicule de reference pour les zones H2. Elle sert a comparer objectivement les solutions de protection solaire, isolation et refroidissement sur un stress d'ete severe.",
+      "physical_rationale": "Canicule de référence H2 : moyenne 29 C, pics autour de 36 C, representant un épisode chaud marqué dans les zones tempérées.",
+      "client_description_fr": "Canicule de référence pour les zones H2. Elle sert a comparer objectivement les solutions de protection solaire, isolation et refroidissement sur un stress d'été sévère.",
       "sources": [
         "Valeurs conservees depuis scripts/create_customer_experience.py avant externalisation Phase 5",
-        "Profil calibre comme scenario commercial de canicule, non comme fichier meteorologique local historique"
+        "Profil calibré comme scénario commercial de canicule, non comme fichier météorologique local historique"
       ]
     },
     {
@@ -239,11 +239,11 @@
         "west_afternoon_peak_w_m2": 520.0,
         "roof_peak_w_m2": 760.0
       },
-      "physical_rationale": "Canicule mediterraneenne de reference : moyenne 31 C, amplitude 8 C, soit des pics proches de 39 C pour tester les limites de confort d'ete.",
-      "client_description_fr": "Canicule de reference pour les zones H3. C'est le scenario le plus exigeant : il met en evidence les risques de surchauffe et l'impact concret des volets, stores, toiture et climatisation.",
+      "physical_rationale": "Canicule méditerranéenne de référence : moyenne 31 C, amplitude 8 C, soit des pics proches de 39 C pour tester les limites de confort d'été.",
+      "client_description_fr": "Canicule de référence pour les zones H3. C'est le scénario le plus exigeant : il met en évidence les risques de surchauffe et l'impact concret des volets, stores, toiture et climatisation.",
       "sources": [
         "Valeurs conservees depuis scripts/create_customer_experience.py avant externalisation Phase 5",
-        "Profil calibre comme scenario commercial de canicule mediterraneenne, proche des ordres de grandeur observes lors d'episodes type ete 2003"
+        "Profil calibré comme scénario commercial de canicule méditerranéenne, proche des ordres de grandeur observes lors d'épisodes type été 2003"
       ]
     }
   ]

@@ -628,17 +628,20 @@ function roomPreset(kind) {
   };
 }
 
-function roomFieldVisible(field) {
+function roomFieldVisible(field, room = null) {
   if (["name", "type", "floor_area_m2", "height_m", "exterior_contact"].includes(field)) return true;
   if (state.profileId === "heat_pump_seller") return false;
+  if (room && room.exterior_contact !== "exterior" && ["orientation", "wall_length_m"].includes(field)) {
+    return false;
+  }
   if (["roof_insulation_seller", "reflective_roof_seller"].includes(state.profileId)) {
     return ["has_roof", "orientation", "wall_length_m"].includes(field);
   }
   return ["orientation", "window_area_m2", "wall_length_m", "mask_factor"].includes(field);
 }
 
-function renderRoomField(field, html) {
-  return roomFieldVisible(field) ? html : "";
+function renderRoomField(field, html, room = null) {
+  return roomFieldVisible(field, room) ? html : "";
 }
 
 function renderRooms() {
@@ -649,7 +652,7 @@ function renderRooms() {
         <h3>Pièce ${index + 1}</h3>
         <button class="removeRoom" type="button" data-remove-room="${index}">Retirer</button>
       </div>
-      ${renderRoomField("name", `<label>Nom<input data-room-field="name" value="${room.name}"></label>`)}
+      ${renderRoomField("name", `<label>Nom<input data-room-field="name" value="${room.name}"></label>`, room)}
       ${renderRoomField("type", `<label>Type
         <select data-room-field="type">
           ${option("living", "Salon / séjour", room.type)}
@@ -661,9 +664,9 @@ function renderRooms() {
           ${option("utility", "Toilettes / buanderie", room.type)}
           ${option("other", "Autre", room.type)}
         </select>
-      </label>`)}
-      ${renderRoomField("floor_area_m2", `<label>Surface m²<input data-room-field="floor_area_m2" type="number" value="${room.floor_area_m2}"></label>`)}
-      ${renderRoomField("height_m", `<label>Hauteur m<input data-room-field="height_m" type="number" value="${room.height_m}"></label>`)}
+      </label>`, room)}
+      ${renderRoomField("floor_area_m2", `<label>Surface m²<input data-room-field="floor_area_m2" type="number" value="${room.floor_area_m2}"></label>`, room)}
+      ${renderRoomField("height_m", `<label>Hauteur m<input data-room-field="height_m" type="number" value="${room.height_m}"></label>`, room)}
       ${renderRoomField("exterior_contact", `<label>Type de frontière principale
         <select data-room-field="exterior_contact">
           ${option("exterior", "Façade(s) donnant sur l'extérieur", room.exterior_contact || "exterior")}
@@ -671,14 +674,14 @@ function renderRooms() {
           ${option("unheated_space", "Contre un local non chauffé (garage, cave, combles)", room.exterior_contact || "exterior")}
           ${option("party", "Contre un voisin ou mur mitoyen", room.exterior_contact || "exterior")}
         </select>
-      </label>`)}
+      </label>`, room)}
       ${renderRoomField("orientation", `<label>Orientation
         <select data-room-field="orientation">
           ${["N", "E", "S", "W", "SE", "SW"].map((value) => option(value, value, room.orientation)).join("")}
         </select>
-      </label>`)}
-      ${renderRoomField("window_area_m2", `<label>Vitrage m²<input data-room-field="window_area_m2" type="number" value="${room.window_area_m2}"></label>`)}
-      ${renderRoomField("wall_length_m", `<label>Longueur façade m<input data-room-field="wall_length_m" type="number" value="${room.wall_length_m}"></label>`)}
+      </label>`, room)}
+      ${renderRoomField("window_area_m2", `<label>Vitrage m²<input data-room-field="window_area_m2" type="number" value="${room.window_area_m2}"></label>`, room)}
+      ${renderRoomField("wall_length_m", `<label>Longueur façade m<input data-room-field="wall_length_m" type="number" value="${room.wall_length_m}"></label>`, room)}
       ${renderRoomField("mask_factor", `<label>Masque solaire
         <select data-room-field="mask_factor">
           ${option("1", "Aucun masque", String(room.mask_factor ?? 1))}
@@ -686,13 +689,13 @@ function renderRooms() {
           ${option("0.65", "Masque moyen", String(room.mask_factor ?? 1))}
           ${option("0.4", "Masque fort", String(room.mask_factor ?? 1))}
         </select>
-      </label>`)}
+      </label>`, room)}
       ${renderRoomField("has_roof", `<label>Sous toiture
         <select data-room-field="has_roof">
           ${option("true", "Oui", String(room.has_roof))}
           ${option("false", "Non", String(room.has_roof))}
         </select>
-      </label>`)}
+      </label>`, room)}
       ${renderConnections(room, rooms)}
     </div>
   `).join("");
@@ -1582,6 +1585,10 @@ els.questionnaireForm.addEventListener("change", (event) => {
 });
 els.rooms.addEventListener("input", markUnsaved);
 els.rooms.addEventListener("change", (event) => {
+  if (event.target.dataset.roomField === "exterior_contact") {
+    syncRoomsFromDom();
+    renderRooms();
+  }
   markUnsaved();
 });
 els.rooms.addEventListener("click", (event) => {
