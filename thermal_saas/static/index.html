@@ -6,10 +6,10 @@
   <title>ThermalTwin SaaS MVP</title>
   <script>
     if (window.location.protocol === "file:") {
-      window.location.replace("http://127.0.0.1:8000/app");
+      window.location.replace("http://127.0.0.1:8001/app");
     }
   </script>
-  <link rel="stylesheet" href="/static/styles.css?v=20260522-security">
+  <link rel="stylesheet" href="/static/styles.css?v=20260527-beta-login">
 </head>
 <body>
   <header class="topbar">
@@ -17,115 +17,31 @@
       <h1>ThermalTwin</h1>
       <p>Workflow SaaS MVP</p>
     </div>
-    <div class="topbarActions">
-      <label class="demoMenu">
-        Charger une démo
-        <select id="demoSelect">
-          <option value="">Choisir...</option>
-          <option value="heat_pump_seller">Démo Vendeur PAC</option>
-          <option value="solar_protection_seller">Démo Protection solaire</option>
-          <option value="roof_insulation_seller">Démo Isolation toiture</option>
-          <option value="reflective_roof_seller">Démo Toiture réfléchissante</option>
-          <option value="window_seller">Démo Vendeur fenêtres</option>
-        </select>
-      </label>
-      <button id="refreshProfiles" type="button">Rafraîchir</button>
-    </div>
   </header>
 
   <main class="layout">
     <aside class="sidebar">
       <section>
-        <h2>Votre organisation</h2>
+        <h2>Connexion</h2>
         <div id="loggedOutAccount">
-          <div id="organizationStep">
-            <label>
-              Nom d'organisation
-              <input id="organizationName" type="text" value="Demo Thermal Pro">
-            </label>
-            <p id="organizationLookupStatus" class="status"></p>
-            <label id="profileChoice">
-              Profil métier
-              <select id="profileSelect"></select>
-            </label>
-            <div id="lockedProfile" class="readonlyValue" hidden></div>
-            <button id="continueToCredentials" type="button">Continuer →</button>
-            <div class="separator">ou</div>
-            <p>Vous avez déjà un compte ? Entrez votre organisation puis continuez pour vous connecter.</p>
-          </div>
-
-          <div id="brandingStep" hidden>
-            <button id="backToOrganizationFromBranding" class="linkButton" type="button">← Modifier l'organisation</button>
-            <div id="brandingOrganizationSummary" class="readonlyValue"></div>
-            <h3>Personnalisation du rapport client</h3>
-            <p>Optionnel. Ces informations seront utilisées automatiquement dans les rapports.</p>
-          </div>
-
-          <div id="credentialsStep" hidden>
-            <button id="backToOrganization" class="linkButton" type="button">← Modifier l'organisation</button>
-            <div id="selectedOrganizationSummary" class="readonlyValue"></div>
-            <label>
-              Email
-              <input id="email" type="email" value="demo@thermaltwin.local">
-            </label>
-            <label>
-              Mot de passe
-              <input id="password" type="password" value="password123">
-            </label>
-            <button id="register" type="button">Créer mon compte</button>
-            <button id="login" type="button">J'ai déjà un compte — Login</button>
-          </div>
+          <label>
+            Email
+            <input id="email" type="email" value="demo@thermaltwin.local" autocomplete="email">
+          </label>
+          <label>
+            Mot de passe
+            <input id="password" type="password" value="password123" autocomplete="current-password">
+          </label>
+          <button id="login" type="button">Se connecter</button>
+          <select id="profileSelect" hidden></select>
         </div>
         <div id="loggedInAccount" class="stateBox success" hidden>
           <span>Connecté en tant que</span>
           <strong id="connectedEmail"></strong>
-          <span>Organisation</span>
-          <strong id="connectedOrganization"></strong>
-          <span>Profil</span>
-          <strong id="connectedProfile"></strong>
+          <strong id="connectedProfile" hidden></strong>
         </div>
         <button id="logout" type="button" disabled>Logout</button>
         <p id="authStatus" class="status"></p>
-      </section>
-
-      <section id="brandingSection" hidden>
-        <h2>Rapport client</h2>
-        <div id="brandingSummary" class="brandingSummary"></div>
-        <div id="brandingForm" hidden>
-          <label>
-            Logo
-            <input id="brandingLogo" type="file" accept="image/png,image/jpeg,image/svg+xml">
-          </label>
-          <div id="brandingLogoPreview" class="logoPreview"></div>
-          <label>
-            Couleur principale
-            <div class="colorControl">
-              <input id="brandingColorPicker" type="color" value="#1a5c3a">
-              <input id="brandingPrimaryColor" type="text" value="#1a5c3a" maxlength="7">
-            </div>
-          </label>
-          <label>
-            Téléphone
-            <input id="brandingPhone" type="text">
-          </label>
-          <label>
-            Email de contact
-            <input id="brandingEmail" type="email">
-          </label>
-          <label>
-            Site web
-            <input id="brandingWebsite" type="text">
-          </label>
-          <label>
-            Mention légale
-            <textarea id="brandingLegalMention" rows="3"></textarea>
-          </label>
-          <div class="buttonRow">
-            <button id="skipBranding" type="button">Passer cette étape</button>
-            <button id="saveBranding" type="button">Sauvegarder</button>
-          </div>
-        </div>
-        <p id="brandingStatus" class="status"></p>
       </section>
 
       <section>
@@ -157,15 +73,54 @@
         </div>
         <p id="projectStatus" class="status"></p>
       </section>
+
+      <details id="brandingSection" class="settingsSection" hidden>
+        <summary>Paramètres du rapport</summary>
+        <div id="brandingSummary" class="brandingSummary"></div>
+        <div id="brandingForm" hidden>
+          <label>
+            Logo
+            <input id="brandingLogo" type="file" accept="image/png,image/jpeg,image/svg+xml">
+          </label>
+          <div id="brandingLogoPreview" class="logoPreview"></div>
+          <label>
+            Couleur principale
+            <div class="colorControl">
+              <input id="brandingColorPicker" type="color" value="#1a5c3a">
+              <input id="brandingPrimaryColor" type="text" value="#1a5c3a" maxlength="7">
+            </div>
+          </label>
+          <label>
+            Téléphone
+            <input id="brandingPhone" type="text">
+          </label>
+          <label>
+            Email de contact
+            <input id="brandingEmail" type="email">
+          </label>
+          <label>
+            Site web
+            <input id="brandingWebsite" type="text">
+          </label>
+          <label>
+            Mention légale
+            <textarea id="brandingLegalMention" rows="3"></textarea>
+          </label>
+          <div class="buttonRow">
+            <button id="skipBranding" type="button">Fermer</button>
+            <button id="saveBranding" type="button">Sauvegarder</button>
+          </div>
+        </div>
+        <p id="brandingStatus" class="status"></p>
+      </details>
     </aside>
 
     <section class="workspace">
       <div class="steps" id="progressSteps" aria-label="Progression">
         <div class="step" data-step="account"><span>1</span><strong>Compte</strong></div>
-        <div class="step" data-step="organization"><span>2</span><strong>Organisation</strong></div>
-        <div class="step" data-step="project"><span>3</span><strong>Projet</strong></div>
-        <div class="step" data-step="dwelling"><span>4</span><strong>Logement</strong></div>
-        <div class="step" data-step="simulation"><span>5</span><strong>Simulation</strong></div>
+        <div class="step" data-step="project"><span>2</span><strong>Projet</strong></div>
+        <div class="step" data-step="dwelling"><span>3</span><strong>Logement</strong></div>
+        <div class="step" data-step="simulation"><span>4</span><strong>Simulation</strong></div>
       </div>
 
       <div id="projectSummary" class="projectSummary" hidden></div>
@@ -174,7 +129,7 @@
         <div class="panelHeader">
           <div>
             <h2>Questionnaire</h2>
-            <p id="questionnaireIntro">Sélectionne un profil métier pour charger les questions.</p>
+            <p id="questionnaireIntro">Connectez-vous pour charger le questionnaire beta.</p>
           </div>
           <div class="actionStack">
             <span id="saveIndicator" class="saveIndicator unsaved">● Non sauvegardé</span>
@@ -218,6 +173,6 @@
     </section>
   </main>
 
-  <script src="/static/app.js?v=20260522-auth-hardening"></script>
+  <script src="/static/app.js?v=20260527-beta-login"></script>
 </body>
 </html>

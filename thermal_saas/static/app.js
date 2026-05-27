@@ -8,7 +8,6 @@ const state = {
   thermalLinks: [],
   token: "",
   user: null,
-  authStep: "organization",
   selectedOrganization: null,
   answersSaved: false,
   latestAnswers: null,
@@ -21,37 +20,20 @@ const state = {
   authSubmitting: "",
   branding: null,
   brandingLogoUrl: "",
-  pendingBranding: null,
   brandingEditorOpen: false,
 };
 
 const els = {
   email: document.querySelector("#email"),
   password: document.querySelector("#password"),
-  register: document.querySelector("#register"),
   login: document.querySelector("#login"),
   logout: document.querySelector("#logout"),
   authStatus: document.querySelector("#authStatus"),
   loggedOutAccount: document.querySelector("#loggedOutAccount"),
   loggedInAccount: document.querySelector("#loggedInAccount"),
   connectedEmail: document.querySelector("#connectedEmail"),
-  connectedOrganization: document.querySelector("#connectedOrganization"),
   connectedProfile: document.querySelector("#connectedProfile"),
-  organizationStep: document.querySelector("#organizationStep"),
-  credentialsStep: document.querySelector("#credentialsStep"),
-  brandingStep: document.querySelector("#brandingStep"),
-  continueToCredentials: document.querySelector("#continueToCredentials"),
-  backToOrganization: document.querySelector("#backToOrganization"),
-  backToOrganizationFromBranding: document.querySelector("#backToOrganizationFromBranding"),
-  selectedOrganizationSummary: document.querySelector("#selectedOrganizationSummary"),
-  brandingOrganizationSummary: document.querySelector("#brandingOrganizationSummary"),
-  organizationLookupStatus: document.querySelector("#organizationLookupStatus"),
-  demoSelect: document.querySelector("#demoSelect"),
-  profileChoice: document.querySelector("#profileChoice"),
   profileSelect: document.querySelector("#profileSelect"),
-  lockedProfile: document.querySelector("#lockedProfile"),
-  refreshProfiles: document.querySelector("#refreshProfiles"),
-  organizationName: document.querySelector("#organizationName"),
   projectName: document.querySelector("#projectName"),
   customerName: document.querySelector("#customerName"),
   projectSelect: document.querySelector("#projectSelect"),
@@ -124,8 +106,8 @@ function toFrenchError(message) {
     "Unknown project.": "Projet introuvable pour votre organisation.",
     "Unknown simulation run.": "Simulation introuvable pour votre organisation.",
     "No answers saved for project": "Aucune réponse sauvegardée pour ce projet.",
-    "Organization already exists with a different business profile.": "Cette organisation existe déjà avec un autre profil métier. Revenez à l'étape organisation pour utiliser le profil verrouillé, ou choisissez un autre nom d'organisation.",
-    "Unknown business profile.": "Profil métier inconnu.",
+    "Organization already exists with a different business profile.": "Cette organisation existe déjà avec une autre configuration.",
+    "Unknown business profile.": "Configuration inconnue.",
     "primary_color must be a hex color.": "La couleur doit être au format hexadécimal, par exemple #1a5c3a.",
     "logo_url must be an image data URL.": "Le logo doit être une image PNG, JPG ou SVG.",
     "logo_url is too large.": "Le logo est trop volumineux.",
@@ -141,24 +123,15 @@ function updateUiState() {
   els.loggedOutAccount.hidden = isLoggedIn;
   els.loggedInAccount.hidden = !isLoggedIn;
   els.connectedEmail.textContent = isLoggedIn ? state.user.email : "";
-  els.connectedOrganization.textContent = state.organization ? state.organization.name : "";
-  els.connectedProfile.textContent = state.organization ? selectedProfile().label : "";
+  els.connectedProfile.textContent = "";
+  els.profileSelect.hidden = true;
   els.logout.disabled = !isLoggedIn;
-  els.brandingSection.hidden = !isLoggedIn && state.authStep !== "branding";
+  els.brandingSection.hidden = !isLoggedIn;
   els.saveBranding.disabled = !isLoggedIn;
-  if (state.authStep === "branding") {
-    els.saveBranding.disabled = false;
-    els.saveBranding.textContent = "Enregistrer →";
-  } else {
-    els.saveBranding.textContent = "Sauvegarder";
-  }
-  els.register.disabled = isLoggedIn || state.authSubmitting === "register";
+  els.saveBranding.textContent = "Sauvegarder";
   els.login.disabled = isLoggedIn || state.authSubmitting === "login";
-  els.organizationStep.hidden = isLoggedIn || state.authStep !== "organization";
-  els.brandingStep.hidden = isLoggedIn || state.authStep !== "branding";
-  els.credentialsStep.hidden = isLoggedIn || state.authStep !== "credentials";
-  els.brandingForm.hidden = !(state.authStep === "branding" || state.brandingEditorOpen);
-  els.skipBranding.hidden = isLoggedIn && state.authStep !== "branding";
+  els.brandingForm.hidden = !state.brandingEditorOpen;
+  els.skipBranding.hidden = true;
 
   if (!isLoggedIn) {
     els.projectSelect.hidden = true;
@@ -166,21 +139,6 @@ function updateUiState() {
     els.emptyProjects.textContent = "Créez un compte ou connectez-vous pour accéder aux projets";
     els.loadProject.disabled = true;
   }
-
-  const lockedProfile = Boolean(state.organization || state.selectedOrganization?.exists);
-  els.profileChoice.hidden = lockedProfile;
-  els.lockedProfile.hidden = !lockedProfile;
-  els.lockedProfile.textContent = lockedProfile
-    ? `Profil : ${selectedProfile().label}`
-    : "";
-  els.organizationName.disabled = Boolean(state.organization);
-  if (state.organization) els.organizationName.value = state.organization.name;
-  els.selectedOrganizationSummary.textContent = state.selectedOrganization
-    ? `${state.selectedOrganization.name} · ${selectedProfile().label}`
-    : "";
-  els.brandingOrganizationSummary.textContent = state.selectedOrganization
-    ? `${state.selectedOrganization.name} · ${selectedProfile().label}`
-    : "";
 
   els.projectCreateFields.hidden = !state.projectDraftOpen;
   els.createProject.disabled = !state.organization || !state.projectDraftOpen;
@@ -201,9 +159,11 @@ function updateUiState() {
 async function loadProfiles() {
   const payload = await api("/business-profiles");
   state.profiles = payload.profiles;
-  els.profileSelect.innerHTML = state.profiles
-    .map((profile) => `<option value="${profile.id}">${profile.label}</option>`)
-    .join("");
+  const defaultProfile = state.profiles.find((profile) => profile.id === "reflective_roof_seller") || state.profiles[0];
+  els.profileSelect.innerHTML = defaultProfile
+    ? `<option value="${defaultProfile.id}">${defaultProfile.label}</option>`
+    : "";
+  els.profileSelect.value = defaultProfile?.id || "";
   state.profileId = els.profileSelect.value;
   if (state.token) {
     await refreshSession();
@@ -249,13 +209,6 @@ async function saveBranding() {
   els.saveBranding.disabled = true;
   try {
     const branding = collectBranding();
-    if (!state.user) {
-      state.pendingBranding = branding;
-      state.authStep = "credentials";
-      setStatus(els.brandingStatus, "");
-      updateUiState();
-      return;
-    }
     const payload = await api("/organization-branding", {
       method: "PUT",
       body: JSON.stringify(branding),
@@ -272,12 +225,7 @@ async function saveBranding() {
 }
 
 function skipBranding() {
-  state.pendingBranding = null;
-  if (!state.user && state.authStep === "branding") {
-    state.authStep = "credentials";
-  } else {
-    state.brandingEditorOpen = false;
-  }
+  state.brandingEditorOpen = false;
   setStatus(els.brandingStatus, "");
   updateUiState();
 }
@@ -290,12 +238,11 @@ function openBrandingEditor() {
 
 function renderBrandingSummary() {
   if (!els.brandingSummary) return;
-  if (!state.user && state.authStep === "branding") {
+  if (!state.user) {
     els.brandingSummary.innerHTML = "";
     return;
   }
   const branding = state.branding || {};
-  const organizationName = state.organization?.name || state.selectedOrganization?.name || "";
   const configured = Boolean(
     branding.logo_url
     || branding.primary_color
@@ -309,7 +256,7 @@ function renderBrandingSummary() {
     <div class="brandingSummaryRow">
       <div class="brandingIdentity">
         <span class="brandingSwatch" style="background:${color}"></span>
-        <span>${configured ? organizationName : "Non personnalisé"}</span>
+        <span>${configured ? "Personnalisation configurée" : "Non personnalisé"}</span>
         ${configured ? "<strong>✓</strong>" : ""}
       </div>
       <button type="button" data-open-branding>${configured ? "Modifier" : "Configurer"}</button>
@@ -384,10 +331,8 @@ async function refreshSession() {
 }
 
 async function loadQuestionnaire() {
-  state.profileId = els.profileSelect.value;
-  if (state.selectedOrganization && !state.selectedOrganization.exists) {
-    state.selectedOrganization.business_profile_id = state.profileId;
-  }
+  state.profileId = state.organization?.business_profile_id || state.profileId || "reflective_roof_seller";
+  els.profileSelect.value = state.profileId;
   state.questionnaire = await api(`/business-profiles/${state.profileId}/questionnaire`);
   if (!state.user) state.organization = null;
   state.project = null;
@@ -421,7 +366,7 @@ async function refreshProjects() {
     els.loadProject.disabled = true;
     return;
   }
-  const payload = await api(`/projects?organization_id=${state.organization.id}`);
+  const payload = await api("/projects");
   const hasProjects = payload.projects.length > 0;
   els.projectSelect.innerHTML = payload.projects
     .map((project) => `<option value="${project.id}">${project.name} · ${project.customer_name || "Sans client"}</option>`)
@@ -430,62 +375,16 @@ async function refreshProjects() {
   els.emptyProjects.hidden = hasProjects;
   els.emptyProjects.textContent = "Aucun projet pour cette organisation — créez-en un ci-dessus";
   els.loadProject.disabled = !hasProjects;
-}
-
-let organizationLookupTimer = null;
-
-function scheduleOrganizationLookup() {
-  window.clearTimeout(organizationLookupTimer);
-  organizationLookupTimer = window.setTimeout(lookupOrganization, 250);
-}
-
-async function lookupOrganization() {
-  const name = els.organizationName.value.trim();
-  state.selectedOrganization = null;
-  if (!name) {
-    setStatus(els.organizationLookupStatus, "Entrez le nom de votre organisation.", true);
-    updateUiState();
-    return;
+  if (!hasProjects) {
+    startNewProject();
+  } else {
+    state.projectDraftOpen = false;
+    setStatus(els.projectStatus, "");
   }
-  try {
-    const payload = await api(`/organizations/lookup?name=${encodeURIComponent(name)}`);
-    if (payload.exists) {
-      state.selectedOrganization = {...payload.organization, exists: true};
-      state.profileId = payload.organization.business_profile_id;
-      els.profileSelect.value = state.profileId;
-      setStatus(
-        els.organizationLookupStatus,
-        `✓ Organisation trouvée : ${payload.organization.name} — ${payload.organization.business_profile_label}`,
-      );
-    } else {
-      state.selectedOrganization = {
-        name,
-        business_profile_id: state.profileId,
-        exists: false,
-      };
-      setStatus(els.organizationLookupStatus, "Nouvelle organisation — choisissez son profil métier.");
-    }
-    await loadQuestionnaire();
-  } catch (error) {
-    setStatus(els.organizationLookupStatus, error.message, true);
-  }
-  updateUiState();
-}
-
-async function continueToCredentials() {
-  await lookupOrganization();
-  if (!state.selectedOrganization) return;
-  state.authStep = state.selectedOrganization.exists ? "credentials" : "branding";
-  updateUiState();
-}
-
-function backToOrganization() {
-  state.authStep = "organization";
-  updateUiState();
 }
 
 function renderQuestionnaire() {
-  els.questionnaireIntro.textContent = `Profil actif : ${selectedProfile().label}`;
+  els.questionnaireIntro.textContent = "Questionnaire beta toiture réfléchissante";
   const html = [];
   for (const section of state.questionnaire.sections) {
     const visibleQuestions = section.questions.filter((question) => !hiddenQuestionIds.has(question.id));
@@ -896,39 +795,6 @@ function selectedProfile() {
   return state.profiles.find((profile) => profile.id === state.profileId) || {label: state.profileId};
 }
 
-async function register() {
-  state.authSubmitting = "register";
-  updateUiState();
-  try {
-    if (!state.selectedOrganization) await continueToCredentials();
-    const brandingToSave = state.pendingBranding;
-    const payload = await api("/auth/register", {
-      method: "POST",
-      body: JSON.stringify({
-        email: els.email.value,
-        password: els.password.value,
-        organization_name: state.selectedOrganization.name,
-        business_profile_id: state.profileId,
-      }),
-    });
-    setSession(payload);
-    await setOrganizationFromUser(payload.organization);
-    if (brandingToSave) {
-      const brandingPayload = await api("/organization-branding", {
-        method: "PUT",
-        body: JSON.stringify(brandingToSave),
-      });
-      applyBranding(brandingPayload.branding);
-      state.pendingBranding = null;
-    }
-  } catch (error) {
-    setStatus(els.authStatus, error.message, true);
-  } finally {
-    state.authSubmitting = "";
-    updateUiState();
-  }
-}
-
 async function login() {
   state.authSubmitting = "login";
   updateUiState();
@@ -938,13 +804,11 @@ async function login() {
       body: JSON.stringify({
         email: els.email.value,
         password: els.password.value,
-        organization_name: state.selectedOrganization?.name || els.organizationName.value,
       }),
     });
     setSession(payload);
-    state.profileId = payload.organization.business_profile_id;
+    state.profileId = state.organization.business_profile_id;
     els.profileSelect.value = state.profileId;
-    await loadQuestionnaire();
     await setOrganizationFromUser(payload.organization);
   } catch (error) {
     setStatus(els.authStatus, error.message, true);
@@ -964,7 +828,6 @@ async function logout() {
   state.organization = null;
   state.project = null;
   state.selectedOrganization = null;
-  state.authStep = "organization";
   state.authSubmitting = "";
   state.answersSaved = false;
   state.latestAnswers = null;
@@ -973,7 +836,6 @@ async function logout() {
   state.simulationStatus = "idle";
   state.branding = null;
   state.brandingLogoUrl = "";
-  state.pendingBranding = null;
   state.brandingEditorOpen = false;
   els.logout.disabled = true;
   els.createProject.disabled = true;
@@ -996,7 +858,6 @@ function setSession(payload) {
     ...payload.organization,
     exists: true,
   };
-  state.authStep = "credentials";
   els.logout.disabled = false;
   setStatus(els.authStatus, `Connecté : ${state.user.email}`);
   updateUiState();
@@ -1410,12 +1271,11 @@ function stableStringify(value) {
 function renderProgress() {
   const completed = {
     account: Boolean(state.user),
-    organization: Boolean(state.organization),
     project: Boolean(state.project),
     dwelling: Boolean(state.answersSaved),
     simulation: usefulReportRuns().length > 0,
   };
-  const order = ["account", "organization", "project", "dwelling", "simulation"];
+  const order = ["account", "project", "dwelling", "simulation"];
   const active = order.find((key) => !completed[key]) || "simulation";
   for (const step of els.progressSteps.querySelectorAll(".step")) {
     const key = step.dataset.step;
@@ -1442,7 +1302,7 @@ function renderProjectSummary() {
   els.projectSummary.hidden = false;
   els.projectSummary.innerHTML = `
     <div class="projectSummaryTitle">📁 ${state.project.name} — ${state.project.customer_name || "Sans client"}</div>
-    <div class="projectSummaryMeta">Profil : ${selectedProfile().label} | ${state.rooms.length} pièce${state.rooms.length > 1 ? "s" : ""} | ${postalCode} ${city}</div>
+    <div class="projectSummaryMeta">${state.rooms.length} pièce${state.rooms.length > 1 ? "s" : ""} | ${postalCode} ${city}</div>
     <div class="projectSummaryMeta">${latest}</div>
     <div class="projectSummaryReports">
       ${reports.length ? reports.map((run) => `
@@ -1498,11 +1358,9 @@ function applyDemo(demoId) {
   const profileId = demoId;
   els.profileSelect.value = profileId;
   state.profileId = profileId;
-  state.authStep = "organization";
   state.selectedOrganization = null;
   els.email.value = `demo.${profileId}.${suffix}@thermaltwin.local`;
   els.password.value = "password123";
-  els.organizationName.value = demoOrganizationName(demoId, suffix);
   els.projectName.value = demoProjectName(demoId);
   els.customerName.value = "Client demo";
   loadQuestionnaire().then(() => {
@@ -1519,17 +1377,9 @@ function applyDemo(demoId) {
     }));
     renderRooms();
     state.answersSaved = false;
-    setStatus(els.authStatus, "Démo préremplie — cliquez sur Continuer puis créez le compte.");
+    setStatus(els.authStatus, "Démo préremplie.");
     updateUiState();
   });
-}
-
-function demoOrganizationName(demoId, suffix) {
-  if (demoId === "heat_pump_seller") return `Demo PAC Pro ${suffix}`;
-  if (demoId === "solar_protection_seller") return `Demo Stores Pro ${suffix}`;
-  if (demoId === "window_seller") return `Demo Fenetres Pro ${suffix}`;
-  if (demoId === "roof_insulation_seller") return `Demo Isolation Toiture ${suffix}`;
-  return `Demo Peinture Toiture ${suffix}`;
 }
 
 function demoProjectName(demoId) {
@@ -1599,8 +1449,6 @@ function demoAnswers(demoId) {
   };
 }
 
-els.refreshProfiles.addEventListener("click", loadProfiles);
-els.register.addEventListener("click", register);
 els.login.addEventListener("click", login);
 els.logout.addEventListener("click", logout);
 els.saveBranding.addEventListener("click", saveBranding);
@@ -1619,17 +1467,8 @@ els.brandingPrimaryColor.addEventListener("input", () => {
 });
 els.profileSelect.addEventListener("change", () => {
   state.profileId = els.profileSelect.value;
-  if (state.selectedOrganization && !state.selectedOrganization.exists) {
-    state.selectedOrganization.business_profile_id = state.profileId;
-  }
   loadQuestionnaire().catch((error) => setStatus(els.authStatus, error.message, true));
 });
-els.organizationName.addEventListener("input", scheduleOrganizationLookup);
-els.organizationName.addEventListener("focus", scheduleOrganizationLookup);
-els.continueToCredentials.addEventListener("click", () => continueToCredentials().catch((error) => setStatus(els.organizationLookupStatus, error.message, true)));
-els.backToOrganization.addEventListener("click", backToOrganization);
-els.backToOrganizationFromBranding.addEventListener("click", backToOrganization);
-els.demoSelect.addEventListener("change", (event) => applyDemo(event.target.value));
 els.createProject.addEventListener("click", createProject);
 els.newProject.addEventListener("click", startNewProject);
 els.loadProject.addEventListener("click", () => loadProject().catch((error) => setStatus(els.projectStatus, error.message, true)));
