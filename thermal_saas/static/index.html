@@ -26,11 +26,11 @@
         <div id="loggedOutAccount">
           <label>
             Email
-            <input id="email" type="email" value="demo@thermaltwin.local" autocomplete="email">
+            <input id="email" type="email" autocomplete="email">
           </label>
           <label>
             Mot de passe
-            <input id="password" type="password" value="password123" autocomplete="current-password">
+            <input id="password" type="password" autocomplete="current-password">
           </label>
           <button id="login" type="button">Se connecter</button>
           <select id="profileSelect" hidden></select>
@@ -149,6 +149,7 @@
               <button type="button" data-room-type="toilet">Toilettes</button>
               <button type="button" data-room-type="office">Bureau</button>
               <button type="button" data-room-type="corridor">Couloir / entrée</button>
+              <button type="button" data-room-type="staircase">Escalier</button>
               <button type="button" data-room-type="utility">Buanderie / local technique</button>
               <button type="button" data-room-type="other">Pièce personnalisée</button>
             </div>
@@ -172,6 +173,10 @@
       </div>
     </section>
   </main>
+
+  <footer class="appFooter">
+    <a href="/legal" target="_blank" rel="noopener">CGU · Confidentialité · Mentions légales</a>
+  </footer>
 
   <script src="/static/app.js?v=20260527-beta-login"></script>
 </body>

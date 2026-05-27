@@ -101,6 +101,49 @@ def test_has_cooling_answer_builds_cooling_system_only_when_enabled():
     assert dwelling_with_cooling["systems"]["cooling"][0]["type"] == "air_conditioner"
 
 
+def test_room_level_cooling_limits_served_rooms_and_day_night_setpoints():
+    catalog = load_reference_catalog()
+    profile = load_business_profile("reflective_roof_seller")
+    answers = _base_answers() | {
+        "has_cooling": "true",
+        "cooling_setpoint_day_c": 27,
+        "cooling_setpoint_night_c": 24,
+        "include_annual_experiment": False,
+        "rooms": [
+            {
+                "name": "Salon",
+                "type": "living",
+                "floor_area_m2": 30.0,
+                "has_roof": True,
+                "has_cooling": True,
+                "facades": [{"orientation": "S", "window_area_m2": 4.0, "wall_length_m": 6.0}],
+            },
+            {
+                "name": "Chambre",
+                "type": "bedroom",
+                "floor_area_m2": 12.0,
+                "has_roof": True,
+                "has_cooling": False,
+                "facades": [{"orientation": "E", "window_area_m2": 1.5, "wall_length_m": 3.5}],
+            },
+        ],
+    }
+
+    customer = build_customer(answers, profile, catalog)
+    dwelling = customer_experience.build_dwelling(customer, catalog)
+    result = run_profile_experience("reflective_roof_seller", answers, include_report_html=False)
+    summer = next(run for run in result["simulation_runs"] if run["season"] == "summer")
+
+    assert dwelling["systems"]["cooling"][0]["served_rooms"] == ["salon"]
+    assert customer["setpoints"]["cooling_c"] == 27
+    assert summer["before_scenario"]["controls"]["cooling_setpoint_schedule"] == {
+        "day_c": 27.0,
+        "night_c": 24.0,
+        "day_start_hour": 7,
+        "night_start_hour": 22,
+    }
+
+
 def test_heat_pump_profile_uses_existing_heating_before_retrofit():
     catalog = load_reference_catalog()
     profile = load_business_profile("heat_pump_seller")

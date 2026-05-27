@@ -39,7 +39,7 @@ def simulate_1r1c(
     timestep_h = scenario["timestep_h"]
     timestep_s = timestep_h * 3600.0
     heating_setpoint_c = scenario["setpoints"]["heating_c"]
-    cooling_setpoint_c = scenario["setpoints"]["cooling_c"]
+    default_cooling_setpoint_c = scenario["setpoints"]["cooling_c"]
 
     rooms = get_rooms_by_id(dwelling)
     scenario_initial_temperatures = scenario.get("initial_temperatures_c", {})
@@ -78,6 +78,11 @@ def simulate_1r1c(
 
     for weather_point in scenario["weather"]["hourly"]:
         outdoor_temperature_c = weather_point["outdoor_temperature_c"]
+        cooling_setpoint_c = _cooling_setpoint_c(
+            scenario,
+            weather_point["hour"],
+            default_cooling_setpoint_c,
+        )
         room_results: dict[str, Any] = {}
         coupling_power_by_room = _compute_coupling_powers(dwelling, temperatures)
 
@@ -594,6 +599,22 @@ def _natural_ventilation_ach(
         if entry["hour"] == hour:
             return entry["ach"]
     return natural_ach
+
+
+def _cooling_setpoint_c(
+    scenario: dict[str, Any],
+    hour: float,
+    default_cooling_setpoint_c: float,
+) -> float:
+    schedule = scenario.get("controls", {}).get("cooling_setpoint_schedule", {})
+    if not schedule:
+        return default_cooling_setpoint_c
+    hour_in_day = int(hour) % 24
+    day_start = int(schedule.get("day_start_hour", 7))
+    night_start = int(schedule.get("night_start_hour", 22))
+    is_day = day_start <= hour_in_day < night_start
+    value = schedule.get("day_c" if is_day else "night_c", default_cooling_setpoint_c)
+    return float(value)
 
 
 def _compute_heating(

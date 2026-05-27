@@ -58,6 +58,20 @@
             "default": false
           },
           {
+            "id": "cooling_setpoint_day_c",
+            "type": "number",
+            "label": "Consigne de climatisation en journée (°C)",
+            "required": false,
+            "default": 26.0
+          },
+          {
+            "id": "cooling_setpoint_night_c",
+            "type": "number",
+            "label": "Consigne de climatisation la nuit (°C)",
+            "required": false,
+            "default": 26.0
+          },
+          {
             "id": "airtightness_id",
             "type": "select",
             "label": "Etancheite globale du logement",

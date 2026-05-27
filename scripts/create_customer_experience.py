@@ -51,6 +51,7 @@ ROOM_TYPES = [
     {"id": "bathroom", "label": "Salle de bain"},
     {"id": "office", "label": "Bureau"},
     {"id": "corridor", "label": "Couloir / entree"},
+    {"id": "staircase", "label": "Escalier"},
     {"id": "other", "label": "Autre"},
 ]
 
@@ -779,7 +780,7 @@ def ensure_unique_room_ids(rooms: list[dict[str, Any]]) -> None:
 def default_window_area(room_type: str, area_m2: float, orientation: str) -> float:
     if room_type == "bathroom":
         return 0.6
-    if room_type == "corridor":
+    if room_type in {"corridor", "staircase"}:
         return 0.0
     if room_type == "living":
         factor = 0.18 if orientation in {"S", "SE", "SW", "W"} else 0.1
@@ -893,6 +894,7 @@ def build_room(
         "type": room_input["type"],
         "floor_area_m2": area_m2,
         "height_m": height_m,
+        "has_cooling": room_input.get("has_cooling"),
         "volume_m3": round(volume_m3, 2),
         "initial_temperature_c": 20.0,
         "equivalent_capacity_j_m2k": period["equivalent_capacity_j_m2k"],
@@ -1050,6 +1052,8 @@ def internal_gain_for_room(room_type: str) -> float:
         return 5.0
     if room_type in {"bedroom", "office"}:
         return 3.0
+    if room_type == "staircase":
+        return 1.0
     return 2.0
 
 
@@ -1168,11 +1172,17 @@ def build_cooling_systems(
 ) -> list[dict[str, Any]]:
     if not has_cooling:
         return []
-    served_rooms = [
-        room["id"]
-        for room in rooms
-        if room["type"] in {"living", "bedroom", "office"}
-    ] or [room["id"] for room in rooms]
+    room_level_answers = [room for room in rooms if room.get("has_cooling") is not None]
+    if room_level_answers:
+        served_rooms = [room["id"] for room in rooms if room.get("has_cooling") is True]
+    else:
+        served_rooms = [
+            room["id"]
+            for room in rooms
+            if room["type"] in {"living", "bedroom", "office"}
+        ] or [room["id"] for room in rooms]
+    if not served_rooms:
+        return []
     return [
         {
             "id": "main_cooling",
@@ -1429,6 +1439,16 @@ def build_scenario(
                 shutter_usage,
             ),
         }
+        if {
+            "cooling_day_c",
+            "cooling_night_c",
+        }.issubset(scenario_setpoints):
+            scenario["controls"]["cooling_setpoint_schedule"] = {
+                "day_c": scenario_setpoints["cooling_day_c"],
+                "night_c": scenario_setpoints["cooling_night_c"],
+                "day_start_hour": 7,
+                "night_start_hour": 22,
+            }
         if season == "summer":
             scenario["controls"]["natural_ventilation"] = build_summer_natural_ventilation_controls()
     if apply_change:

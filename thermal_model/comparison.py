@@ -158,7 +158,11 @@ def compare_scenarios(
         "location": dwelling.get("location", {}),
         "before_scenario_id": before_scenario["scenario_id"],
         "after_scenario_id": after_scenario["scenario_id"],
-        "experiment": _build_experiment_context(before_scenario, after_scenario),
+        "experiment": _build_experiment_context(
+            before_scenario,
+            after_scenario,
+            before_dwelling,
+        ),
         "summary": _build_summary(before_results, after_results, deltas),
         "before": before_results,
         "after": after_results,
@@ -169,6 +173,7 @@ def compare_scenarios(
 def _build_experiment_context(
     before_scenario: dict[str, Any],
     after_scenario: dict[str, Any],
+    before_dwelling: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     before_weather = before_scenario["weather"]["hourly"]
     after_weather = after_scenario["weather"]["hourly"]
@@ -209,6 +214,7 @@ def _build_experiment_context(
             "outdoor_temperature_max_c": max(outdoor_temperatures),
         },
         "setpoints": before_scenario["setpoints"],
+        "has_cooling": bool(before_dwelling and before_dwelling["systems"]["cooling"]),
         "initial_temperature_mode": "scenario_initial_temperatures",
         "intervention": _summarize_retrofit(after_scenario.get("retrofit", {})),
     }

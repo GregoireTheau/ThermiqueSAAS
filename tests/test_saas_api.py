@@ -50,6 +50,19 @@ def test_frontend_app_is_served(tmp_path, monkeypatch):
     assert response.headers["x-frame-options"] == "DENY"
 
 
+def test_legal_page_is_served(tmp_path, monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
+    client = TestClient(app)
+
+    response = client.get("/legal")
+
+    assert response.status_code == 200
+    assert "Conditions générales d'utilisation" in response.text
+    assert "Politique de confidentialité" in response.text
+    assert "Mentions légales" in response.text
+    assert "estimations et simulations thermiques" in response.text
+
+
 def test_health_endpoint(tmp_path, monkeypatch):
     monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
     client = TestClient(app)

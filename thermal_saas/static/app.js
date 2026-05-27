@@ -397,18 +397,20 @@ function renderQuestionnaire() {
   els.questionnaireForm.innerHTML = html.join("");
   applyDefaults();
   syncPositionOptions();
+  updateCoolingVisibility();
 }
 
 function renderQuestion(question) {
+  const conditionalClass = question.id.startsWith("cooling_setpoint_") ? " conditionalCooling" : "";
   if (question.type === "select") {
     const options = (question.options || [])
       .map((option) => `<option value="${option.id}">${option.label}</option>`)
       .join("");
-    return `<label>${question.label}<select name="${question.id}">${options}</select></label>`;
+    return `<label class="${conditionalClass.trim()}">${question.label}<select name="${question.id}">${options}</select></label>`;
   }
   if (question.type === "boolean") {
     const selected = question.default ? "true" : "false";
-    return `<div class="booleanQuestion">
+    return `<div class="booleanQuestion${conditionalClass}">
       <span class="fieldLabel">${question.label}</span>
       <div class="booleanPills">
         <label>
@@ -424,7 +426,22 @@ function renderQuestion(question) {
   }
   const value = question.default ?? "";
   const inputType = question.type === "number" ? "number" : "text";
-  return `<label>${question.label}<input name="${question.id}" type="${inputType}" value="${value}"></label>`;
+  return `<label class="${conditionalClass.trim()}">${question.label}<input name="${question.id}" type="${inputType}" value="${value}"></label>`;
+}
+
+function hasGlobalCooling() {
+  return getField("has_cooling", "false") === "true";
+}
+
+function updateCoolingVisibility() {
+  const hasCooling = hasGlobalCooling();
+  document.querySelectorAll(".conditionalCooling").forEach((element) => {
+    element.hidden = !hasCooling;
+  });
+  if (!hasCooling) {
+    state.rooms = state.rooms.map((room) => ({...room, has_cooling: false}));
+  }
+  renderRooms();
 }
 
 const positionOptions = {
@@ -501,33 +518,36 @@ function defaultRoom() {
 
 function roomPreset(kind) {
   const presets = {
-    living: ["Salon", "living", 24, 4.0, 5.0],
-    bedroom: ["Chambre", "bedroom", 12, 1.5, 3.5],
-    kitchen: ["Cuisine", "kitchen", 10, 1.2, 3.2],
-    bathroom: ["Salle de bain", "bathroom", 6, 0.6, 2.5],
-    toilet: ["Toilettes", "utility", 2, 0.3, 1.4],
-    office: ["Bureau", "office", 9, 1.2, 3.0],
-    corridor: ["Couloir", "corridor", 6, 0.0, 2.5],
-    utility: ["Buanderie", "utility", 5, 0.4, 2.2],
-    other: ["Pièce", "other", 15, 1.2, 4.0],
+    living: ["Salon", "living", 24, 4.0, 5.0, 2.5, "exterior"],
+    bedroom: ["Chambre", "bedroom", 12, 1.5, 3.5, 2.5, "exterior"],
+    kitchen: ["Cuisine", "kitchen", 10, 1.2, 3.2, 2.5, "exterior"],
+    bathroom: ["Salle de bain", "bathroom", 6, 0.6, 2.5, 2.5, "exterior"],
+    toilet: ["Toilettes", "utility", 2, 0.3, 1.4, 2.5, "exterior"],
+    office: ["Bureau", "office", 9, 1.2, 3.0, 2.5, "exterior"],
+    corridor: ["Couloir", "corridor", 6, 0.0, 2.5, 2.5, "interior"],
+    staircase: ["Escalier", "staircase", 6, 0.0, 2.5, 4.5, "interior"],
+    utility: ["Buanderie", "utility", 5, 0.4, 2.2, 2.5, "exterior"],
+    other: ["Pièce", "other", 15, 1.2, 4.0, 2.5, "exterior"],
   };
-  const [name, type, area, windowArea, wallLength] = presets[kind] || presets.other;
+  const [name, type, area, windowArea, wallLength, height, exteriorContact] = presets[kind] || presets.other;
   return {
     name,
     type,
     floor_area_m2: area,
-    height_m: 2.5,
+    height_m: height,
     orientation: "S",
     window_area_m2: windowArea,
     wall_length_m: wallLength,
-    exterior_contact: "exterior",
+    exterior_contact: exteriorContact,
     mask_factor: 1,
     has_roof: true,
     has_ground_floor: true,
+    has_cooling: false,
   };
 }
 
 function roomFieldVisible(field, room = null) {
+  if (field === "has_cooling") return hasGlobalCooling();
   if (["name", "type", "floor_area_m2", "height_m", "exterior_contact"].includes(field)) return true;
   if (state.profileId === "heat_pump_seller") return false;
   if (room && room.exterior_contact !== "exterior" && ["orientation", "wall_length_m"].includes(field)) {
@@ -560,6 +580,7 @@ function renderRooms() {
           ${option("bathroom", "Salle de bain", room.type)}
           ${option("office", "Bureau", room.type)}
           ${option("corridor", "Couloir / entrée", room.type)}
+          ${option("staircase", "Escalier", room.type)}
           ${option("utility", "Toilettes / buanderie", room.type)}
           ${option("other", "Autre", room.type)}
         </select>
@@ -595,6 +616,19 @@ function renderRooms() {
           ${option("false", "Non", String(room.has_roof))}
         </select>
       </label>`, room)}
+      ${renderRoomField("has_cooling", `<div class="booleanQuestion roomBooleanQuestion">
+        <span class="fieldLabel">Pièce climatisée</span>
+        <div class="booleanPills">
+          <label>
+            <input data-room-field="has_cooling" name="room_${index}_has_cooling" type="radio" value="false" ${String(room.has_cooling) !== "true" ? "checked" : ""}>
+            <span>Non</span>
+          </label>
+          <label>
+            <input data-room-field="has_cooling" name="room_${index}_has_cooling" type="radio" value="true" ${String(room.has_cooling) === "true" ? "checked" : ""}>
+            <span>Oui</span>
+          </label>
+        </div>
+      </div>`, room)}
       ${renderConnections(room, rooms)}
     </div>
   `).join("");
@@ -712,6 +746,8 @@ function syncRoomsFromDom(connectionChange = null) {
   const roomElements = [...document.querySelectorAll(".room")];
   const rooms = roomElements.map((roomElement, index) => {
     const value = (field, fallback) => {
+      const checkedFieldElement = roomElement.querySelector(`[data-room-field="${field}"]:checked`);
+      if (checkedFieldElement) return checkedFieldElement.value;
       const fieldElement = roomElement.querySelector(`[data-room-field="${field}"]`);
       return fieldElement ? fieldElement.value : fallback;
     };
@@ -722,6 +758,7 @@ function syncRoomsFromDom(connectionChange = null) {
       type: value("type", "living"),
       floor_area_m2: Number(value("floor_area_m2", 20)),
       height_m: Number(value("height_m", 2.5)),
+      has_cooling: hasGlobalCooling() && value("has_cooling", "false") === "true",
       has_roof: value("has_roof", "true") === "true",
       has_ground_floor: true,
       exterior_contact: exteriorContact,
@@ -785,7 +822,7 @@ function collectAnswers() {
       area_m2: link.area_m2,
     })),
   };
-  for (const key of ["heating_setpoint_c", "cooling_setpoint_c"]) {
+  for (const key of ["heating_setpoint_c", "cooling_setpoint_c", "cooling_setpoint_day_c", "cooling_setpoint_night_c"]) {
     if (answers[key] !== undefined && answers[key] !== "") answers[key] = Number(answers[key]);
   }
   return answers;
@@ -982,6 +1019,7 @@ function applyAnswers(answers) {
     setField(key, value);
   }
   syncPositionOptions();
+  updateCoolingVisibility();
   if (answers.rooms) {
     state.rooms = answers.rooms.map(roomFromAnswer);
     state.thermalLinks = (answers.thermal_layout?.connections || []).map((connection) => ({
@@ -1008,6 +1046,7 @@ function roomFromAnswer(room) {
     mask_factor: room.facades?.[0]?.mask_factor ?? 1,
     has_roof: Boolean(room.has_roof),
     has_ground_floor: room.has_ground_floor !== false,
+    has_cooling: room.has_cooling === true,
   };
 }
 
@@ -1477,6 +1516,7 @@ els.runSimulation.addEventListener("click", runSimulation);
 els.questionnaireForm.addEventListener("input", markUnsaved);
 els.questionnaireForm.addEventListener("change", (event) => {
   if (event.target.name === "dwelling_type") syncPositionOptions();
+  if (event.target.name === "has_cooling") updateCoolingVisibility();
   markUnsaved();
 });
 els.rooms.addEventListener("input", markUnsaved);

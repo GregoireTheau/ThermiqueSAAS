@@ -172,6 +172,7 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
                 ),
             },
             "setpoints": experiment["setpoints"],
+            "has_cooling": experiment.get("has_cooling", False),
             "intervention": experiment["intervention"],
         },
         "comfort_mode": comfort_mode,
@@ -1648,6 +1649,7 @@ def _format_intervention_title(intervention: dict[str, Any]) -> str:
 def _build_context_text(experiment: dict[str, Any], season: str) -> str:
     season_label = "un épisode d'été chaud" if season == "summer" else "une séquence d'hiver froid"
     weather = experiment["weather_summary"]
+    setpoint_text = _format_setpoint_text(experiment)
     return (
         f"L'expérience reproduit {season_label} pendant "
         f"{_format_number(experiment['duration_days'])} jours ({_format_number(experiment['duration_hours'])} h). "
@@ -1655,8 +1657,7 @@ def _build_context_text(experiment: dict[str, Any], season: str) -> str:
         f"{_format_temperature(weather['outdoor_temperature_min_c'])} à "
         f"{_format_temperature(weather['outdoor_temperature_max_c'])}. Le logement est ensuite "
         f"simulé deux fois, avant puis après intervention, avec les mêmes consignes "
-        f"de confort : {_format_temperature(experiment['setpoints']['heating_c'])} en chauffage et "
-        f"{_format_temperature(experiment['setpoints']['cooling_c'])} en rafraîchissement."
+        f"de confort : {setpoint_text}."
     )
 
 
@@ -1951,10 +1952,7 @@ def _render_context_params(
         ),
         (
             "Consignes",
-            (
-                f"Chauffage {_format_temperature(experiment['setpoints']['heating_c'])}, "
-                f"rafraîchissement {_format_temperature(experiment['setpoints']['cooling_c'])}"
-            ),
+            _format_setpoint_text(experiment),
         ),
         (
             "Seuil inconfort",
@@ -2096,6 +2094,23 @@ def _render_special_sections(report: dict[str, Any]) -> str:
         Été : {_format_delta(hot_discomfort)} d'inconfort chaud évité.
       </div>
 """
+
+
+def _format_setpoint_text(experiment: dict[str, Any]) -> str:
+    setpoints = experiment["setpoints"]
+    parts = [f"Chauffage {_format_temperature(setpoints['heating_c'])}"]
+    if experiment.get("has_cooling"):
+        day = setpoints.get("cooling_day_c")
+        night = setpoints.get("cooling_night_c")
+        if day is not None and night is not None:
+            parts.append(
+                "rafraîchissement "
+                f"{_format_temperature(day)} en journée, "
+                f"{_format_temperature(night)} la nuit",
+            )
+        else:
+            parts.append(f"rafraîchissement {_format_temperature(setpoints['cooling_c'])}")
+    return ", ".join(parts)
 
 
 def _render_results_sections(report: dict[str, Any]) -> str:

@@ -127,6 +127,29 @@ def test_render_report_html_contains_report_sections_without_hourly_traces():
     assert comparison["dwelling_id"] in html
 
 
+def test_report_context_only_mentions_cooling_setpoints_when_cooling_exists():
+    comparison = _comparison(
+        "data/examples/scenario_heatwave_before.json",
+        "data/examples/scenario_heatwave.json",
+    )
+    comparison["experiment"]["setpoints"] = {
+        "heating_c": 19.0,
+        "cooling_c": 27.0,
+        "cooling_day_c": 27.0,
+        "cooling_night_c": 24.0,
+    }
+
+    comparison["experiment"]["has_cooling"] = False
+    no_cooling_html = render_report_html(build_report_model(comparison))
+    assert "Consignes" in no_cooling_html
+    assert "Chauffage 19 °C" in no_cooling_html
+    assert "rafraîchissement" not in no_cooling_html
+
+    comparison["experiment"]["has_cooling"] = True
+    cooling_html = render_report_html(build_report_model(comparison))
+    assert "Chauffage 19 °C, rafraîchissement 27 °C en journée, 24 °C la nuit" in cooling_html
+
+
 def test_comfort_mode_and_room_status_handle_cold_symmetrically():
     assert get_comfort_mode({"season": "winter", "scenario_type": "heat_pump"}) == "cold"
     assert get_comfort_mode(

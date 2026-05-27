@@ -197,6 +197,11 @@ def get_app() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.get("/legal")
+def get_legal() -> FileResponse:
+    return FileResponse(STATIC_DIR / "legal.html")
+
+
 @app.get("/health")
 def health_endpoint() -> dict[str, Any]:
     try:

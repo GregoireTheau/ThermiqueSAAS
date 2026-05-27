@@ -71,6 +71,43 @@ p {
   padding: 18px;
 }
 
+.appFooter {
+  padding: 0 18px 18px;
+  text-align: right;
+  font-size: 12px;
+}
+
+.appFooter a,
+.legalPage a {
+  color: var(--muted);
+}
+
+.legalPage {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+}
+
+.legalPage h1 {
+  margin-top: 16px;
+}
+
+.legalPage section {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.legalPage p {
+  margin-top: 10px;
+  line-height: 1.55;
+}
+
+.legalBackLink {
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .sidebar,
 .workspace {
   display: flex;

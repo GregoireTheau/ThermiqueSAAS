@@ -180,10 +180,17 @@ def build_customer(
         raise BusinessFlowError("climate_zone_id is required when postal_code cannot be mapped.")
 
     heating_setpoint_c = float(answers.get("heating_setpoint_c", 19.0))
-    cooling_setpoint_c = float(answers.get("cooling_setpoint_c", 26.0))
+    cooling_setpoint_day_c = float(
+        answers.get("cooling_setpoint_day_c", answers.get("cooling_setpoint_c", 26.0)),
+    )
+    cooling_setpoint_night_c = float(
+        answers.get("cooling_setpoint_night_c", cooling_setpoint_day_c),
+    )
+    cooling_setpoint_c = cooling_setpoint_day_c
     _validate_setpoint(heating_setpoint_c, "heating_setpoint_c")
-    _validate_setpoint(cooling_setpoint_c, "cooling_setpoint_c")
-    if cooling_setpoint_c < heating_setpoint_c:
+    _validate_setpoint(cooling_setpoint_day_c, "cooling_setpoint_day_c")
+    _validate_setpoint(cooling_setpoint_night_c, "cooling_setpoint_night_c")
+    if min(cooling_setpoint_day_c, cooling_setpoint_night_c) < heating_setpoint_c:
         raise BusinessFlowError(
             "La consigne de chauffage ne peut pas être supérieure à la consigne de climatisation.",
         )
@@ -216,7 +223,12 @@ def build_customer(
         "shutter_usage": _shutter_usage(answers, adaptation_id),
         "heating_ref": _initial_heating_ref(profile["id"], answers),
         "has_cooling": _answer_bool(answers.get("has_cooling"), False),
-        "setpoints": {"heating_c": heating_setpoint_c, "cooling_c": cooling_setpoint_c},
+        "setpoints": {
+            "heating_c": heating_setpoint_c,
+            "cooling_c": cooling_setpoint_c,
+            "cooling_day_c": cooling_setpoint_day_c,
+            "cooling_night_c": cooling_setpoint_night_c,
+        },
         "rooms": rooms,
         "thermal_layout": _thermal_layout(rooms, answers.get("thermal_layout")),
         "change": change,
@@ -463,6 +475,9 @@ def _normalize_room(
                 ),
             ),
         ),
+        "has_cooling": _answer_bool(room["has_cooling"], False)
+        if "has_cooling" in room
+        else None,
     }
 
 
