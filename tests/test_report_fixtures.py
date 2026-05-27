@@ -25,5 +25,5 @@ def test_generate_report_fixtures_outputs_multiple_html_reports(tmp_path):
     assert len(output_paths) == 3
     assert all(path.exists() for path in output_paths)
     assert (tmp_path / "apartment_two_rooms" / "dwelling.json").exists()
-    assert any("summer_heatwave_report.html" in path.name for path in output_paths)
+    assert any("summer_real_heatwave_zoom_report.html" in path.name for path in output_paths)
     assert any("winter_cold_report.html" in path.name for path in output_paths)

@@ -58,6 +58,19 @@ def test_all_business_profiles_ask_ventilation_and_airtightness():
         assert "airtightness_id" in question_ids
 
 
+def test_roof_profiles_ask_roof_configuration_above_dwelling():
+    expected_options = [
+        ("attic", "Combles au-dessus du logement"),
+        ("sloped_ceiling", "Toits rampants au-dessus du logement"),
+        ("flat_roof", "Toit terrasse au-dessus du logement"),
+    ]
+    for profile_id in {"reflective_roof_seller", "roof_insulation_seller"}:
+        question = _question_by_id(get_profile_questionnaire(profile_id), "attic_ventilation_id")
+
+        assert question["label"] == "Configuration de toiture au-dessus du logement"
+        assert [(option["id"], option["label"]) for option in question["options"]] == expected_options
+
+
 def test_solar_protection_profile_runs_only_summer_protection_experience():
     questionnaire = get_profile_questionnaire("solar_protection_seller")
     question_ids = _question_ids(questionnaire)
@@ -145,12 +158,14 @@ def test_roof_insulation_profile_runs_roof_insulation_experiences():
         "adaptation_id": "roof_insulation",
         "roof_insulation_id": "poor",
         "roof_color_id": "dark",
-        "attic_ventilation_id": "limited",
+        "attic_ventilation_id": "flat_roof",
     }
 
     result = run_profile_experience("roof_insulation_seller", answers)
 
     assert result["adaptation_id"] == "roof_insulation"
+    roof = next(surface for surface in result["dwelling"]["rooms"][0]["surfaces"] if surface["type"] == "roof")
+    assert roof["solar_to_room_factor"] == 0.07
     assert [run["season"] for run in result["simulation_runs"]] == ["winter", "summer", "annual"]
     for run in result["simulation_runs"]:
         assert run["after_scenario"]["retrofit"]["surface_overrides"]
@@ -163,11 +178,13 @@ def test_roof_profile_can_run_reflective_roof_variant():
     result = run_profile_experience("reflective_roof_seller", answers)
 
     assert result["adaptation_id"] == "reflective_roof"
-    assert [run["season"] for run in result["simulation_runs"]] == ["summer", "summer", "annual"]
+    assert [run["season"] for run in result["simulation_runs"]] == ["summer", "summer"]
+    assert [run["role"] for run in result["simulation_runs"]] == ["primary", "secondary"]
+    assert len(result["simulation_runs"][0]["before_scenario"]["weather"]["hourly"]) == 124 * 24
+    assert len(result["simulation_runs"][1]["before_scenario"]["weather"]["hourly"]) == 5 * 24
     for run in result["simulation_runs"]:
         overrides = run["after_scenario"]["retrofit"]["surface_overrides"]
         assert overrides[0]["albedo"] == 0.75
-    _assert_annual_run(result["simulation_runs"][-1])
 
 
 def test_window_profile_runs_window_replacement_experiences():
@@ -292,6 +309,14 @@ def _question_ids(questionnaire):
         for section in questionnaire["sections"]
         for question in section["questions"]
     }
+
+
+def _question_by_id(questionnaire, question_id):
+    for section in questionnaire["sections"]:
+        for question in section["questions"]:
+            if question["id"] == question_id:
+                return question
+    raise AssertionError(f"Question {question_id} not found")
 
 
 def _assert_annual_run(run):

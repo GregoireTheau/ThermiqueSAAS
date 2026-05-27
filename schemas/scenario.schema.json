@@ -130,7 +130,9 @@
         "weather_mode": {
           "enum": [
             "synthetic",
-            "openmeteo_annual"
+            "openmeteo_annual",
+            "openmeteo_summer_period",
+            "openmeteo_heatwave_zoom"
           ]
         },
         "requested_city": {

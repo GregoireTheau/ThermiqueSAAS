@@ -212,6 +212,7 @@ def simulate_1r1c(
         hourly_results.append(
             {
                 "hour": weather_point["hour"],
+                "month": weather_point.get("month"),
                 "outdoor_temperature_c": outdoor_temperature_c,
                 "rooms": room_results,
             }

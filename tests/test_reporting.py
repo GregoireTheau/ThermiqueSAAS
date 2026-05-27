@@ -271,17 +271,32 @@ def test_business_report_presentation_is_profile_specific():
         answers,
         include_report_html=True,
     )
-    reflective_long_summer = reflective_result["simulation_runs"][1]["report"]
-    assert reflective_long_summer["temperature_profiles"]["rooms"][0]["x_axis"]["type"] == "season_months"
-    assert reflective_long_summer["temperature_profiles"]["rooms"][0]["x_axis"]["labels"] == [
-        ("Juin", 0),
-        ("Juil", 720.0),
-        ("Aoû", 1440.0),
+    reflective_long_summer = reflective_result["simulation_runs"][0]["report"]
+    long_profile = reflective_long_summer["temperature_profiles"]["rooms"][0]
+    assert long_profile["x_axis"]["type"] == "season_months"
+    assert long_profile["aggregation"] == "daily_max"
+    assert long_profile["points"][0]["before_temperature_c"] == long_profile["points"][0]["before_max_temperature_c"]
+    assert "before_average_temperature_c" in long_profile["points"][0]
+    assert long_profile["x_axis"]["labels"] == [
+        ("Mai", 0),
+        ("Juil", 1488),
+        ("Sep", 2952),
     ]
-    assert ">h0<" not in reflective_result["simulation_runs"][1]["report_html"]
-    assert ">Juin<" in reflective_result["simulation_runs"][1]["report_html"]
+    assert ">h0<" not in reflective_result["simulation_runs"][0]["report_html"]
+    assert ">Mai<" in reflective_result["simulation_runs"][0]["report_html"]
+    assert "température maximale de chaque journée" in reflective_result["simulation_runs"][0]["report_html"]
+    assert "Moy. int./j" in reflective_result["simulation_runs"][0]["report_html"]
+    assert (
+        reflective_result["simulation_runs"][1]["report"]["temperature_profiles"]["rooms"][0]["x_axis"]["type"]
+        == "hours"
+    )
+    assert (
+        reflective_result["simulation_runs"][1]["report"]["temperature_profiles"]["rooms"][0]["aggregation"]
+        == "hourly"
+    )
+    assert len(reflective_result["simulation_runs"][1]["before_scenario"]["weather"]["hourly"]) == 120
 
-    reflective = reflective_result["simulation_runs"][-1]
+    reflective = reflective_result["simulation_runs"][1]
     assert [kpi["label"] for kpi in reflective["report"]["primary_kpis"]] == [
         "Inconfort chaud évité",
         "Température maximale réduite",
@@ -289,7 +304,8 @@ def test_business_report_presentation_is_profile_specific():
     assert "Énergie finale économisée" not in [
         kpi["label"] for kpi in reflective["report"]["primary_kpis"]
     ]
-    assert "Pourquoi le chauffage augmente-t-il légèrement ?" in reflective["report_html"]
+    assert "zoom canicule réelle" in reflective["report_html"]
+    assert "température simulée heure par heure" in reflective["report_html"]
 
     windows_result = run_profile_experience(
         "window_seller",

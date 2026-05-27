@@ -125,12 +125,12 @@
           {
             "id": "attic_ventilation_id",
             "type": "select",
-            "label": "Ventilation des combles ou de la sous-toiture",
+            "label": "Configuration de toiture au-dessus du logement",
             "required": true,
             "options": [
-              {"id": "ventilated", "label": "Combles ou sous-toiture bien ventiles"},
-              {"id": "limited", "label": "Ventilation limitee ou inconnue"},
-              {"id": "not_ventilated", "label": "Peu ou pas ventiles"}
+              {"id": "attic", "label": "Combles au-dessus du logement"},
+              {"id": "sloped_ceiling", "label": "Toits rampants au-dessus du logement"},
+              {"id": "flat_roof", "label": "Toit terrasse au-dessus du logement"}
             ]
           }
         ]

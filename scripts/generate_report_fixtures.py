@@ -14,14 +14,13 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts import create_customer_experience as customer_experience  # noqa: E402
+from thermal_saas.business_flow import prepare_experiment_weather  # noqa: E402
 from thermal_model import (  # noqa: E402
     build_report_model,
     compare_scenarios,
-    ensure_openmeteo_thermal_weather,
     load_dwelling,
     load_reference_catalog,
     render_report_html,
-    resolve_scenario_weather_reference,
     resolve_dwelling_references,
     validate_dwelling,
     validate_scenario,
@@ -210,21 +209,8 @@ def generate_report_fixtures(args: argparse.Namespace) -> list[Path]:
 
 
 def prepare_fixture_weather(experiment: dict[str, Any], args: argparse.Namespace) -> None:
-    if experiment["role"] != "annual":
-        return
-
-    weather_city = experiment["before"]["experiment"]["weather_city"]
-    weather_year = experiment["before"]["experiment"]["weather_year"]
-    weather_path = ensure_openmeteo_thermal_weather(
-        weather_city,
-        weather_year,
-        output_dir=args.annual_weather_dir,
-        model=args.openmeteo_model,
-        cache_dir=args.openmeteo_cache_dir,
-    )
-    print(f"annual weather: {weather_city} {weather_year} -> {weather_path}")
-    for scenario_key in ("before", "after"):
-        resolve_scenario_weather_reference(experiment[scenario_key], PROJECT_ROOT)
+    del args
+    prepare_experiment_weather(experiment)
 
 
 def main() -> None:

@@ -31,6 +31,9 @@ from .business_profiles import build_questionnaire, load_business_profile
 
 DEFAULT_AIR_DENSITY_KG_M3 = 1.2
 DEFAULT_AIR_HEAT_CAPACITY_J_KGK = 1005.0
+MAY_15_START_HOUR = 134 * 24
+SEPTEMBER_16_START_HOUR = 258 * 24
+HEATWAVE_ZOOM_DAYS = 5
 
 
 class BusinessFlowError(ValueError):
@@ -229,8 +232,9 @@ def build_customer(
 
 
 def prepare_experiment_weather(experiment: dict[str, Any]) -> None:
-    """Ensure annual weather exists locally and resolve weather_ref scenarios."""
-    if experiment["role"] != "annual":
+    """Ensure Open-Meteo weather exists locally and resolve/filter weather_ref scenarios."""
+    weather_mode = experiment["before"].get("experiment", {}).get("weather_mode", "")
+    if not weather_mode.startswith("openmeteo_"):
         return
 
     weather_city = experiment["before"]["experiment"]["weather_city"]
@@ -245,6 +249,53 @@ def prepare_experiment_weather(experiment: dict[str, Any]) -> None:
 
     for scenario_key in ("before", "after"):
         resolve_scenario_weather_reference(experiment[scenario_key], Path.cwd())
+
+    if weather_mode == "openmeteo_summer_period":
+        for scenario_key in ("before", "after"):
+            _filter_openmeteo_summer_period(experiment[scenario_key])
+    elif weather_mode == "openmeteo_heatwave_zoom":
+        for scenario_key in ("before", "after"):
+            _filter_openmeteo_heatwave_zoom(experiment[scenario_key])
+
+
+def _filter_openmeteo_summer_period(scenario: dict[str, Any]) -> None:
+    hourly = scenario["weather"]["hourly"]
+    selected = hourly[MAY_15_START_HOUR:SEPTEMBER_16_START_HOUR]
+    scenario["weather"]["hourly"] = _renumber_weather_hours(selected)
+    scenario["weather"]["source"] = f"{scenario['weather']['source']}_may15_sep15"
+
+
+def _filter_openmeteo_heatwave_zoom(scenario: dict[str, Any]) -> None:
+    seasonal = scenario["weather"]["hourly"][MAY_15_START_HOUR:SEPTEMBER_16_START_HOUR]
+    window_start = _warmest_consecutive_days_start(seasonal, HEATWAVE_ZOOM_DAYS)
+    selected = seasonal[window_start:window_start + HEATWAVE_ZOOM_DAYS * 24]
+    scenario["weather"]["hourly"] = _renumber_weather_hours(selected)
+    scenario["weather"]["source"] = f"{scenario['weather']['source']}_warmest_5_days"
+
+
+def _warmest_consecutive_days_start(
+    hourly: list[dict[str, Any]],
+    days: int,
+) -> int:
+    hours_per_window = days * 24
+    if len(hourly) <= hours_per_window:
+        return 0
+    daily_means = [
+        sum(point["outdoor_temperature_c"] for point in hourly[index:index + 24]) / 24.0
+        for index in range(0, len(hourly) - 23, 24)
+    ]
+    best_day = max(
+        range(0, len(daily_means) - days + 1),
+        key=lambda day: sum(daily_means[day:day + days]) / days,
+    )
+    return best_day * 24
+
+
+def _renumber_weather_hours(hourly: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {**point, "hour": index}
+        for index, point in enumerate(hourly)
+    ]
 
 
 def ensure_annual_weather(
@@ -282,10 +333,11 @@ def _weather_dir_from_scenario(scenario: dict[str, Any]) -> str:
 
 def _change_details(adaptation_id: str, answers: dict[str, Any]) -> dict[str, Any]:
     if adaptation_id in {"reflective_roof", "roof_insulation"}:
+        roof_configuration_id = _roof_configuration_id(answers)
         return {
             "roof_type": _option_by_id(
                 customer_experience.ROOF_TYPES,
-                answers.get("roof_type_id", "lost_attic"),
+                roof_configuration_id,
             ),
             "roof_color": _option_by_id(
                 customer_experience.ROOF_COLORS,
@@ -293,7 +345,7 @@ def _change_details(adaptation_id: str, answers: dict[str, Any]) -> dict[str, An
             ),
             "attic_ventilation": _option_by_id(
                 customer_experience.ATTIC_VENTILATION_LEVELS,
-                answers.get("attic_ventilation_id", "limited"),
+                roof_configuration_id,
             ),
         }
     if adaptation_id in {"better_windows", "solar_protection"}:
@@ -316,6 +368,17 @@ def _change_details(adaptation_id: str, answers: dict[str, Any]) -> dict[str, An
             ),
         }
     return {}
+
+
+def _roof_configuration_id(answers: dict[str, Any]) -> str:
+    value = answers.get("attic_ventilation_id") or answers.get("roof_type_id") or "attic"
+    legacy_mapping = {
+        "lost_attic": "attic",
+        "ventilated": "attic",
+        "limited": "attic",
+        "not_ventilated": "attic",
+    }
+    return legacy_mapping.get(value, value)
 
 
 def _initial_heating_ref(profile_id: str, answers: dict[str, Any]) -> str:

@@ -11,7 +11,6 @@ from thermal_model import (
     load_reference_catalog,
     render_report_html,
     resolve_dwelling_references,
-    validate_scenario,
 )
 
 
@@ -29,36 +28,34 @@ def _change(change_id):
     )
 
 
-def test_reflective_roof_runs_heatwave_and_long_summer():
+def test_reflective_roof_runs_real_summer_period_and_heatwave_zoom():
     dwelling, catalog = _resolved_dwelling()
     customer = {"change": _change("reflective_roof"), "target_scope": "all"}
 
     experiments = customer_experience.build_experiments(customer, dwelling, catalog)
 
     assert [experiment["id"] for experiment in experiments] == [
-        "house_simple_reflective_roof_summer_heatwave",
-        "house_simple_reflective_roof_summer_long",
-        "house_simple_reflective_roof_annual",
+        "house_simple_reflective_roof_summer_real_period",
+        "house_simple_reflective_roof_summer_real_heatwave_zoom",
     ]
     assert [experiment["role"] for experiment in experiments] == [
         "primary",
         "secondary",
-        "annual",
     ]
-    assert len(experiments[0]["before"]["weather"]["hourly"]) == 72
-    assert len(experiments[1]["before"]["weather"]["hourly"]) == 1440
-    assert experiments[1]["before"]["experiment"]["weather_variant"] == (
-        "summer_long_with_heatwave"
+    assert experiments[0]["before"]["experiment"]["weather_mode"] == (
+        "openmeteo_summer_period"
     )
-    assert experiments[2]["before"]["experiment"]["simulation_type"] == "annual"
-    assert experiments[2]["before"]["experiment"]["weather_city"] == "Bordeaux"
-    assert experiments[2]["before"]["weather"]["weather_ref"] == (
+    assert experiments[1]["before"]["experiment"]["weather_mode"] == (
+        "openmeteo_heatwave_zoom"
+    )
+    assert experiments[0]["before"]["experiment"]["weather_city"] == "Bordeaux"
+    assert experiments[0]["before"]["weather"]["weather_ref"] == (
         "data/weather/openmeteo/thermal/bordeaux_2023.weather.json"
     )
     schema = json.loads(Path("schemas/scenario.schema.json").read_text())
-    assert list(Draft202012Validator(schema).iter_errors(experiments[2]["before"])) == []
-    validate_scenario(experiments[0]["before"])
-    validate_scenario(experiments[1]["after"])
+    assert list(Draft202012Validator(schema).iter_errors(experiments[0]["before"])) == []
+    assert "weather_ref" in experiments[0]["before"]["weather"]
+    assert "weather_ref" in experiments[1]["after"]["weather"]
 
 
 def test_window_summer_experiment_requires_exposed_windows():

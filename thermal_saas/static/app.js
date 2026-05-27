@@ -1223,8 +1223,8 @@ function renderSimulationRuns(runs = state.simulationRuns) {
     ${visibleRuns.map((run) => `
     <div class="run">
       <div>
-        <strong>${run.adaptation_id} · ${run.season} · ${run.role}</strong>
-        <p>${run.status} · ${run.id}</p>
+        <strong>${simulationRunLabel(run)}</strong>
+        <p>${simulationRunStatus(run)}</p>
       </div>
       <div class="runActions">
         <button type="button" data-open-report="${run.id}">Rapport HTML</button>
@@ -1233,6 +1233,44 @@ function renderSimulationRuns(runs = state.simulationRuns) {
     </div>
   `).join("")}
   `;
+}
+
+function simulationRunLabel(run) {
+  if (run.adaptation_id === "reflective_roof" && run.season === "summer" && run.role === "primary") {
+    return "Simulation de mai à septembre";
+  }
+  if (run.adaptation_id === "reflective_roof" && run.season === "summer" && run.role === "secondary") {
+    return "Simulation sur 5 jours de canicule";
+  }
+  const adaptationLabels = {
+    reflective_roof: "Peinture réfléchissante",
+    roof_insulation: "Isolation toiture",
+    better_windows: "Fenêtres",
+    solar_protection: "Protections solaires",
+    heat_pump: "Pompe à chaleur",
+  };
+  const seasonLabels = {
+    summer: "Confort d'été",
+    winter: "Chauffage hiver",
+    annual: "Année complète",
+  };
+  const roleLabels = {
+    primary: "rapport principal",
+    secondary: "rapport complémentaire",
+    annual: "rapport annuel",
+  };
+  return [
+    adaptationLabels[run.adaptation_id] || run.adaptation_id,
+    seasonLabels[run.season] || run.season,
+    roleLabels[run.role] || run.role,
+  ].join(" · ");
+}
+
+function simulationRunStatus(run) {
+  if (run.adaptation_id === "reflective_roof") {
+    return run.status;
+  }
+  return `${run.status} · ${run.id}`;
 }
 
 async function openReport(simulationRunId) {
@@ -1293,11 +1331,19 @@ async function renderLatestSummary() {
     return;
   }
   const latestRun = runs[runs.length - 1];
+  const summaryRun = summaryMetricsRun(runs);
   state.latestReportId = latestRun.id;
-  const payload = await api(`/simulation-runs/${latestRun.id}`);
+  const payload = await api(`/simulation-runs/${summaryRun.id}`);
   const summary = payload.result.comparison.summary;
   const headline = summary.headline_metrics;
   const energy = summary.energy_savings;
+  if (summaryRun.adaptation_id === "reflective_roof") {
+    els.resultSummary.innerHTML = `
+      <div class="metric accent"><span>Réduction température max</span><strong>${formatNumber(headline.max_temperature_reduction_c)} °C</strong></div>
+      <div class="metric accent"><span>Inconfort chaud évité</span><strong>${formatInteger(headline.hot_degree_hours_reduced)} °C·h</strong></div>
+    `;
+    return;
+  }
   els.resultSummary.innerHTML = `
     <div class="metric"><span>Économie électricité</span><strong>${formatNumber(energy.electricity_saved_kwh)} kWh</strong></div>
     <div class="metric"><span>Économie estimée</span><strong>${formatNumber(energy.cost_saved_eur)} €</strong></div>
@@ -1308,8 +1354,19 @@ async function renderLatestSummary() {
   `;
 }
 
+function summaryMetricsRun(runs) {
+  const reflectivePrimary = runs.find((run) => (
+    run.adaptation_id === "reflective_roof" && run.season === "summer" && run.role === "primary"
+  ));
+  return reflectivePrimary || runs[runs.length - 1];
+}
+
 function formatNumber(value) {
   return Number(value || 0).toLocaleString("fr-FR", {maximumFractionDigits: 2});
+}
+
+function formatInteger(value) {
+  return Number(value || 0).toLocaleString("fr-FR", {maximumFractionDigits: 0});
 }
 
 function usefulReportRuns(runs = state.simulationRuns) {
@@ -1390,7 +1447,7 @@ function renderProjectSummary() {
     <div class="projectSummaryReports">
       ${reports.length ? reports.map((run) => `
         <div class="reportAction">
-          <span>${run.season} · ${run.role}</span>
+          <span>${simulationRunLabel(run)}</span>
           <button type="button" data-open-report="${run.id}">HTML</button>
           <button type="button" data-download-report="${run.id}">PDF</button>
         </div>
@@ -1530,7 +1587,7 @@ function demoAnswers(demoId) {
       ...common,
       roof_insulation_id: "poor",
       roof_color_id: "medium",
-      attic_ventilation_id: "limited",
+      attic_ventilation_id: "attic",
     };
   }
   return {
@@ -1538,7 +1595,7 @@ function demoAnswers(demoId) {
     adaptation_id: "reflective_roof",
     roof_insulation_id: "standard",
     roof_color_id: "dark",
-    attic_ventilation_id: "limited",
+    attic_ventilation_id: "attic",
   };
 }
 

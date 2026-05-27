@@ -190,7 +190,7 @@ CHANGES = [
     {
         "id": "reflective_roof",
         "label": "Ajouter un revêtement réfléchissant sur la toiture contre la chaleur",
-        "experiments": ["summer_heatwave_primary", "summer_long_secondary"],
+        "experiments": ["summer_openmeteo_period_primary", "summer_openmeteo_heatwave_zoom"],
     },
     {
         "id": "better_windows",
@@ -266,6 +266,28 @@ EXPERIMENT_SPECS = {
         "label": "Été long avec canicule",
         "reason": "Expérience secondaire sur deux mois d'été type avec un épisode de canicule intégré.",
     },
+    "summer_openmeteo_period_primary": {
+        "id": "summer_real_period",
+        "season": "summer",
+        "weather_variant": "openmeteo_may_september",
+        "simulation_type": "seasonal",
+        "weather_mode": "openmeteo_summer_period",
+        "duration_days": 124,
+        "role": "primary",
+        "label": "Mi-mai à mi-septembre",
+        "reason": "Expérience principale sur météo réelle pour mesurer le confort d'été sur la période exposée.",
+    },
+    "summer_openmeteo_heatwave_zoom": {
+        "id": "summer_real_heatwave_zoom",
+        "season": "summer",
+        "weather_variant": "openmeteo_warmest_5_days",
+        "simulation_type": "stress",
+        "weather_mode": "openmeteo_heatwave_zoom",
+        "duration_days": 5,
+        "role": "secondary",
+        "label": "Zoom canicule réelle",
+        "reason": "Zoom sur les 5 jours consécutifs les plus chauds de la période mi-mai à mi-septembre.",
+    },
     "annual_openmeteo": {
         "id": "annual",
         "season": "annual",
@@ -287,10 +309,9 @@ CLIMATE_ZONES = [
 ]
 
 ROOF_TYPES = [
-    {"id": "lost_attic", "label": "Combles perdus"},
-    {"id": "sloped_ceiling", "label": "Rampants / pieces sous pente"},
-    {"id": "flat_roof", "label": "Toit terrasse"},
-    {"id": "unknown", "label": "Je ne sais pas"},
+    {"id": "attic", "label": "Combles au-dessus du logement"},
+    {"id": "sloped_ceiling", "label": "Toits rampants au-dessus du logement"},
+    {"id": "flat_roof", "label": "Toit terrasse au-dessus du logement"},
 ]
 
 ROOF_COLORS = [
@@ -301,9 +322,9 @@ ROOF_COLORS = [
 ]
 
 ATTIC_VENTILATION_LEVELS = [
-    {"id": "ventilated", "label": "Combles ou sous-toiture bien ventiles", "solar_to_room_factor": 0.015},
-    {"id": "limited", "label": "Ventilation limitee ou inconnue", "solar_to_room_factor": 0.02},
-    {"id": "not_ventilated", "label": "Peu ou pas ventiles", "solar_to_room_factor": 0.03},
+    {"id": "attic", "label": "Combles au-dessus du logement", "solar_to_room_factor": 0.0225},
+    {"id": "sloped_ceiling", "label": "Toits rampants au-dessus du logement", "solar_to_room_factor": 0.05},
+    {"id": "flat_roof", "label": "Toit terrasse au-dessus du logement", "solar_to_room_factor": 0.07},
 ]
 
 
@@ -541,7 +562,7 @@ def collect_change_details(change_id: str) -> dict[str, Any]:
         return {
             "roof_type": choose_one("Type de toiture concernee", ROOF_TYPES),
             "roof_color": choose_one("Couleur dominante actuelle de la toiture", ROOF_COLORS),
-            "attic_ventilation": choose_one("Ventilation des combles ou de la sous-toiture", ATTIC_VENTILATION_LEVELS),
+            "attic_ventilation": choose_one("Configuration de toiture au-dessus du logement", ATTIC_VENTILATION_LEVELS),
         }
     if change_id in {"better_windows", "solar_protection"}:
         return {
@@ -966,7 +987,7 @@ def build_surfaces(
                 "azimuth_deg": 180,
                 "tilt_deg": 25,
                 "albedo": roof_color.get("albedo", 0.25),
-                "solar_to_room_factor": attic_ventilation.get("solar_to_room_factor", 0.02),
+                "solar_to_room_factor": attic_ventilation.get("solar_to_room_factor", 0.0225),
                 "mask_factor": 1.0,
             },
         )
@@ -1300,7 +1321,7 @@ def selected_experiment_specs(
         ):
             continue
         specs.append(spec)
-    if include_annual_experiment:
+    if include_annual_experiment and change["id"] != "reflective_roof":
         specs.append(EXPERIMENT_SPECS["annual_openmeteo"])
     return specs
 
@@ -1352,7 +1373,7 @@ def build_scenario(
     season = experiment_spec["season"]
     scenario_setpoints = setpoints or default_setpoints_for_experiment(experiment_spec)
     weather_city = {}
-    if experiment_spec["weather_mode"] == "openmeteo_annual":
+    if experiment_spec["weather_mode"].startswith("openmeteo_"):
         weather_city = resolve_weather_city(
             dwelling["location"].get("city"),
             dwelling["location"].get("postal_code"),
@@ -1441,7 +1462,7 @@ def build_scenario_weather(
     annual_weather_year: int,
     annual_weather_dir: str | Path,
 ) -> dict[str, Any]:
-    if experiment_spec["weather_mode"] == "openmeteo_annual":
+    if experiment_spec["weather_mode"].startswith("openmeteo_"):
         city = weather_city["weather_city"]
         return {
             "source": f"openmeteo_{city}_{annual_weather_year}",

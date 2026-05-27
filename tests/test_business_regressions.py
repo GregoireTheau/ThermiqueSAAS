@@ -13,7 +13,7 @@ def _base_answers():
         "window_ref": "double_glazing_old",
         "roof_insulation_id": "poor",
         "roof_color_id": "dark",
-        "attic_ventilation_id": "limited",
+        "attic_ventilation_id": "attic",
         "include_annual_experiment": False,
         "rooms": [
             {
