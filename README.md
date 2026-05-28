@@ -118,17 +118,19 @@ rapport-mme-dupont-better-windows-annual-annual-2026-05-22.pdf
 
 Variables d'environnement recommandees avant beta fermee :
 
-- `THERMAL_SAAS_SECRET_KEY` : secret serveur utilise pour signer les tokens de
-  session stockes sous forme de hash HMAC. Obligatoire si
-  `THERMAL_SAAS_ENV=production`.
+- `THERMAL_SAAS_SECRET_KEY` : secret serveur long aleatoire utilise pour signer
+  les tokens de session stockes sous forme de hash HMAC. Obligatoire et 32
+  caracteres minimum si `THERMAL_SAAS_ENV=production`.
 - `THERMAL_SAAS_ENV=production` : active l'exigence de secret explicite.
 - `THERMAL_SAAS_SESSION_TTL_HOURS` : duree de validite des sessions bearer.
   Valeur par defaut : `12`.
 - `THERMAL_SAAS_CORS_ORIGINS` : origines autorisees separees par virgule.
   Valeur locale par defaut :
-  `http://127.0.0.1:8000,http://127.0.0.1:8010`.
+  `http://127.0.0.1:8000,http://127.0.0.1:8010`. En production, aucune origine
+  locale n'est ajoutee par defaut et `*` est refuse.
 - `THERMAL_SAAS_ALLOWED_HOSTS` : hosts HTTP acceptes par l'application.
-  Valeur locale par defaut : `127.0.0.1,localhost,testserver`.
+  Valeur locale par defaut : `127.0.0.1,localhost,testserver`. En production,
+  aucun host local n'est ajoute par defaut.
 - `THERMAL_SAAS_MAX_REQUEST_BYTES` : taille maximale acceptee pour un payload
   HTTP. Valeur par defaut : `1000000`.
 - `THERMAL_SAAS_AUTH_RATE_LIMIT_ATTEMPTS` : nombre de tentatives login/register
@@ -144,7 +146,7 @@ Exemple :
 
 ```bash
 export THERMAL_SAAS_ENV=production
-export THERMAL_SAAS_SECRET_KEY="change-this-long-random-secret"
+export THERMAL_SAAS_SECRET_KEY="change-this-long-random-secret-32chars-min"
 export THERMAL_SAAS_SESSION_TTL_HOURS=12
 export THERMAL_SAAS_CORS_ORIGINS="https://beta.example.com"
 export THERMAL_SAAS_ALLOWED_HOSTS="beta.example.com"

@@ -131,6 +131,14 @@ def test_render_external_hostname_is_allowed(monkeypatch):
     ]
 
 
+def test_production_allowed_hosts_do_not_include_local_defaults(monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_ENV", "production")
+    monkeypatch.delenv("THERMAL_SAAS_ALLOWED_HOSTS", raising=False)
+    monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", "thermal-saas-beta.onrender.com")
+
+    assert _allowed_hosts() == ["thermal-saas-beta.onrender.com"]
+
+
 def test_render_external_url_is_allowed_for_cors(monkeypatch):
     monkeypatch.setenv("THERMAL_SAAS_CORS_ORIGINS", "https://thermal-beta.example.com")
     monkeypatch.setenv("RENDER_EXTERNAL_URL", "https://thermal-saas-beta.onrender.com/")
@@ -139,6 +147,26 @@ def test_render_external_url_is_allowed_for_cors(monkeypatch):
         "https://thermal-beta.example.com",
         "https://thermal-saas-beta.onrender.com",
     ]
+
+
+def test_production_cors_does_not_include_local_defaults(monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_ENV", "production")
+    monkeypatch.delenv("THERMAL_SAAS_CORS_ORIGINS", raising=False)
+    monkeypatch.setenv("RENDER_EXTERNAL_URL", "https://thermal-saas-beta.onrender.com/")
+
+    assert _cors_origins() == ["https://thermal-saas-beta.onrender.com"]
+
+
+def test_production_rejects_wildcard_cors(monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_ENV", "production")
+    monkeypatch.setenv("THERMAL_SAAS_CORS_ORIGINS", "*")
+
+    try:
+        _cors_origins()
+    except RuntimeError as exc:
+        assert "cannot contain '*'" in str(exc)
+    else:
+        raise AssertionError("Wildcard CORS should be rejected in production.")
 
 
 def test_admin_backup_requires_configured_token(tmp_path, monkeypatch):
@@ -193,6 +221,56 @@ def test_admin_backup_uploads_sqlite_backup(tmp_path, monkeypatch):
     assert response.status_code == 200
     assert response.json()["backup"]["bucket"] == "beta-backups"
     assert response.json()["backup"]["key"].endswith(".sqlite.gz")
+
+
+def test_admin_beta_user_requires_valid_token(tmp_path, monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
+    monkeypatch.setenv("THERMAL_SAAS_ADMIN_TOKEN", "expected-token")
+    client = TestClient(app)
+
+    missing_response = client.post(
+        "/admin/beta-users",
+        json={
+            "email": "client@example.com",
+            "password": "password123",
+            "organization_name": "Client Org",
+        },
+    )
+    response = client.post(
+        "/admin/beta-users",
+        headers={"X-Thermal-Admin-Token": "wrong-token"},
+        json={
+            "email": "client@example.com",
+            "password": "password123",
+            "organization_name": "Client Org",
+        },
+    )
+
+    assert missing_response.status_code == 403
+    assert response.status_code == 403
+
+
+def test_admin_beta_user_creates_reflective_roof_user_by_default(tmp_path, monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
+    monkeypatch.setenv("THERMAL_SAAS_ADMIN_TOKEN", "expected-token")
+    client = TestClient(app)
+
+    response = client.post(
+        "/admin/beta-users",
+        headers={"X-Thermal-Admin-Token": "expected-token"},
+        json={
+            "email": "client@example.com",
+            "password": "password123",
+            "organization_name": "Client Org",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["user"]["email"] == "client@example.com"
+    assert payload["organization"]["name"] == "Client Org"
+    assert payload["organization"]["business_profile_id"] == "reflective_roof_seller"
+    assert "access_token" not in payload
 
 
 def test_profile_experience_api_accepts_window_profile(tmp_path, monkeypatch):
@@ -394,7 +472,49 @@ def test_session_expires(tmp_path, monkeypatch):
 def test_secret_key_is_required_in_production(tmp_path, monkeypatch):
     monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
     monkeypatch.setenv("THERMAL_SAAS_ENV", "production")
+    monkeypatch.setenv("THERMAL_SAAS_ADMIN_TOKEN", "expected-token")
     monkeypatch.delenv("THERMAL_SAAS_SECRET_KEY", raising=False)
+    client = TestClient(app)
+
+    response = client.post(
+        "/admin/beta-users",
+        headers={"X-Thermal-Admin-Token": "expected-token"},
+        json={
+            "email": "secure@example.com",
+            "password": "password123",
+            "organization_name": "Secure Org",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "THERMAL_SAAS_SECRET_KEY" in response.json()["detail"]
+
+
+def test_secret_key_must_be_long_in_production(tmp_path, monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
+    monkeypatch.setenv("THERMAL_SAAS_ENV", "production")
+    monkeypatch.setenv("THERMAL_SAAS_ADMIN_TOKEN", "expected-token")
+    monkeypatch.setenv("THERMAL_SAAS_SECRET_KEY", "too-short")
+    client = TestClient(app)
+
+    response = client.post(
+        "/admin/beta-users",
+        headers={"X-Thermal-Admin-Token": "expected-token"},
+        json={
+            "email": "secure@example.com",
+            "password": "password123",
+            "organization_name": "Secure Org",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "at least 32 characters" in response.json()["detail"]
+
+
+def test_public_register_is_disabled_in_production(tmp_path, monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
+    monkeypatch.setenv("THERMAL_SAAS_ENV", "production")
+    monkeypatch.setenv("THERMAL_SAAS_SECRET_KEY", "a-production-secret-with-at-least-32-chars")
     client = TestClient(app)
 
     response = client.post(
@@ -407,8 +527,8 @@ def test_secret_key_is_required_in_production(tmp_path, monkeypatch):
         },
     )
 
-    assert response.status_code == 400
-    assert "THERMAL_SAAS_SECRET_KEY" in response.json()["detail"]
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Inscription publique désactivée."
 
 
 def test_large_payload_is_rejected(tmp_path, monkeypatch):

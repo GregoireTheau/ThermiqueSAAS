@@ -22,6 +22,7 @@ from .business_profiles import load_business_profile
 
 DEFAULT_DB_PATH = Path("outputs/thermal_saas.sqlite")
 DEFAULT_SESSION_TTL_HOURS = 12
+MIN_PRODUCTION_SECRET_LENGTH = 32
 
 
 class StorageError(ValueError):
@@ -35,6 +36,10 @@ class AuthError(ValueError):
 def default_db_path() -> Path:
     """Return the configured SQLite path."""
     return Path(os.environ.get("THERMAL_SAAS_DB_PATH", DEFAULT_DB_PATH))
+
+
+def _is_production() -> bool:
+    return os.environ.get("THERMAL_SAAS_ENV", "").strip().lower() == "production"
 
 
 def init_db(db_path: str | Path | None = None) -> None:
@@ -696,10 +701,12 @@ def _hash_token(token: str) -> str:
 
 
 def _secret_key() -> str:
-    secret_key = os.environ.get("THERMAL_SAAS_SECRET_KEY")
+    secret_key = os.environ.get("THERMAL_SAAS_SECRET_KEY", "").strip()
     if secret_key:
+        if _is_production() and len(secret_key) < MIN_PRODUCTION_SECRET_LENGTH:
+            raise AuthError("THERMAL_SAAS_SECRET_KEY must contain at least 32 characters in production.")
         return secret_key
-    if os.environ.get("THERMAL_SAAS_ENV") == "production":
+    if _is_production():
         raise AuthError("THERMAL_SAAS_SECRET_KEY is required in production.")
     return "thermal-saas-dev-secret-change-me"
 

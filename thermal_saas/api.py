@@ -71,19 +71,29 @@ def _csv_env(name: str, default: str = "") -> list[str]:
     ]
 
 
+def _is_production() -> bool:
+    return os.environ.get("THERMAL_SAAS_ENV", "").strip().lower() == "production"
+
+
 def _allowed_hosts() -> list[str]:
-    hosts = _csv_env("THERMAL_SAAS_ALLOWED_HOSTS", "127.0.0.1,localhost,testserver")
+    default_hosts = "" if _is_production() else "127.0.0.1,localhost,testserver"
+    hosts = _csv_env("THERMAL_SAAS_ALLOWED_HOSTS", default_hosts)
     render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
     if render_hostname and render_hostname not in hosts:
         hosts.append(render_hostname)
+    if _is_production() and not hosts:
+        raise RuntimeError("THERMAL_SAAS_ALLOWED_HOSTS or RENDER_EXTERNAL_HOSTNAME is required in production.")
     return hosts
 
 
 def _cors_origins() -> list[str]:
+    default_origins = "" if _is_production() else "http://127.0.0.1:8000,http://127.0.0.1:8010"
     origins = _csv_env(
         "THERMAL_SAAS_CORS_ORIGINS",
-        "http://127.0.0.1:8000,http://127.0.0.1:8010",
+        default_origins,
     )
+    if _is_production() and "*" in origins:
+        raise RuntimeError("THERMAL_SAAS_CORS_ORIGINS cannot contain '*' in production.")
     render_url = os.environ.get("RENDER_EXTERNAL_URL", "").strip().rstrip("/")
     if render_url and render_url not in origins:
         origins.append(render_url)
@@ -128,6 +138,13 @@ class RegisterPayload(BaseModel):
     organization_name: str = Field(min_length=1, max_length=120)
     business_profile_id: str = Field(min_length=1, max_length=80)
     name: str | None = Field(default=None, max_length=120)
+
+
+class BetaUserPayload(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=8, max_length=200)
+    organization_name: str = Field(min_length=1, max_length=120)
+    business_profile_id: str = Field(default="reflective_roof_seller", min_length=1, max_length=80)
 
 
 class LoginPayload(BaseModel):
@@ -182,7 +199,7 @@ async def add_security_headers(request: Request, call_next):
         "Permissions-Policy",
         "camera=(), microphone=(), geolocation=()",
     )
-    if os.environ.get("THERMAL_SAAS_ENV") == "production":
+    if _is_production():
         response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     return response
 
@@ -258,6 +275,12 @@ def _require_admin_token(admin_token: str | None) -> None:
         raise HTTPException(status_code=403, detail="Invalid admin token.")
 
 
+def _require_beta_admin_token(admin_token: str | None) -> None:
+    expected_token = os.environ.get("THERMAL_SAAS_ADMIN_TOKEN", "")
+    if not expected_token or not admin_token or not secrets.compare_digest(admin_token, expected_token):
+        raise HTTPException(status_code=403, detail="Invalid admin token.")
+
+
 def require_project_access(project_id: str, user: dict[str, Any]) -> None:
     if not project_belongs_to_organization(project_id, user["organization_id"]):
         raise HTTPException(status_code=404, detail="Unknown project.")
@@ -292,8 +315,36 @@ def get_questionnaire(profile_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+@app.post("/admin/beta-users")
+def create_beta_user_endpoint(
+    payload: BetaUserPayload,
+    admin_token: str | None = Header(default=None, alias="X-Thermal-Admin-Token"),
+) -> dict[str, Any]:
+    _require_beta_admin_token(admin_token)
+    data = _payload_dict(payload)
+    try:
+        auth_payload = register_user_with_organization(
+            email=data["email"],
+            password=data["password"],
+            organization_name=data["organization_name"],
+            business_profile_id=data["business_profile_id"],
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=400, detail=f"Missing field: {exc.args[0]}") from exc
+    except AuthError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {
+        "user": auth_payload["user"],
+        "organization": auth_payload["organization"],
+    }
+
+
 @app.post("/auth/register")
 def register_endpoint(payload: RegisterPayload, request: Request, response: Response) -> dict[str, Any]:
+    if _is_production():
+        raise HTTPException(status_code=403, detail="Inscription publique désactivée.")
     data = _payload_dict(payload)
     _check_auth_rate_limit(request, data["email"])
     try:
@@ -628,7 +679,7 @@ def _set_auth_cookie(response: Response, auth_payload: dict[str, Any]) -> None:
         AUTH_COOKIE_NAME,
         auth_payload["access_token"],
         httponly=True,
-        secure=os.environ.get("THERMAL_SAAS_ENV") == "production",
+        secure=_is_production(),
         samesite="lax",
         max_age=_cookie_max_age_seconds(auth_payload.get("expires_at")),
     )
@@ -638,7 +689,7 @@ def _clear_auth_cookie(response: Response) -> None:
     response.delete_cookie(
         AUTH_COOKIE_NAME,
         httponly=True,
-        secure=os.environ.get("THERMAL_SAAS_ENV") == "production",
+        secure=_is_production(),
         samesite="lax",
     )
 

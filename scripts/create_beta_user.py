@@ -1,95 +1,61 @@
 #!/usr/bin/env python3
-"""Create a private beta user for the reflective-roof SaaS."""
+"""Create a beta user through the production admin API."""
 
 from __future__ import annotations
 
 import argparse
 import os
-from pathlib import Path
-import sys
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
-from thermal_saas.storage import (  # noqa: E402
-    AuthError,
-    default_db_path,
-    register_user_with_organization,
-)
+import requests
 
 
-BETA_PROFILE_ID = "reflective_roof_seller"
+DEFAULT_PROFILE = "reflective_roof_seller"
+DEFAULT_URL = "https://thermaltwin.up.railway.app"
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Create a ThermalTwin beta account locked to reflective roof.",
-    )
+    parser = argparse.ArgumentParser(description="Create a ThermalTwin beta customer account.")
     parser.add_argument("--email", required=True, help="User login email.")
-    parser.add_argument(
-        "--password",
-        required=True,
-        help="Temporary password to send to the customer. Minimum 8 characters.",
-    )
-    parser.add_argument(
-        "--organization",
-        required=True,
-        help="Customer company or organization name.",
-    )
-    parser.add_argument(
-        "--name",
-        default=None,
-        help="Optional contact name shown internally. Defaults to the email.",
-    )
-    parser.add_argument(
-        "--db-path",
-        default=None,
-        help=(
-            "Optional SQLite path. Defaults to THERMAL_SAAS_DB_PATH. "
-            "For local beta dev, falls back to outputs/thermal_saas_phase8.sqlite when present."
-        ),
-    )
+    parser.add_argument("--password", required=True, help="Temporary password to send to the customer.")
+    parser.add_argument("--org", required=True, help="Customer organization name.")
+    parser.add_argument("--profile", default=DEFAULT_PROFILE, help="Business profile id.")
+    parser.add_argument("--url", default=DEFAULT_URL, help="ThermalTwin API base URL.")
     return parser.parse_args()
-
-
-def resolve_db_path(explicit_path: str | None) -> Path:
-    if explicit_path:
-        return Path(explicit_path)
-    if os.environ.get("THERMAL_SAAS_DB_PATH"):
-        return default_db_path()
-    local_beta_path = PROJECT_ROOT / "outputs" / "thermal_saas_phase8.sqlite"
-    if local_beta_path.exists():
-        return local_beta_path
-    return default_db_path()
 
 
 def main() -> int:
     args = parse_args()
-    db_path = resolve_db_path(args.db_path)
-    try:
-        payload = register_user_with_organization(
-            email=args.email,
-            password=args.password,
-            organization_name=args.organization,
-            business_profile_id=BETA_PROFILE_ID,
-            name=args.name,
-            db_path=db_path,
-        )
-    except AuthError as exc:
-        print(f"Erreur création compte beta: {exc}", file=sys.stderr)
+    admin_token = os.environ.get("THERMAL_SAAS_ADMIN_TOKEN", "").strip()
+    if not admin_token:
+        print("Erreur: THERMAL_SAAS_ADMIN_TOKEN doit être défini dans l'environnement.")
         return 1
 
+    endpoint = args.url.rstrip("/") + "/admin/beta-users"
+    response = requests.post(
+        endpoint,
+        headers={"X-Thermal-Admin-Token": admin_token},
+        json={
+            "email": args.email,
+            "password": args.password,
+            "organization_name": args.org,
+            "business_profile_id": args.profile,
+        },
+        timeout=20,
+    )
+    if response.status_code >= 400:
+        try:
+            detail = response.json().get("detail", response.text)
+        except requests.JSONDecodeError:
+            detail = response.text
+        print(f"Erreur création compte beta ({response.status_code}): {detail}")
+        return 1
+
+    payload = response.json()
     user = payload["user"]
     organization = payload["organization"]
     print("Compte beta créé")
-    print(f"Base SQLite: {db_path}")
-    print(f"Organisation: {organization['name']}")
-    print(f"Profil: {organization['business_profile_id']}")
-    print()
-    print("Identifiants à envoyer au client:")
     print(f"Email: {user['email']}")
-    print(f"Mot de passe temporaire: {args.password}")
+    print(f"Organisation: {organization['name']}")
     return 0
 
 
