@@ -384,7 +384,7 @@ async function refreshProjects() {
 }
 
 function renderQuestionnaire() {
-  els.questionnaireIntro.textContent = "Questionnaire beta toiture réfléchissante";
+  els.questionnaireIntro.textContent = "Questionnaire toiture réfléchissante";
   const html = [];
   for (const section of state.questionnaire.sections) {
     const visibleQuestions = section.questions.filter((question) => !hiddenQuestionIds.has(question.id));
@@ -1137,7 +1137,7 @@ function renderSimulationRuns(runs = state.simulationRuns) {
 
 function simulationRunLabel(run) {
   if (run.adaptation_id === "reflective_roof" && run.season === "summer" && run.role === "primary") {
-    return "Simulation de mai à septembre";
+    return "Simulation de juin à septembre";
   }
   if (run.adaptation_id === "reflective_roof" && run.season === "summer" && run.role === "secondary") {
     return "Simulation sur 5 jours de canicule";
@@ -1167,10 +1167,11 @@ function simulationRunLabel(run) {
 }
 
 function simulationRunStatus(run) {
+  const statusLabel = run.status === "completed" ? "Simulation réalisée" : run.status;
   if (run.adaptation_id === "reflective_roof") {
-    return run.status;
+    return statusLabel;
   }
-  return `${run.status} · ${run.id}`;
+  return `${statusLabel} · ${run.id}`;
 }
 
 async function openReport(simulationRunId) {
