@@ -1,7 +1,7 @@
 {
   "id": "heat_pump_seller",
   "label": "Vendeur de PAC",
-  "description": "Parcours specialise pour qualifier un logement et simuler le remplacement du chauffage actuel par une PAC.",
+  "description": "Parcours spécialisé pour qualifier un logement et simuler le remplacement du chauffage actuel par une PAC.",
   "allowed_adaptations": ["heat_pump"],
   "default_adaptation": "heat_pump",
   "include_annual_experiment": true,
@@ -38,16 +38,16 @@
             "required": true,
             "options": [
               {"id": "single_storey_house", "label": "Maison de plain-pied"},
-              {"id": "multi_storey_house", "label": "Maison avec etage"},
-              {"id": "apartment_ground_floor", "label": "Appartement en rez-de-chaussee"},
-              {"id": "apartment_middle_floor", "label": "Appartement en etage intermediaire"},
-              {"id": "apartment_top_floor", "label": "Appartement au dernier etage"}
+              {"id": "multi_storey_house", "label": "Maison avec étage"},
+              {"id": "apartment_ground_floor", "label": "Appartement en rez-de-chaussée"},
+              {"id": "apartment_middle_floor", "label": "Appartement en étage intermédiaire"},
+              {"id": "apartment_top_floor", "label": "Appartement au dernier étage"}
             ]
           },
           {
             "id": "period_id",
             "type": "select",
-            "label": "Periode de construction ou renovation",
+            "label": "Période de construction ou rénovation",
             "required": true,
             "options_ref": "envelope_defaults"
           },
@@ -57,9 +57,9 @@
             "label": "Isolation des murs donnant dehors",
             "required": true,
             "options": [
-              {"id": "poor", "label": "Non, ou probablement pas isoles"},
-              {"id": "standard", "label": "Je ne sais pas / standard pour l'age du logement"},
-              {"id": "renovated", "label": "Oui, isolation ajoutee ou renovee"}
+              {"id": "poor", "label": "Non, ou probablement pas isolés"},
+              {"id": "standard", "label": "Je ne sais pas / standard pour l'âge du logement"},
+              {"id": "renovated", "label": "Oui, isolation ajoutée ou rénovée"}
             ]
           },
           {
@@ -68,9 +68,9 @@
             "label": "Ressentez-vous des courants d'air ?",
             "required": true,
             "options": [
-              {"id": "leaky", "label": "Oui, courants d'air sensibles aux fenetres, portes ou prises"},
+              {"id": "leaky", "label": "Oui, courants d'air sensibles aux fenêtres, portes ou prises"},
               {"id": "standard", "label": "Je ne sais pas / rien de particulier"},
-              {"id": "good", "label": "Non, logement plutot etanche"}
+              {"id": "good", "label": "Non, logement plutôt étanche"}
             ]
           },
           {
@@ -83,13 +83,13 @@
               {"id": "natural_average", "label": "Ventilation naturelle moyenne"},
               {"id": "simple_flow", "label": "VMC simple flux"},
               {"id": "double_flow_standard", "label": "VMC double flux"},
-              {"id": "airtight_recent", "label": "Logement recent etanche"}
+              {"id": "airtight_recent", "label": "Logement récent étanche"}
             ]
           },
           {
             "id": "has_cooling",
             "type": "boolean",
-            "label": "Le logement a-t-il deja une climatisation active ?",
+            "label": "Le logement a-t-il déjà une climatisation active ?",
             "required": false,
             "default": false
           }
@@ -102,10 +102,10 @@
           {
             "id": "current_energy_id",
             "type": "select",
-            "label": "Energie actuelle du chauffage",
+            "label": "Énergie actuelle du chauffage",
             "required": true,
             "options": [
-              {"id": "electricity", "label": "Electricite"},
+              {"id": "electricity", "label": "Électricité"},
               {"id": "gas", "label": "Gaz"},
               {"id": "fuel_oil", "label": "Fioul"},
               {"id": "wood", "label": "Bois"},
@@ -118,21 +118,21 @@
             "label": "Diffusion de chaleur actuelle",
             "required": true,
             "options": [
-              {"id": "electric_radiators", "label": "Radiateurs electriques"},
-              {"id": "water_radiators", "label": "Radiateurs a eau"},
+              {"id": "electric_radiators", "label": "Radiateurs électriques"},
+              {"id": "water_radiators", "label": "Radiateurs à eau"},
               {"id": "underfloor", "label": "Plancher chauffant"},
-              {"id": "air_units", "label": "Unites murales / soufflage d'air"},
+              {"id": "air_units", "label": "Unités murales / soufflage d'air"},
               {"id": "mixed", "label": "Mixte ou incertain"}
             ]
           },
-          {"id": "heating_setpoint_c", "type": "number", "label": "Temperature de chauffage visee en hiver", "required": true, "default": 19.0}
+          {"id": "heating_setpoint_c", "type": "number", "label": "Température de chauffage visée en hiver", "required": true, "default": 19.0}
         ]
       },
       {
         "id": "rooms",
-        "label": "Pieces",
+        "label": "Pièces",
         "questions": [
-          {"id": "rooms", "type": "room_list", "label": "Pieces a modeliser", "required": true}
+          {"id": "rooms", "type": "room_list", "label": "Pièces à modéliser", "required": true}
         ]
       }
     ]

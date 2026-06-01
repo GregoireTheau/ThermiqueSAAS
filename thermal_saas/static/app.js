@@ -1402,7 +1402,7 @@ function applyDemo(demoId) {
   els.email.value = `demo.${profileId}.${suffix}@thermaltwin.local`;
   els.password.value = "password123";
   els.projectName.value = demoProjectName(demoId);
-  els.customerName.value = "Client demo";
+  els.customerName.value = "Client démo";
   loadQuestionnaire().then(() => {
     const answers = demoAnswers(demoId);
     state.pendingDemoAnswers = answers;
@@ -1423,11 +1423,11 @@ function applyDemo(demoId) {
 }
 
 function demoProjectName(demoId) {
-  if (demoId === "heat_pump_seller") return "Maison demo PAC";
-  if (demoId === "solar_protection_seller") return "Maison demo protection solaire";
-  if (demoId === "window_seller") return "Maison demo fenetres";
-  if (demoId === "roof_insulation_seller") return "Maison demo isolation toiture";
-  return "Maison demo peinture toiture";
+  if (demoId === "heat_pump_seller") return "Maison démo PAC";
+  if (demoId === "solar_protection_seller") return "Maison démo protection solaire";
+  if (demoId === "window_seller") return "Maison démo fenêtres";
+  if (demoId === "roof_insulation_seller") return "Maison démo isolation toiture";
+  return "Maison démo peinture toiture";
 }
 
 function demoAnswers(demoId) {

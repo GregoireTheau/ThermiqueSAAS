@@ -38,22 +38,22 @@
             "required": true,
             "options": [
               {"id": "single_storey_house", "label": "Maison de plain-pied"},
-              {"id": "multi_storey_house", "label": "Maison avec etage"},
-              {"id": "apartment_top_floor", "label": "Appartement au dernier etage"},
-              {"id": "apartment_ground_top_floor", "label": "Appartement en rez-de-chaussee directement sous toiture"}
+              {"id": "multi_storey_house", "label": "Maison avec étage"},
+              {"id": "apartment_top_floor", "label": "Appartement au dernier étage"},
+              {"id": "apartment_ground_top_floor", "label": "Appartement en rez-de-chaussée directement sous toiture"}
             ]
           },
           {
             "id": "period_id",
             "type": "select",
-            "label": "Periode de construction ou renovation",
+            "label": "Période de construction ou rénovation",
             "required": true,
             "options_ref": "envelope_defaults"
           },
           {
             "id": "has_cooling",
             "type": "boolean",
-            "label": "Le logement a-t-il deja une climatisation active ?",
+            "label": "Le logement a-t-il déjà une climatisation active ?",
             "required": false,
             "default": false
           },
@@ -74,12 +74,12 @@
           {
             "id": "airtightness_id",
             "type": "select",
-            "label": "Etancheite globale du logement",
+            "label": "Étanchéité globale du logement",
             "required": true,
             "options": [
               {"id": "leaky", "label": "Courants d'air sensibles"},
               {"id": "standard", "label": "Je ne sais pas / rien de particulier"},
-              {"id": "good", "label": "Logement plutot etanche"}
+              {"id": "good", "label": "Logement plutôt étanche"}
             ]
           },
           {
@@ -92,7 +92,7 @@
               {"id": "natural_average", "label": "Ventilation naturelle moyenne"},
               {"id": "simple_flow", "label": "VMC simple flux"},
               {"id": "double_flow_standard", "label": "VMC double flux"},
-              {"id": "airtight_recent", "label": "Logement recent etanche"}
+              {"id": "airtight_recent", "label": "Logement récent étanche"}
             ]
           }
         ]
@@ -107,9 +107,9 @@
             "label": "Niveau d'isolation toiture actuel",
             "required": true,
             "options": [
-              {"id": "poor", "label": "Toiture ou combles peu isoles"},
+              {"id": "poor", "label": "Toiture ou combles peu isolés"},
               {"id": "standard", "label": "Isolation toiture standard"},
-              {"id": "renovated", "label": "Toiture bien isolee ou renovee"},
+              {"id": "renovated", "label": "Toiture bien isolée ou rénovée"},
               {"id": "unknown", "label": "Je ne sais pas"}
             ]
           },
@@ -119,7 +119,7 @@
             "label": "Couleur dominante actuelle de la toiture",
             "required": true,
             "options": [
-              {"id": "dark", "label": "Foncee"},
+              {"id": "dark", "label": "Foncée"},
               {"id": "medium", "label": "Moyenne"},
               {"id": "light", "label": "Claire"},
               {"id": "unknown", "label": "Je ne sais pas"}
@@ -140,9 +140,9 @@
       },
       {
         "id": "rooms",
-        "label": "Pieces sous toiture",
+        "label": "Pièces sous toiture",
         "questions": [
-          {"id": "rooms", "type": "room_list", "label": "Pieces a modeliser, avec contact toiture", "required": true}
+          {"id": "rooms", "type": "room_list", "label": "Pièces à modéliser, avec contact toiture", "required": true}
         ]
       }
     ]
