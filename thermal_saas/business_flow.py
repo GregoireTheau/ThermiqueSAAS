@@ -31,7 +31,7 @@ from .business_profiles import build_questionnaire, load_business_profile
 
 DEFAULT_AIR_DENSITY_KG_M3 = 1.2
 DEFAULT_AIR_HEAT_CAPACITY_J_KGK = 1005.0
-MAY_15_START_HOUR = 134 * 24
+JUNE_1_START_HOUR = 151 * 24
 SEPTEMBER_16_START_HOUR = 258 * 24
 HEATWAVE_ZOOM_DAYS = 5
 
@@ -272,13 +272,13 @@ def prepare_experiment_weather(experiment: dict[str, Any]) -> None:
 
 def _filter_openmeteo_summer_period(scenario: dict[str, Any]) -> None:
     hourly = scenario["weather"]["hourly"]
-    selected = hourly[MAY_15_START_HOUR:SEPTEMBER_16_START_HOUR]
+    selected = hourly[JUNE_1_START_HOUR:SEPTEMBER_16_START_HOUR]
     scenario["weather"]["hourly"] = _renumber_weather_hours(selected)
-    scenario["weather"]["source"] = f"{scenario['weather']['source']}_may15_sep15"
+    scenario["weather"]["source"] = f"{scenario['weather']['source']}_jun1_sep15"
 
 
 def _filter_openmeteo_heatwave_zoom(scenario: dict[str, Any]) -> None:
-    seasonal = scenario["weather"]["hourly"][MAY_15_START_HOUR:SEPTEMBER_16_START_HOUR]
+    seasonal = scenario["weather"]["hourly"][JUNE_1_START_HOUR:SEPTEMBER_16_START_HOUR]
     window_start = _warmest_consecutive_days_start(seasonal, HEATWAVE_ZOOM_DAYS)
     selected = seasonal[window_start:window_start + HEATWAVE_ZOOM_DAYS * 24]
     scenario["weather"]["hourly"] = _renumber_weather_hours(selected)

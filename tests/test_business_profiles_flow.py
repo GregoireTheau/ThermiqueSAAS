@@ -223,7 +223,8 @@ def test_roof_profile_can_run_reflective_roof_variant():
     assert result["adaptation_id"] == "reflective_roof"
     assert [run["season"] for run in result["simulation_runs"]] == ["summer", "summer"]
     assert [run["role"] for run in result["simulation_runs"]] == ["primary", "secondary"]
-    assert len(result["simulation_runs"][0]["before_scenario"]["weather"]["hourly"]) == 124 * 24
+    assert len(result["simulation_runs"][0]["before_scenario"]["weather"]["hourly"]) == 107 * 24
+    assert result["simulation_runs"][0]["before_scenario"]["weather"]["hourly"][0]["month"] == 6
     assert len(result["simulation_runs"][1]["before_scenario"]["weather"]["hourly"]) == 5 * 24
     for run in result["simulation_runs"]:
         overrides = run["after_scenario"]["retrofit"]["surface_overrides"]

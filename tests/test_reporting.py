@@ -39,7 +39,8 @@ def test_report_model_keeps_traceable_headline_metrics():
     assert report["experiment"]["weather_source"] == "synthetic"
     assert report["experiment"]["title"].startswith("Simulation")
     assert "expérience" in report["narrative"]["context"].lower()
-    assert "scénario après applique" in report["narrative"]["tested_change"]
+    assert "scénario après applique" not in report["narrative"]["tested_change"]
+    assert "Dans le modèle" not in report["narrative"]["tested_change"]
     assert "température" in report["narrative"]["conclusion"]
     assert report["temperature_profiles"]["thresholds"]["primary"] == "hot"
     assert report["comfort_mode"] == "hot"
@@ -110,6 +111,7 @@ def test_render_report_html_contains_report_sections_without_hourly_traces():
     assert "Simulation toiture réfléchissante - confort été" in html
     assert "Synthèse exécutive" in html
     assert "Scénario</div>Simulation thermique pendant un épisode de canicule" in html
+    assert "en toiture" not in html
     assert "Scénarios" not in html
     assert "Contexte" in html
     assert "Graphiques de température" in html
@@ -304,12 +306,24 @@ def test_business_report_presentation_is_profile_specific():
     assert long_profile["points"][0]["before_temperature_c"] == long_profile["points"][0]["before_max_temperature_c"]
     assert "before_average_temperature_c" in long_profile["points"][0]
     assert long_profile["x_axis"]["labels"] == [
-        ("Mai", 0),
-        ("Juil", 1488),
-        ("Sep", 2952),
+        ("Juin", 0),
+        ("Juil", 1272),
+        ("Sep", 2544),
     ]
     assert ">h0<" not in reflective_result["simulation_runs"][0]["report_html"]
-    assert ">Mai<" in reflective_result["simulation_runs"][0]["report_html"]
+    assert ">Juin<" in reflective_result["simulation_runs"][0]["report_html"]
+    assert ">Mai<" not in reflective_result["simulation_runs"][0]["report_html"]
+    assert (
+        "Scénario</div>Simulation thermique de juin à septembre avant et après "
+        "l&#x27;ajout d&#x27;une peinture réfléchissante sur la toiture."
+        in reflective_result["simulation_runs"][0]["report_html"]
+    )
+    assert (
+        "<tr><td>Modification testée</td><td>Ajouter un revêtement réfléchissant sur la toiture contre la chaleur</td></tr>"
+        in reflective_result["simulation_runs"][0]["report_html"]
+    )
+    assert "Dans le modèle, cela correspond" not in reflective_result["simulation_runs"][0]["report_html"]
+    assert "en toiture" not in reflective_result["simulation_runs"][0]["report_html"]
     assert "température maximale de chaque journée" in reflective_result["simulation_runs"][0]["report_html"]
     assert "Moy. int./j" in reflective_result["simulation_runs"][0]["report_html"]
     assert (

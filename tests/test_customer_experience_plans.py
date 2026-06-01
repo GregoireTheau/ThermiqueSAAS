@@ -49,6 +49,8 @@ def test_reflective_roof_runs_real_summer_period_and_heatwave_zoom():
         "openmeteo_heatwave_zoom"
     )
     assert experiments[0]["before"]["experiment"]["weather_city"] == "Bordeaux"
+    assert experiments[0]["before"]["experiment"]["label"] == "Début juin à mi-septembre"
+    assert experiments[0]["before"]["experiment"]["weather_variant"] == "openmeteo_june_september"
     assert experiments[0]["before"]["weather"]["weather_ref"] == (
         "data/weather/openmeteo/thermal/bordeaux_2023.weather.json"
     )

@@ -270,12 +270,12 @@ EXPERIMENT_SPECS = {
     "summer_openmeteo_period_primary": {
         "id": "summer_real_period",
         "season": "summer",
-        "weather_variant": "openmeteo_may_september",
+        "weather_variant": "openmeteo_june_september",
         "simulation_type": "seasonal",
         "weather_mode": "openmeteo_summer_period",
-        "duration_days": 124,
+        "duration_days": 107,
         "role": "primary",
-        "label": "Mi-mai à mi-septembre",
+        "label": "Début juin à mi-septembre",
         "reason": "Expérience principale sur météo réelle pour mesurer le confort d'été sur la période exposée.",
     },
     "summer_openmeteo_heatwave_zoom": {
@@ -287,7 +287,7 @@ EXPERIMENT_SPECS = {
         "duration_days": 5,
         "role": "secondary",
         "label": "Zoom canicule réelle",
-        "reason": "Zoom sur les 5 jours consécutifs les plus chauds de la période mi-mai à mi-septembre.",
+        "reason": "Zoom sur les 5 jours consécutifs les plus chauds de la période début juin à mi-septembre.",
     },
     "annual_openmeteo": {
         "id": "annual",

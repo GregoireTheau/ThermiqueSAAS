@@ -1676,13 +1676,8 @@ def _build_purpose_text(experiment: dict[str, Any], season: str) -> str:
 
 
 def _build_tested_change_text(experiment: dict[str, Any]) -> str:
-    label = experiment.get("adaptation_label") or _format_intervention_title(
+    return experiment.get("adaptation_label") or _format_intervention_title(
         experiment["intervention"],
-    )
-    technical_summary = _format_intervention(experiment["intervention"])
-    return (
-        f"Le scénario après applique : {label}. "
-        f"Dans le modèle, cela correspond à {technical_summary}."
     )
 
 
@@ -1695,6 +1690,8 @@ def _format_scenario_summary(experiment: dict[str, Any]) -> str:
 def _scenario_period_label(experiment: dict[str, Any]) -> str:
     weather_variant = experiment.get("weather_variant", "")
     season = experiment.get("season", "")
+    if weather_variant == "openmeteo_june_september":
+        return "de juin à septembre"
     if weather_variant == "summer_long_with_heatwave":
         return "au cours d'un été entier"
     if weather_variant == "summer_heatwave" or season == "summer":
@@ -1707,7 +1704,7 @@ def _scenario_period_label(experiment: dict[str, Any]) -> str:
 def _scenario_intervention_label(experiment: dict[str, Any]) -> str:
     adaptation_id = experiment.get("adaptation_id", "")
     labels = {
-        "reflective_roof": "l'ajout d'une peinture réfléchissante en toiture",
+        "reflective_roof": "l'ajout d'une peinture réfléchissante sur la toiture",
         "roof_insulation": "l'amélioration de l'isolation de la toiture",
         "better_windows": "le remplacement des vitrages",
         "solar_protection": "l'ajout de protections solaires",
