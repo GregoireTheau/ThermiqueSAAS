@@ -571,7 +571,7 @@ function renderRooms() {
         <h3>Pièce ${index + 1}</h3>
         <button class="removeRoom" type="button" data-remove-room="${index}">Retirer</button>
       </div>
-      ${renderRoomField("name", `<label>Nom<input data-room-field="name" value="${room.name}"></label>`, room)}
+      ${renderRoomField("name", `<label>Nom<input data-room-field="name" value="${escapeHtml(room.name)}"></label>`, room)}
       ${renderRoomField("type", `<label>Type
         <select data-room-field="type">
           ${option("living", "Salon / séjour", room.type)}
@@ -635,7 +635,15 @@ function renderRooms() {
 }
 
 function option(value, label, selected) {
-  return `<option value="${value}" ${value === selected ? "selected" : ""}>${label}</option>`;
+  return `<option value="${escapeHtml(value)}" ${value === selected ? "selected" : ""}>${escapeHtml(label)}</option>`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function roomsWithIds(rooms) {
@@ -1549,9 +1557,15 @@ els.addRoomMenuButton.addEventListener("click", () => {
   els.roomTypeMenu.hidden = !els.roomTypeMenu.hidden;
 });
 els.roomTypeMenu.addEventListener("click", (event) => {
-  const roomType = event.target.dataset.roomType;
+  const roomTypeButton = event.target.closest("[data-room-type]");
+  if (!roomTypeButton || !els.roomTypeMenu.contains(roomTypeButton)) return;
+  const roomType = roomTypeButton.dataset.roomType;
   if (!roomType) return;
-  syncRoomsFromDom();
+  try {
+    syncRoomsFromDom();
+  } catch (error) {
+    console.error("Impossible de synchroniser les pièces avant ajout.", error);
+  }
   state.rooms.push(roomPreset(roomType));
   markUnsaved();
   renderRooms();
