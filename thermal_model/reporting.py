@@ -2336,10 +2336,11 @@ def _render_temperature_svg(profile: dict[str, Any], comfort_mode: str) -> str:
     points = profile["points"]
     x_axis = profile.get("x_axis", {})
     width = 1040
-    height = 330
+    height = 370
     left = 54
     right = 24
-    top = 30
+    legend_y = 26
+    top = 70
     bottom = 48
     plot_width = width - left - right
     plot_height = height - top - bottom
@@ -2410,7 +2411,7 @@ def _render_temperature_svg(profile: dict[str, Any], comfort_mode: str) -> str:
     x_labels = _svg_x_labels(points, x_axis, x_at_hour, height, bottom)
     legend = _svg_legend(
         left + 18,
-        top + 10,
+        legend_y,
         profile["primary_discomfort"],
         threshold,
         profile.get("aggregation", "hourly"),

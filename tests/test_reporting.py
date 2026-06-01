@@ -122,6 +122,9 @@ def test_render_report_html_contains_report_sections_without_hourly_traces():
     assert "Limites de la simulation" not in html
     assert "24 h" in html
     assert "°C" in html
+    assert '<svg class="chart" viewBox="0 0 1040 370"' in html
+    assert 'y="12.0" width="746" height="26"' in html
+    assert 'y1="70.0"' in html
     assert "€" in html
     assert ".00 °C" not in html
     assert comparison["dwelling_id"] in html
