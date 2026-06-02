@@ -527,6 +527,16 @@ button:disabled {
   gap: 6px;
 }
 
+.bottomActionBar {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.bottomActionBar button {
+  width: auto;
+}
+
 .saveIndicator {
   font-size: 13px;
   font-weight: 700;

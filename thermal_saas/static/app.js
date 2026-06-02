@@ -48,6 +48,7 @@ const els = {
   questionnaireIntro: document.querySelector("#questionnaireIntro"),
   questionnaireForm: document.querySelector("#questionnaireForm"),
   saveAnswers: document.querySelector("#saveAnswers"),
+  saveAnswersBottom: document.querySelector("#saveAnswersBottom"),
   saveIndicator: document.querySelector("#saveIndicator"),
   answersStatus: document.querySelector("#answersStatus"),
   addRoomMenuButton: document.querySelector("#addRoomMenuButton"),
@@ -142,7 +143,7 @@ function updateUiState() {
 
   els.projectCreateFields.hidden = !state.projectDraftOpen;
   els.createProject.disabled = !state.organization || !state.projectDraftOpen;
-  els.saveAnswers.disabled = !state.project;
+  setSaveAnswersDisabled(!state.project);
   els.runSimulation.disabled = !state.project || !state.answersSaved || state.simulationStatus === "loading";
   els.newProject.disabled = !state.organization;
   els.addRoomMenuButton.disabled = !state.project;
@@ -154,6 +155,11 @@ function updateUiState() {
   renderProjectSummary();
   renderSimulationState();
   renderBrandingSummary();
+}
+
+function setSaveAnswersDisabled(disabled) {
+  els.saveAnswers.disabled = disabled;
+  els.saveAnswersBottom.disabled = disabled;
 }
 
 async function loadProfiles() {
@@ -345,7 +351,7 @@ async function loadQuestionnaire() {
   state.simulationStatus = "idle";
   state.projectDraftOpen = false;
   els.createProject.disabled = true;
-  els.saveAnswers.disabled = true;
+  setSaveAnswersDisabled(true);
   els.runSimulation.disabled = true;
   els.addRoomMenuButton.disabled = true;
   els.roomTypeMenu.hidden = true;
@@ -597,17 +603,17 @@ function renderRooms() {
       </label>`, room)}
       ${renderRoomField("orientation", `<label>Orientation
         <select data-room-field="orientation">
-          ${["N", "E", "S", "W", "SE", "SW"].map((value) => option(value, value, room.orientation)).join("")}
+          ${["N", "E", "S", "W", "SE", "SW"].map((value) => option(value, value, room.orientation || room.facades?.[0]?.orientation || "S")).join("")}
         </select>
       </label>`, room)}
-      ${renderRoomField("window_area_m2", `<label>Vitrage m²<input data-room-field="window_area_m2" type="number" value="${room.window_area_m2}"></label>`, room)}
-      ${renderRoomField("wall_length_m", `<label>Longueur façade m<input data-room-field="wall_length_m" type="number" value="${room.wall_length_m}"></label>`, room)}
+      ${renderRoomField("window_area_m2", `<label>Vitrage m²<input data-room-field="window_area_m2" type="number" value="${room.window_area_m2 ?? room.facades?.[0]?.window_area_m2 ?? 0}"></label>`, room)}
+      ${renderRoomField("wall_length_m", `<label>Longueur façade m<input data-room-field="wall_length_m" type="number" value="${room.wall_length_m ?? room.facades?.[0]?.wall_length_m ?? 4}"></label>`, room)}
       ${renderRoomField("mask_factor", `<label>Masque solaire
         <select data-room-field="mask_factor">
-          ${option("1", "Aucun masque", String(room.mask_factor ?? 1))}
-          ${option("0.85", "Masque léger", String(room.mask_factor ?? 1))}
-          ${option("0.65", "Masque moyen", String(room.mask_factor ?? 1))}
-          ${option("0.4", "Masque fort", String(room.mask_factor ?? 1))}
+          ${option("1", "Aucun masque", String(room.mask_factor ?? room.facades?.[0]?.mask_factor ?? 1))}
+          ${option("0.85", "Masque léger", String(room.mask_factor ?? room.facades?.[0]?.mask_factor ?? 1))}
+          ${option("0.65", "Masque moyen", String(room.mask_factor ?? room.facades?.[0]?.mask_factor ?? 1))}
+          ${option("0.4", "Masque fort", String(room.mask_factor ?? room.facades?.[0]?.mask_factor ?? 1))}
         </select>
       </label>`, room)}
       ${renderRoomField("has_roof", `<label>Sous toiture
@@ -760,6 +766,10 @@ function syncRoomsFromDom(connectionChange = null) {
       return fieldElement ? fieldElement.value : fallback;
     };
     const exteriorContact = value("exterior_contact", "exterior");
+    const orientation = value("orientation", "S");
+    const windowArea = Number(value("window_area_m2", 0));
+    const wallLength = Number(value("wall_length_m", 4));
+    const maskFactor = Number(value("mask_factor", 1));
     return {
       id: roomElement.dataset.roomId || `room_${index + 1}`,
       name: value("name", "Pièce"),
@@ -769,12 +779,16 @@ function syncRoomsFromDom(connectionChange = null) {
       has_cooling: hasGlobalCooling() && value("has_cooling", "false") === "true",
       has_roof: value("has_roof", "true") === "true",
       has_ground_floor: true,
+      orientation,
+      window_area_m2: windowArea,
+      wall_length_m: wallLength,
+      mask_factor: maskFactor,
       exterior_contact: exteriorContact,
       facades: exteriorContact === "exterior" ? [{
-        orientation: value("orientation", "S"),
-        window_area_m2: Number(value("window_area_m2", 0)),
-        wall_length_m: Number(value("wall_length_m", 4)),
-        mask_factor: Number(value("mask_factor", 1)),
+        orientation,
+        window_area_m2: windowArea,
+        wall_length_m: wallLength,
+        mask_factor: maskFactor,
       }] : [],
     };
   });
@@ -884,7 +898,7 @@ async function logout() {
   state.brandingEditorOpen = false;
   els.logout.disabled = true;
   els.createProject.disabled = true;
-  els.saveAnswers.disabled = true;
+  setSaveAnswersDisabled(true);
   els.runSimulation.disabled = true;
   els.projectSelect.innerHTML = "";
   els.simulationRuns.innerHTML = "";
@@ -954,7 +968,7 @@ async function createProject() {
     state.thermalLinks = [];
     state.simulationStatus = "idle";
     state.projectDraftOpen = false;
-    els.saveAnswers.disabled = false;
+    setSaveAnswersDisabled(false);
     els.runSimulation.disabled = true;
     await refreshProjects();
     setStatus(els.projectStatus, `✓ Projet créé : ${state.project.name} — ${state.project.customer_name || "Sans client"}`);
@@ -997,7 +1011,7 @@ async function loadProject() {
   state.projectDraftOpen = false;
   els.projectName.value = state.project.name;
   els.customerName.value = state.project.customer_name || "";
-  els.saveAnswers.disabled = false;
+  setSaveAnswersDisabled(false);
   state.latestAnswers = payload.latest_answers || null;
   state.answersSaved = Boolean(state.latestAnswers);
   state.simulationRuns = payload.simulation_runs;
@@ -1059,7 +1073,7 @@ function roomFromAnswer(room) {
 }
 
 async function saveAnswers() {
-  els.saveAnswers.disabled = true;
+  setSaveAnswersDisabled(true);
   try {
     const answers = collectAnswers();
     if (state.latestAnswers && sameAnswers(answers, state.latestAnswers.answers)) {
@@ -1521,6 +1535,7 @@ els.createProject.addEventListener("click", createProject);
 els.newProject.addEventListener("click", startNewProject);
 els.loadProject.addEventListener("click", () => loadProject().catch((error) => setStatus(els.projectStatus, error.message, true)));
 els.saveAnswers.addEventListener("click", saveAnswers);
+els.saveAnswersBottom.addEventListener("click", saveAnswers);
 els.runSimulation.addEventListener("click", runSimulation);
 els.questionnaireForm.addEventListener("input", markUnsaved);
 els.questionnaireForm.addEventListener("change", (event) => {
