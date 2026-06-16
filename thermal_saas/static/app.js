@@ -165,7 +165,7 @@ function setSaveAnswersDisabled(disabled) {
 async function loadProfiles() {
   const payload = await api("/business-profiles");
   state.profiles = payload.profiles;
-  const defaultProfile = state.profiles.find((profile) => profile.id === "reflective_roof_seller") || state.profiles[0];
+  const defaultProfile = state.profiles.find((profile) => profile.id === "roof_insulation_seller") || state.profiles[0];
   els.profileSelect.innerHTML = defaultProfile
     ? `<option value="${defaultProfile.id}">${defaultProfile.label}</option>`
     : "";
@@ -337,7 +337,7 @@ async function refreshSession() {
 }
 
 async function loadQuestionnaire() {
-  state.profileId = state.organization?.business_profile_id || state.profileId || "reflective_roof_seller";
+  state.profileId = state.organization?.business_profile_id || state.profileId || "roof_insulation_seller";
   els.profileSelect.value = state.profileId;
   state.questionnaire = await api(`/business-profiles/${state.profileId}/questionnaire`);
   if (!state.user) state.organization = null;
@@ -390,7 +390,7 @@ async function refreshProjects() {
 }
 
 function renderQuestionnaire() {
-  els.questionnaireIntro.textContent = "Questionnaire toiture réfléchissante";
+  els.questionnaireIntro.textContent = questionnaireIntroLabel();
   const html = [];
   for (const section of state.questionnaire.sections) {
     const visibleQuestions = section.questions.filter((question) => !hiddenQuestionIds.has(question.id));
@@ -404,6 +404,16 @@ function renderQuestionnaire() {
   applyDefaults();
   syncPositionOptions();
   updateCoolingVisibility();
+}
+
+function questionnaireIntroLabel() {
+  if (state.profileId === "roof_insulation_seller") {
+    return "Questionnaire isolation toiture";
+  }
+  if (state.profileId === "reflective_roof_seller") {
+    return "Questionnaire toiture réfléchissante";
+  }
+  return "Questionnaire projet";
 }
 
 function renderQuestion(question) {
@@ -492,6 +502,8 @@ function applyDefaults() {
   setField("dwelling_type", "house");
   setField("position_id", "single_storey_house");
   setField("period_id", "2001_2012_good_insulation");
+  setField("heating_ref", "electric_radiator");
+  setField("heating_setpoint_c", 19);
 }
 
 function markUnsaved() {
@@ -1158,6 +1170,15 @@ function renderSimulationRuns(runs = state.simulationRuns) {
 }
 
 function simulationRunLabel(run) {
+  if (run.adaptation_id === "roof_insulation" && run.season === "annual") {
+    return "Simulation annuelle météo réelle";
+  }
+  if (run.adaptation_id === "roof_insulation" && run.season === "winter" && run.role === "primary") {
+    return "Simulation hiver";
+  }
+  if (run.adaptation_id === "roof_insulation" && run.season === "summer") {
+    return "Impact été";
+  }
   if (run.adaptation_id === "reflective_roof" && run.season === "summer" && run.role === "primary") {
     return "Simulation de juin à septembre";
   }
@@ -1190,7 +1211,7 @@ function simulationRunLabel(run) {
 
 function simulationRunStatus(run) {
   const statusLabel = run.status === "completed" ? "Simulation réalisée" : run.status;
-  if (run.adaptation_id === "reflective_roof") {
+  if (["reflective_roof", "roof_insulation"].includes(run.adaptation_id)) {
     return statusLabel;
   }
   return `${statusLabel} · ${run.id}`;
@@ -1260,10 +1281,30 @@ async function renderLatestSummary() {
   const summary = payload.result.comparison.summary;
   const headline = summary.headline_metrics;
   const energy = summary.energy_savings;
+  const beforeTotals = payload.result.comparison.before.totals;
+  const afterTotals = payload.result.comparison.after.totals;
+  const beforeScenario = payload.result.before_scenario;
   if (summaryRun.adaptation_id === "reflective_roof") {
     els.resultSummary.innerHTML = `
       <div class="metric accent"><span>Réduction température max</span><strong>${formatNumber(headline.max_temperature_reduction_c)} °C</strong></div>
       <div class="metric accent"><span>Inconfort chaud évité</span><strong>${formatInteger(headline.hot_degree_hours_reduced)} °C·h</strong></div>
+    `;
+    return;
+  }
+  if (summaryRun.adaptation_id === "roof_insulation") {
+    const heatingRef = beforeScenario?.dwelling_overrides?.systems?.heating?.[0]?.system_ref
+      || beforeScenario?.systems?.heating?.[0]?.system_ref
+      || state.latestAnswers?.answers?.heating_ref
+      || "electric_radiator";
+    const weatherYear = payload.result.comparison.experiment.weather_year || "météo réelle";
+    els.resultSummary.innerHTML = `
+      <div class="metric accent"><span>Économie estimée sur une année météo réelle</span><strong>${formatNumber(energy.cost_saved_eur)} €</strong></div>
+      <div class="metric accent"><span>Besoin de chauffage réduit</span><strong>${formatNumber(beforeTotals.heating_thermal_kwh - afterTotals.heating_thermal_kwh)} kWh_th</strong></div>
+      <div class="metric"><span>Énergie finale chauffage économisée</span><strong>${formatNumber(beforeTotals.heating_final_kwh - afterTotals.heating_final_kwh)} kWh_final</strong></div>
+      <div class="metric"><span>Chauffage utilisé dans l'estimation</span><strong>${heatingSystemLabel(heatingRef)}</strong></div>
+      <div class="metric"><span>Période</span><strong>Année météo réelle ${weatherYear}</strong></div>
+      <div class="metric"><span>Inconfort froid évité</span><strong>${formatNumber(headline.cold_degree_hours_reduced)} °C·h</strong></div>
+      <div class="metric"><span>Impact été</span><strong>${formatNumber(headline.hot_degree_hours_reduced)} °C·h chaud évités</strong></div>
     `;
     return;
   }
@@ -1281,11 +1322,27 @@ function summaryMetricsRun(runs) {
   const reflectivePrimary = runs.find((run) => (
     run.adaptation_id === "reflective_roof" && run.season === "summer" && run.role === "primary"
   ));
-  return reflectivePrimary || runs[runs.length - 1];
+  const roofAnnual = runs.find((run) => (
+    run.adaptation_id === "roof_insulation" && run.season === "annual"
+  ));
+  return reflectivePrimary || roofAnnual || runs[runs.length - 1];
 }
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString("fr-FR", {maximumFractionDigits: 2});
+}
+
+function heatingSystemLabel(heatingRef) {
+  const labels = {
+    electric_radiator: "Radiateurs électriques",
+    gas_boiler_standard: "Chaudière gaz",
+    gas_boiler_condensing: "Chaudière gaz condensation",
+    fuel_oil_boiler_standard: "Chaudière fioul",
+    wood_stove_standard: "Chauffage bois",
+    air_air_heat_pump_standard: "PAC air-air",
+    air_water_heat_pump_standard: "PAC air-eau",
+  };
+  return labels[heatingRef] || heatingRef || "Non précisé";
 }
 
 function formatInteger(value) {
@@ -1500,6 +1557,9 @@ function demoAnswers(demoId) {
       roof_insulation_id: "poor",
       roof_color_id: "medium",
       attic_ventilation_id: "attic",
+      wall_insulation_id: "standard",
+      heating_ref: "electric_radiator",
+      heating_setpoint_c: 19,
     };
   }
   return {

@@ -1,7 +1,7 @@
 {
   "id": "roof_insulation_seller",
-  "label": "Vendeur isolation toiture",
-  "description": "Parcours spécialisé pour qualifier une toiture ou des combles et simuler l'amélioration de l'isolation.",
+  "label": "Isolation toiture",
+  "description": "Parcours spécialisé pour qualifier une toiture ou des combles et simuler l'amélioration de l'isolation avant/après travaux.",
   "allowed_adaptations": ["roof_insulation"],
   "default_adaptation": "roof_insulation",
   "include_annual_experiment": true,
@@ -69,6 +69,41 @@
             "default": false
           },
           {
+            "id": "heating_ref",
+            "type": "select",
+            "label": "Chauffage principal actuel",
+            "required": true,
+            "options": [
+              {"id": "electric_radiator", "label": "Radiateurs électriques"},
+              {"id": "gas_boiler_standard", "label": "Chaudière gaz"},
+              {"id": "fuel_oil_boiler_standard", "label": "Chaudière fioul"},
+              {"id": "wood_stove_standard", "label": "Chauffage bois"},
+              {"id": "air_air_heat_pump_standard", "label": "PAC air-air"},
+              {"id": "air_water_heat_pump_standard", "label": "PAC air-eau"}
+            ]
+          },
+          {
+            "id": "heating_setpoint_c",
+            "type": "number",
+            "label": "Consigne de chauffage habituelle (°C)",
+            "required": false,
+            "default": 19.0
+          },
+          {
+            "id": "cooling_setpoint_day_c",
+            "type": "number",
+            "label": "Consigne de climatisation en journée (°C)",
+            "required": false,
+            "default": 26.0
+          },
+          {
+            "id": "cooling_setpoint_night_c",
+            "type": "number",
+            "label": "Consigne de climatisation la nuit (°C)",
+            "required": false,
+            "default": 26.0
+          },
+          {
             "id": "airtightness_id",
             "type": "select",
             "label": "Étanchéité globale du logement",
@@ -101,19 +136,19 @@
           {
             "id": "roof_insulation_id",
             "type": "select",
-            "label": "Niveau d'isolation toiture actuel",
+            "label": "Niveau d'isolation toiture ou combles actuel",
             "required": true,
             "options": [
-              {"id": "poor", "label": "Toiture ou combles peu isolés"},
-              {"id": "standard", "label": "Isolation toiture standard"},
-              {"id": "renovated", "label": "Toiture bien isolée ou rénovée"},
+              {"id": "poor", "label": "Absente, ancienne ou très faible"},
+              {"id": "standard", "label": "Isolation moyenne / standard"},
+              {"id": "renovated", "label": "Isolation récente ou renforcée"},
               {"id": "unknown", "label": "Je ne sais pas"}
             ]
           },
           {
             "id": "roof_color_id",
             "type": "select",
-            "label": "Couleur dominante actuelle de la toiture",
+            "label": "Couleur dominante actuelle de la toiture (impact été)",
             "required": true,
             "options": [
               {"id": "dark", "label": "Foncée"},
@@ -125,11 +160,11 @@
           {
             "id": "attic_ventilation_id",
             "type": "select",
-            "label": "Configuration de toiture au-dessus du logement",
+            "label": "Type de toiture ou combles au-dessus du logement",
             "required": true,
             "options": [
-              {"id": "attic", "label": "Combles au-dessus du logement"},
-              {"id": "sloped_ceiling", "label": "Toits rampants au-dessus du logement"},
+              {"id": "attic", "label": "Combles perdus au-dessus du logement"},
+              {"id": "sloped_ceiling", "label": "Rampants / pièces sous pente"},
               {"id": "flat_roof", "label": "Toit terrasse au-dessus du logement"}
             ]
           }
@@ -139,7 +174,7 @@
         "id": "rooms",
         "label": "Pièces sous toiture",
         "questions": [
-          {"id": "rooms", "type": "room_list", "label": "Pièces à modéliser, avec contact toiture", "required": true}
+          {"id": "rooms", "type": "room_list", "label": "Pièces chauffées à modéliser sous toiture", "required": true}
         ]
       }
     ]

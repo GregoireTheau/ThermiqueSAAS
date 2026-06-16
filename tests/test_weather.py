@@ -56,6 +56,27 @@ def test_resolve_weather_city_uses_exact_department_then_climate_zone():
     assert resolve_weather_city("Ville inconnue", "", "FR_H2b")["weather_city"] == "Nantes"
 
 
+def test_resolve_weather_city_maps_all_metropolitan_departments():
+    department_codes = [
+        *(f"{department:02d}" for department in range(1, 20)),
+        "2A",
+        "2B",
+        *(str(department) for department in range(21, 96)),
+    ]
+
+    unresolved = [
+        department
+        for department in department_codes
+        if resolve_weather_city(
+            "Ville inconnue",
+            f"{department}000",
+            None,
+        )["match_mode"] != "department"
+    ]
+
+    assert unresolved == []
+
+
 def test_build_thermal_weather_matches_scenario_weather_shape():
     dataframe = _weather_frame(2023, [4.0, 5.0, 6.0, 7.0])
 

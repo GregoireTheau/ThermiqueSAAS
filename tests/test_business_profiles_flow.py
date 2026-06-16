@@ -59,16 +59,36 @@ def test_all_business_profiles_ask_ventilation_and_airtightness():
 
 
 def test_roof_profiles_ask_roof_configuration_above_dwelling():
-    expected_options = [
+    reflective_expected_options = [
         ("attic", "Combles au-dessus du logement"),
         ("sloped_ceiling", "Toits rampants au-dessus du logement"),
         ("flat_roof", "Toit terrasse au-dessus du logement"),
     ]
-    for profile_id in {"reflective_roof_seller", "roof_insulation_seller"}:
-        question = _question_by_id(get_profile_questionnaire(profile_id), "attic_ventilation_id")
+    roof_insulation_expected_options = [
+        ("attic", "Combles perdus au-dessus du logement"),
+        ("sloped_ceiling", "Rampants / pièces sous pente"),
+        ("flat_roof", "Toit terrasse au-dessus du logement"),
+    ]
 
-        assert question["label"] == "Configuration de toiture au-dessus du logement"
-        assert [(option["id"], option["label"]) for option in question["options"]] == expected_options
+    reflective_question = _question_by_id(
+        get_profile_questionnaire("reflective_roof_seller"),
+        "attic_ventilation_id",
+    )
+    roof_insulation_question = _question_by_id(
+        get_profile_questionnaire("roof_insulation_seller"),
+        "attic_ventilation_id",
+    )
+
+    assert reflective_question["label"] == "Configuration de toiture au-dessus du logement"
+    assert [
+        (option["id"], option["label"])
+        for option in reflective_question["options"]
+    ] == reflective_expected_options
+    assert roof_insulation_question["label"] == "Type de toiture ou combles au-dessus du logement"
+    assert [
+        (option["id"], option["label"])
+        for option in roof_insulation_question["options"]
+    ] == roof_insulation_expected_options
 
 
 def test_solar_protection_profile_runs_only_summer_protection_experience():

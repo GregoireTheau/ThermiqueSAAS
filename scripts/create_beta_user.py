@@ -9,7 +9,7 @@ import os
 import requests
 
 
-DEFAULT_PROFILE = "reflective_roof_seller"
+DEFAULT_PROFILE = "roof_insulation_seller"
 DEFAULT_URL = "https://thermaltwin.up.railway.app"
 
 

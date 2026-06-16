@@ -36,6 +36,7 @@ REPORT_PRESENTATION_CONFIG = {
         "secondary_kpis": ["hot_discomfort", "max_temperature"],
         "hidden_summary_kpis": [],
         "reading_template": "roof_insulation_winter",
+        "fixed_notes": ["roof_insulation_annual_scope"],
     },
     ("roof_insulation_seller", "summer"): {
         "hero_kpis": ["hot_discomfort", "max_temperature"],
@@ -1625,7 +1626,12 @@ def _build_report_title(experiment: dict[str, Any], season: str) -> str:
     intervention = _format_intervention_title(experiment["intervention"])
     if experiment.get("label"):
         return f"Simulation {intervention} - {experiment['label'].lower()}"
-    season_label = "confort été" if season == "summer" else "chauffage hiver"
+    season_labels = {
+        "summer": "confort été",
+        "annual": "année complète",
+        "winter": "chauffage hiver",
+    }
+    season_label = season_labels.get(season, "chauffage hiver")
     return f"Simulation {intervention} - {season_label}"
 
 
@@ -1647,7 +1653,12 @@ def _format_intervention_title(intervention: dict[str, Any]) -> str:
 
 
 def _build_context_text(experiment: dict[str, Any], season: str) -> str:
-    season_label = "un épisode d'été chaud" if season == "summer" else "une séquence d'hiver froid"
+    season_labels = {
+        "summer": "un épisode d'été chaud",
+        "annual": "une année météo complète",
+        "winter": "une séquence d'hiver froid",
+    }
+    season_label = season_labels.get(season, "une séquence d'hiver froid")
     weather = experiment["weather_summary"]
     setpoint_text = _format_setpoint_text(experiment)
     return (
@@ -1698,6 +1709,8 @@ def _scenario_period_label(experiment: dict[str, Any]) -> str:
         return "pendant un épisode de canicule"
     if weather_variant == "winter_cold" or season == "winter":
         return "pendant un épisode hivernal froid"
+    if weather_variant == "openmeteo_annual" or season == "annual":
+        return "sur une année complète de météo réelle"
     return "sur la période simulée"
 
 
@@ -1737,6 +1750,12 @@ def _build_conclusion_text(
             f"{_format_pct(energy['final_energy'])}."
         )
     if template == "roof_insulation_winter":
+        if season == "annual":
+            return (
+                "L'isolation réduit le besoin de chauffage annuel de "
+                f"{_format_pct(energy['heating_thermal'])}. "
+                "Le confort d'été reste affiché séparément pour éviter de mélanger les effets."
+            )
         return (
             "L'isolation réduit le besoin de chauffage de "
             f"{_format_pct(energy['heating_thermal'])}. "
@@ -1996,6 +2015,12 @@ def _build_presentation_notes(
             context_notes.append(
                 "Un vitrage performant réduit les apports solaires directs en été. "
                 "L'effet sur le confort dépend de l'orientation et de la surface vitrée exposée.",
+            )
+        elif note_key == "roof_insulation_annual_scope":
+            context_notes.append(
+                "Ce rapport annuel estime les besoins avant/après isolation de toiture "
+                "avec la même météo réelle et les mêmes consignes. Il ne remplace pas "
+                "un DPE, un audit énergétique ou une étude réglementaire.",
             )
 
     for note_key in config.get("conditional_notes", []):

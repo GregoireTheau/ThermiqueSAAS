@@ -250,7 +250,7 @@ def test_admin_beta_user_requires_valid_token(tmp_path, monkeypatch):
     assert response.status_code == 403
 
 
-def test_admin_beta_user_creates_reflective_roof_user_by_default(tmp_path, monkeypatch):
+def test_admin_beta_user_creates_roof_insulation_user_by_default(tmp_path, monkeypatch):
     monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
     monkeypatch.setenv("THERMAL_SAAS_ADMIN_TOKEN", "expected-token")
     client = TestClient(app)
@@ -269,7 +269,7 @@ def test_admin_beta_user_creates_reflective_roof_user_by_default(tmp_path, monke
     payload = response.json()
     assert payload["user"]["email"] == "client@example.com"
     assert payload["organization"]["name"] == "Client Org"
-    assert payload["organization"]["business_profile_id"] == "reflective_roof_seller"
+    assert payload["organization"]["business_profile_id"] == "roof_insulation_seller"
     assert "access_token" not in payload
 
 
