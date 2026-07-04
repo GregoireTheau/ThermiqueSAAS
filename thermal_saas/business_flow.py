@@ -233,6 +233,7 @@ def build_customer(
         "thermal_layout": _thermal_layout(rooms, answers.get("thermal_layout")),
         "change": change,
         "change_details": _change_details(adaptation_id, answers),
+        "energy_prices": _energy_prices(answers),
         "target_scope": answers.get("target_scope", "all"),
         "include_annual_experiment": _answer_bool(
             answers.get("include_annual_experiment"),
@@ -409,6 +410,36 @@ def _initial_heating_ref(profile_id: str, answers: dict[str, Any]) -> str:
     if current_energy_id == "electricity" and heat_emitters_id == "air_units":
         return "air_air_heat_pump_standard"
     return "electric_radiator"
+
+
+def _energy_prices(answers: dict[str, Any]) -> dict[str, float]:
+    heating_ref = answers.get("heating_ref", "electric_radiator")
+    energy = _heating_energy_vector(heating_ref)
+    default_prices = {
+        "electricity": 0.25,
+        "gas": 0.11,
+        "fuel_oil": 0.13,
+        "wood": 0.07,
+    }
+    price = answers.get("heating_energy_price_eur_kwh")
+    if price in (None, ""):
+        price = default_prices[energy]
+    price = float(price)
+    if price <= 0:
+        raise BusinessFlowError("Le prix énergie chauffage doit être strictement positif.")
+    prices = {"electricity_eur_kwh": default_prices["electricity"]}
+    prices[f"{energy}_eur_kwh"] = price
+    return prices
+
+
+def _heating_energy_vector(heating_ref: str) -> str:
+    if heating_ref.startswith("gas_"):
+        return "gas"
+    if heating_ref.startswith("fuel_oil_"):
+        return "fuel_oil"
+    if heating_ref.startswith("wood_"):
+        return "wood"
+    return "electricity"
 
 
 def _normalize_room(

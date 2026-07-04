@@ -90,6 +90,13 @@
             "default": 19.0
           },
           {
+            "id": "heating_energy_price_eur_kwh",
+            "type": "number",
+            "label": "Prix énergie chauffage (€/kWh final)",
+            "required": false,
+            "default": 0.25
+          },
+          {
             "id": "cooling_setpoint_day_c",
             "type": "number",
             "label": "Consigne de climatisation en journée (°C)",

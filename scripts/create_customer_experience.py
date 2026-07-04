@@ -1290,6 +1290,7 @@ def build_experiments(
             customer.get("shutter_usage"),
             customer.get("annual_weather_year", 2023),
             customer.get("annual_weather_dir", "data/weather/openmeteo"),
+            customer.get("energy_prices"),
         )
         after = build_scenario(
             base_id,
@@ -1303,6 +1304,7 @@ def build_experiments(
             customer.get("shutter_usage"),
             customer.get("annual_weather_year", 2023),
             customer.get("annual_weather_dir", "data/weather/openmeteo"),
+            customer.get("energy_prices"),
         )
         experiments.append(
             {
@@ -1379,6 +1381,7 @@ def build_scenario(
     shutter_usage: dict[str, Any] | None = None,
     annual_weather_year: int = 2023,
     annual_weather_dir: str | Path = "data/weather/openmeteo",
+    energy_prices: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     season = experiment_spec["season"]
     scenario_setpoints = setpoints or default_setpoints_for_experiment(experiment_spec)
@@ -1420,7 +1423,7 @@ def build_scenario(
             annual_weather_year,
             annual_weather_dir,
         ),
-        "energy_prices": {"electricity_eur_kwh": 0.25},
+        "energy_prices": energy_prices or {"electricity_eur_kwh": 0.25},
         "co2_factors": {"electricity_kg_kwh": 0.06},
     }
     if weather_city:

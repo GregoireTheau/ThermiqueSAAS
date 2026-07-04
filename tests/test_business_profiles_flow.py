@@ -91,6 +91,17 @@ def test_roof_profiles_ask_roof_configuration_above_dwelling():
     ] == roof_insulation_expected_options
 
 
+def test_roof_insulation_profile_asks_heating_energy_price():
+    question = _question_by_id(
+        get_profile_questionnaire("roof_insulation_seller"),
+        "heating_energy_price_eur_kwh",
+    )
+
+    assert question["label"] == "Prix énergie chauffage (€/kWh final)"
+    assert question["type"] == "number"
+    assert question["default"] == 0.25
+
+
 def test_solar_protection_profile_runs_only_summer_protection_experience():
     questionnaire = get_profile_questionnaire("solar_protection_seller")
     question_ids = _question_ids(questionnaire)
@@ -233,6 +244,30 @@ def test_roof_insulation_profile_runs_roof_insulation_experiences():
     for run in result["simulation_runs"]:
         assert run["after_scenario"]["retrofit"]["surface_overrides"]
     _assert_annual_run(result["simulation_runs"][-1])
+
+
+def test_roof_insulation_uses_custom_heating_energy_price():
+    base_answers = _base_answers() | {
+        "adaptation_id": "roof_insulation",
+        "roof_insulation_id": "poor",
+        "roof_color_id": "dark",
+        "attic_ventilation_id": "flat_roof",
+        "heating_energy_price_eur_kwh": 0.5,
+    }
+
+    default_result = run_profile_experience("roof_insulation_seller", base_answers)
+    custom_result = run_profile_experience(
+        "roof_insulation_seller",
+        base_answers | {"heating_energy_price_eur_kwh": 1.0},
+    )
+    default_annual = default_result["simulation_runs"][-1]
+    custom_annual = custom_result["simulation_runs"][-1]
+
+    assert custom_annual["before_scenario"]["energy_prices"] == {"electricity_eur_kwh": 1.0}
+    assert custom_annual["after_scenario"]["energy_prices"] == {"electricity_eur_kwh": 1.0}
+    assert custom_annual["comparison"]["summary"]["energy_savings"]["cost_saved_eur"] == (
+        2 * default_annual["comparison"]["summary"]["energy_savings"]["cost_saved_eur"]
+    )
 
 
 def test_roof_profile_can_run_reflective_roof_variant():

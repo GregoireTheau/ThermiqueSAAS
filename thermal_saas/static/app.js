@@ -75,6 +75,15 @@ const els = {
 };
 
 const hiddenQuestionIds = new Set(["project_name", "rooms"]);
+const defaultHeatingEnergyPrices = {
+  electric_radiator: 0.25,
+  gas_boiler_standard: 0.11,
+  gas_boiler_condensing: 0.11,
+  fuel_oil_boiler_standard: 0.13,
+  wood_stove_standard: 0.07,
+  air_air_heat_pump_standard: 0.25,
+  air_water_heat_pump_standard: 0.25,
+};
 
 async function api(path, options = {}) {
   const headers = {"Content-Type": "application/json", ...(options.headers || {})};
@@ -504,6 +513,7 @@ function applyDefaults() {
   setField("period_id", "2001_2012_good_insulation");
   setField("heating_ref", "electric_radiator");
   setField("heating_setpoint_c", 19);
+  setField("heating_energy_price_eur_kwh", 0.25);
 }
 
 function markUnsaved() {
@@ -859,6 +869,9 @@ function collectAnswers() {
   for (const key of ["heating_setpoint_c", "cooling_setpoint_c", "cooling_setpoint_day_c", "cooling_setpoint_night_c"]) {
     if (answers[key] !== undefined && answers[key] !== "") answers[key] = Number(answers[key]);
   }
+  if (answers.heating_energy_price_eur_kwh !== undefined && answers.heating_energy_price_eur_kwh !== "") {
+    answers.heating_energy_price_eur_kwh = Number(answers.heating_energy_price_eur_kwh);
+  }
   return answers;
 }
 
@@ -1153,7 +1166,7 @@ function renderSimulationRuns(runs = state.simulationRuns) {
   }
   const hiddenCount = runs.length - visibleRuns.length;
   els.simulationRuns.innerHTML = `
-    ${hiddenCount > 0 ? `<div class="stateBox success">Affichage des ${visibleRuns.length} rapports utiles. ${hiddenCount} ancienne${hiddenCount > 1 ? "s" : ""} simulation${hiddenCount > 1 ? "s" : ""} masquée${hiddenCount > 1 ? "s" : ""}.</div>` : ""}
+    ${hiddenCount > 0 ? `<div class="stateBox success">Affichage des ${visibleRuns.length} rapport${visibleRuns.length > 1 ? "s" : ""} utile${visibleRuns.length > 1 ? "s" : ""}. ${hiddenCount} simulation${hiddenCount > 1 ? "s" : ""} technique${hiddenCount > 1 ? "s" : ""} masquée${hiddenCount > 1 ? "s" : ""}.</div>` : ""}
     ${visibleRuns.map((run) => `
     <div class="run">
       <div>
@@ -1352,8 +1365,11 @@ function formatInteger(value) {
 function usefulReportRuns(runs = state.simulationRuns) {
   const answersId = state.latestAnswers?.id || runs[runs.length - 1]?.answers_id;
   const scopedRuns = answersId ? runs.filter((run) => run.answers_id === answersId) : runs;
+  const reportRuns = scopedRuns.some((run) => run.adaptation_id === "roof_insulation")
+    ? scopedRuns.filter((run) => run.adaptation_id !== "roof_insulation" || run.season === "annual")
+    : scopedRuns;
   const latestByScenario = new Map();
-  for (const run of scopedRuns) {
+  for (const run of reportRuns) {
     latestByScenario.set(`${run.season}:${run.role}`, run);
   }
   return [...latestByScenario.values()];
@@ -1560,6 +1576,7 @@ function demoAnswers(demoId) {
       wall_insulation_id: "standard",
       heating_ref: "electric_radiator",
       heating_setpoint_c: 19,
+      heating_energy_price_eur_kwh: 0.25,
     };
   }
   return {
@@ -1601,6 +1618,10 @@ els.questionnaireForm.addEventListener("input", markUnsaved);
 els.questionnaireForm.addEventListener("change", (event) => {
   if (event.target.name === "dwelling_type") syncPositionOptions();
   if (event.target.name === "has_cooling") updateCoolingVisibility();
+  if (event.target.name === "heating_ref") {
+    const defaultPrice = defaultHeatingEnergyPrices[event.target.value];
+    if (defaultPrice !== undefined) setField("heating_energy_price_eur_kwh", defaultPrice);
+  }
   markUnsaved();
 });
 els.rooms.addEventListener("input", markUnsaved);
