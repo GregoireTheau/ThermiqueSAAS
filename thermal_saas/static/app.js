@@ -1296,7 +1296,6 @@ async function renderLatestSummary() {
   const energy = summary.energy_savings;
   const beforeTotals = payload.result.comparison.before.totals;
   const afterTotals = payload.result.comparison.after.totals;
-  const beforeScenario = payload.result.before_scenario;
   if (summaryRun.adaptation_id === "reflective_roof") {
     els.resultSummary.innerHTML = `
       <div class="metric accent"><span>Réduction température max</span><strong>${formatNumber(headline.max_temperature_reduction_c)} °C</strong></div>
@@ -1305,19 +1304,11 @@ async function renderLatestSummary() {
     return;
   }
   if (summaryRun.adaptation_id === "roof_insulation") {
-    const heatingRef = beforeScenario?.dwelling_overrides?.systems?.heating?.[0]?.system_ref
-      || beforeScenario?.systems?.heating?.[0]?.system_ref
-      || state.latestAnswers?.answers?.heating_ref
-      || "electric_radiator";
     const weatherYear = payload.result.comparison.experiment.weather_year || "météo réelle";
     els.resultSummary.innerHTML = `
       <div class="metric accent"><span>Économie estimée sur une année météo réelle</span><strong>${formatNumber(energy.cost_saved_eur)} €</strong></div>
       <div class="metric accent"><span>Besoin de chauffage réduit</span><strong>${formatNumber(beforeTotals.heating_thermal_kwh - afterTotals.heating_thermal_kwh)} kWh_th</strong></div>
-      <div class="metric"><span>Énergie finale chauffage économisée</span><strong>${formatNumber(beforeTotals.heating_final_kwh - afterTotals.heating_final_kwh)} kWh_final</strong></div>
-      <div class="metric"><span>Chauffage utilisé dans l'estimation</span><strong>${heatingSystemLabel(heatingRef)}</strong></div>
       <div class="metric"><span>Période</span><strong>Année météo réelle ${weatherYear}</strong></div>
-      <div class="metric"><span>Inconfort froid évité</span><strong>${formatNumber(headline.cold_degree_hours_reduced)} °C·h</strong></div>
-      <div class="metric"><span>Impact été</span><strong>${formatNumber(headline.hot_degree_hours_reduced)} °C·h chaud évités</strong></div>
     `;
     return;
   }
@@ -1343,19 +1334,6 @@ function summaryMetricsRun(runs) {
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString("fr-FR", {maximumFractionDigits: 2});
-}
-
-function heatingSystemLabel(heatingRef) {
-  const labels = {
-    electric_radiator: "Radiateurs électriques",
-    gas_boiler_standard: "Chaudière gaz",
-    gas_boiler_condensing: "Chaudière gaz condensation",
-    fuel_oil_boiler_standard: "Chaudière fioul",
-    wood_stove_standard: "Chauffage bois",
-    air_air_heat_pump_standard: "PAC air-air",
-    air_water_heat_pump_standard: "PAC air-eau",
-  };
-  return labels[heatingRef] || heatingRef || "Non précisé";
 }
 
 function formatInteger(value) {
