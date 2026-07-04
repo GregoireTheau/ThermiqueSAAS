@@ -30,38 +30,38 @@ def print_comparison(comparison: dict[str, Any]) -> None:
     summary = comparison["summary"]
     experiment = comparison["experiment"]
 
-    print(f"Logement: {comparison['dwelling_id']}")
-    print(f"Avant: {comparison['before_scenario_id']}")
-    print(f"Apres: {comparison['after_scenario_id']}")
+    print(f"Dwelling: {comparison['dwelling_id']}")
+    print(f"Before: {comparison['before_scenario_id']}")
+    print(f"After: {comparison['after_scenario_id']}")
     print(
         "Experience: "
-        f"{experiment['duration_days']:.1f} jours "
+        f"{experiment['duration_days']:.1f} days "
         f"({experiment['duration_hours']:.0f} h), "
-        f"meteo {experiment['weather_source']}, "
+        f"weather {experiment['weather_source']}, "
         f"{experiment['weather_summary']['outdoor_temperature_min_c']:.1f} C -> "
         f"{experiment['weather_summary']['outdoor_temperature_max_c']:.1f} C ext."
     )
-    print("Portee: resultats simules sur cette periode, sans projection annuelle.")
+    print("Scope: simulated results over this period, without annual projection.")
     print()
-    print("Lecture commerciale")
-    print(f"- Confort gagne: {summary['comfort_gain']['label']}")
-    print(f"- Energie economisee: {summary['energy_savings']['label']}")
+    print("Commercial reading")
+    print(f"- Comfort gained: {summary['comfort_gain']['label']}")
+    print(f"- Energy saved: {summary['energy_savings']['label']}")
     print(
-        "- Cause principale: "
+        "- Main cause: "
         f"{summary['main_gain_driver']['label']} "
         f"({summary['main_gain_driver']['value']:.2f} "
         f"{summary['main_gain_driver']['unit']})"
     )
     print()
-    print("Energie / cout / CO2")
+    print("Energy / cost / CO2")
     print(
-        "Electricite kWh: "
+        "Electricity kWh: "
         f"{before_totals['electricity_kwh']:.2f} -> "
         f"{after_totals['electricity_kwh']:.2f} "
         f"(gain {deltas['electricity_kwh']:.2f})"
     )
     print(
-        "Cout EUR: "
+        "Cost EUR: "
         f"{before_totals['electricity_cost_eur']:.2f} -> "
         f"{after_totals['electricity_cost_eur']:.2f} "
         f"(gain {deltas['electricity_cost_eur']:.2f})"
@@ -73,28 +73,28 @@ def print_comparison(comparison: dict[str, Any]) -> None:
         f"(gain {deltas['electricity_co2_kg']:.2f})"
     )
     print()
-    print("Confort par piece")
+    print("Comfort by room")
     for room_delta in deltas["rooms"].values():
         print(
             f"- {room_delta['room_name']}: "
             f"{room_delta['before_max_temperature_c']:.1f} C -> "
             f"{room_delta['after_max_temperature_c']:.1f} C "
-            f"(baisse {room_delta['delta_max_temperature_c']:.1f} C), "
-            f"degres-heures chauds evites "
+            f"(reduction {room_delta['delta_max_temperature_c']:.1f} C), "
+            f"warm degree-hours avoided "
             f"{room_delta['delta_hot_degree_hours']:.0f}, "
-            f"degres-heures froids evites "
+            f"cold degree-hours avoided "
             f"{room_delta['delta_cold_degree_hours']:.0f}"
         )
     print()
-    print("Deltas techniques par piece")
+    print("Technical deltas by room")
     for room_delta in deltas["rooms"].values():
         print(
             f"- {room_delta['room_name']}: "
-            f"solaire {room_delta['delta_solar_gain_kwh']:.2f} kWh, "
+            f"solar {room_delta['delta_solar_gain_kwh']:.2f} kWh, "
             f"transmission {room_delta['delta_transmission_exchange_kwh']:.2f} kWh, "
             f"ventilation {room_delta['delta_ventilation_exchange_kwh']:.2f} kWh, "
-            f"chauffage {room_delta['delta_heating_thermal_kwh']:.2f} kWh, "
-            f"clim {room_delta['delta_cooling_thermal_kwh']:.2f} kWh"
+            f"heating {room_delta['delta_heating_thermal_kwh']:.2f} kWh, "
+            f"cooling {room_delta['delta_cooling_thermal_kwh']:.2f} kWh"
         )
 
 

@@ -60,14 +60,14 @@ def test_all_business_profiles_ask_ventilation_and_airtightness():
 
 def test_roof_profiles_ask_roof_configuration_above_dwelling():
     reflective_expected_options = [
-        ("attic", "Combles au-dessus du logement"),
-        ("sloped_ceiling", "Toits rampants au-dessus du logement"),
-        ("flat_roof", "Toit terrasse au-dessus du logement"),
+        ("attic", "Attic above the home"),
+        ("sloped_ceiling", "Sloped roof above the home"),
+        ("flat_roof", "Flat roof above the home"),
     ]
     roof_insulation_expected_options = [
-        ("attic", "Combles perdus au-dessus du logement"),
-        ("sloped_ceiling", "Rampants / pièces sous pente"),
-        ("flat_roof", "Toit terrasse au-dessus du logement"),
+        ("attic", "Unconverted attic above the home"),
+        ("sloped_ceiling", "Sloped ceilings / rooms under the roof"),
+        ("flat_roof", "Flat roof above the home"),
     ]
 
     reflective_question = _question_by_id(
@@ -79,12 +79,12 @@ def test_roof_profiles_ask_roof_configuration_above_dwelling():
         "attic_ventilation_id",
     )
 
-    assert reflective_question["label"] == "Configuration de toiture au-dessus du logement"
+    assert reflective_question["label"] == "Roof configuration above the home"
     assert [
         (option["id"], option["label"])
         for option in reflective_question["options"]
     ] == reflective_expected_options
-    assert roof_insulation_question["label"] == "Type de toiture ou combles au-dessus du logement"
+    assert roof_insulation_question["label"] == "Roof or attic type above the home"
     assert [
         (option["id"], option["label"])
         for option in roof_insulation_question["options"]
@@ -97,7 +97,7 @@ def test_roof_insulation_profile_asks_heating_energy_price():
         "heating_energy_price_eur_kwh",
     )
 
-    assert question["label"] == "Prix énergie chauffage (€/kWh final)"
+    assert question["label"] == "Heating energy price (€/final kWh)"
     assert question["type"] == "number"
     assert question["default"] == 0.25
 
@@ -313,7 +313,7 @@ def test_business_flow_rejects_window_larger_than_facade():
         run_profile_experience("window_seller", answers)
     except BusinessFlowError as exc:
         assert "window_area_m2" in str(exc)
-        assert "surface de façade" in str(exc)
+        assert "facade area" in str(exc)
     else:
         raise AssertionError("run_profile_experience accepted a window larger than facade")
 
@@ -357,8 +357,8 @@ def test_business_flow_rejects_absurd_height_setpoints_and_incompatible_adaptati
             _base_answers() | {"heating_setpoint_c": 19.0, "cooling_setpoint_c": 15.0},
         )
     except BusinessFlowError as exc:
-        assert "chauffage" in str(exc)
-        assert "climatisation" in str(exc)
+        assert "heating" in str(exc)
+        assert "cooling" in str(exc)
     else:
         raise AssertionError("run_profile_experience accepted inverted setpoints")
 

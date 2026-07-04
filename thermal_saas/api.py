@@ -344,7 +344,7 @@ def create_beta_user_endpoint(
 @app.post("/auth/register")
 def register_endpoint(payload: RegisterPayload, request: Request, response: Response) -> dict[str, Any]:
     if _is_production():
-        raise HTTPException(status_code=403, detail="Inscription publique désactivée.")
+        raise HTTPException(status_code=403, detail="Public registration is disabled.")
     data = _payload_dict(payload)
     _check_auth_rate_limit(request, data["email"])
     try:
@@ -638,7 +638,7 @@ def _report_pdf_filename(simulation_run: dict[str, Any]) -> str:
     customer_or_project = project.get("customer_name") or project["name"]
     created_day = _format_filename_date(simulation_run["created_at"])
     parts = [
-        "rapport",
+        "report",
         customer_or_project,
         simulation_run["adaptation_id"],
         simulation_run["season"],
@@ -659,7 +659,7 @@ def _slugify_filename_part(value: Any) -> str:
     normalized = unicodedata.normalize("NFKD", str(value))
     ascii_value = normalized.encode("ascii", "ignore").decode("ascii").lower()
     slug = FILENAME_UNSAFE_RE.sub("-", ascii_value).strip("-")
-    return slug or "rapport"
+    return slug or "report"
 
 
 def _payload_dict(payload: BaseModel) -> dict[str, Any]:

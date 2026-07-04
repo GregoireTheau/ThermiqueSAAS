@@ -57,10 +57,10 @@ def test_legal_page_is_served(tmp_path, monkeypatch):
     response = client.get("/legal")
 
     assert response.status_code == 200
-    assert "Conditions générales d'utilisation" in response.text
-    assert "Politique de confidentialité" in response.text
-    assert "Mentions légales" in response.text
-    assert "estimations et simulations thermiques" in response.text
+    assert "Terms of Use" in response.text
+    assert "Privacy Policy" in response.text
+    assert "Legal Notice" in response.text
+    assert "thermal estimates and simulations" in response.text
 
 
 def test_health_endpoint(tmp_path, monkeypatch):
@@ -107,7 +107,7 @@ def test_profile_experience_api_returns_clear_user_error(tmp_path, monkeypatch):
 
     assert response.status_code == 400
     assert "window_area_m2" in response.json()["detail"]
-    assert "surface de façade" in response.json()["detail"]
+    assert "facade area" in response.json()["detail"]
 
 
 def test_startup_initializes_empty_database(tmp_path, monkeypatch):
@@ -397,7 +397,7 @@ def test_persistent_project_api_runs_and_exposes_report(tmp_path, monkeypatch):
     assert pdf_report_response.content.startswith(b"%PDF")
     assert pdf_report_response.headers["content-type"] == "application/pdf"
     assert "attachment" in pdf_report_response.headers["content-disposition"]
-    assert "rapport-mme-dupont-better-windows-annual-annual-" in (
+    assert "report-mme-dupont-better-windows-annual-annual-" in (
         pdf_report_response.headers["content-disposition"]
     )
     assert "content-disposition" in (
@@ -528,7 +528,7 @@ def test_public_register_is_disabled_in_production(tmp_path, monkeypatch):
     )
 
     assert response.status_code == 403
-    assert response.json()["detail"] == "Inscription publique désactivée."
+    assert response.json()["detail"] == "Public registration is disabled."
 
 
 def test_large_payload_is_rejected(tmp_path, monkeypatch):

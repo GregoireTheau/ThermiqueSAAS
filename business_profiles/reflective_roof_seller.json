@@ -1,7 +1,7 @@
 {
   "id": "reflective_roof_seller",
-  "label": "Vendeur peinture réflective toiture",
-  "description": "Parcours spécialisé pour qualifier une toiture exposée et simuler l'ajout d'un revêtement réfléchissant contre la chaleur.",
+  "label": "Reflective roof coating seller",
+  "description": "Specialized flow to qualify an exposed roof and simulate adding a reflective coating against heat.",
   "allowed_adaptations": ["reflective_roof"],
   "default_adaptation": "reflective_roof",
   "include_annual_experiment": true,
@@ -10,139 +10,139 @@
     "sections": [
       {
         "id": "project",
-        "label": "Projet",
+        "label": "Project",
         "questions": [
-          {"id": "project_name", "type": "text", "label": "Nom du projet", "required": true},
-          {"id": "city", "type": "text", "label": "Ville", "required": true},
-          {"id": "postal_code", "type": "text", "label": "Code postal", "required": true}
+          {"id": "project_name", "type": "text", "label": "Project name", "required": true},
+          {"id": "city", "type": "text", "label": "City", "required": true},
+          {"id": "postal_code", "type": "text", "label": "Postal code", "required": true}
         ]
       },
       {
         "id": "dwelling",
-        "label": "Logement",
+        "label": "Home",
         "questions": [
           {
             "id": "dwelling_type",
             "type": "select",
-            "label": "Type de logement",
+            "label": "Home type",
             "required": true,
             "options": [
-              {"id": "house", "label": "Maison"},
-              {"id": "apartment", "label": "Appartement"}
+              {"id": "house", "label": "House"},
+              {"id": "apartment", "label": "Apartment"}
             ]
           },
           {
             "id": "position_id",
             "type": "select",
-            "label": "Position du logement",
+            "label": "Home position",
             "required": true,
             "options": [
-              {"id": "single_storey_house", "label": "Maison de plain-pied"},
-              {"id": "multi_storey_house", "label": "Maison avec étage"},
-              {"id": "apartment_top_floor", "label": "Appartement au dernier étage"},
-              {"id": "apartment_ground_top_floor", "label": "Appartement en rez-de-chaussée directement sous toiture"}
+              {"id": "single_storey_house", "label": "Single-storey house"},
+              {"id": "multi_storey_house", "label": "Multi-storey house"},
+              {"id": "apartment_top_floor", "label": "Top-floor apartment"},
+              {"id": "apartment_ground_top_floor", "label": "Ground-floor apartment directly under the roof"}
             ]
           },
           {
             "id": "period_id",
             "type": "select",
-            "label": "Période de construction ou rénovation",
+            "label": "Construction or renovation period",
             "required": true,
             "options_ref": "envelope_defaults"
           },
           {
             "id": "has_cooling",
             "type": "boolean",
-            "label": "Le logement a-t-il déjà une climatisation active ?",
+            "label": "Does the home already have active cooling?",
             "required": false,
             "default": false
           },
           {
             "id": "cooling_setpoint_day_c",
             "type": "number",
-            "label": "Consigne de climatisation en journée (°C)",
+            "label": "Daytime cooling setpoint (°C)",
             "required": false,
             "default": 26.0
           },
           {
             "id": "cooling_setpoint_night_c",
             "type": "number",
-            "label": "Consigne de climatisation la nuit (°C)",
+            "label": "Night cooling setpoint (°C)",
             "required": false,
             "default": 26.0
           },
           {
             "id": "airtightness_id",
             "type": "select",
-            "label": "Étanchéité globale du logement",
+            "label": "Overall airtightness",
             "required": true,
             "options": [
-              {"id": "leaky", "label": "Courants d'air sensibles"},
-              {"id": "standard", "label": "Je ne sais pas / rien de particulier"},
-              {"id": "good", "label": "Logement plutôt étanche"}
+              {"id": "leaky", "label": "Noticeable drafts"},
+              {"id": "standard", "label": "I don't know / nothing specific"},
+              {"id": "good", "label": "Fairly airtight home"}
             ]
           },
           {
             "id": "ventilation_id",
             "type": "select",
-            "label": "Ventilation principale",
+            "label": "Main ventilation",
             "required": true,
             "options": [
-              {"id": "natural_leaky_old", "label": "Ventilation naturelle logement ancien"},
-              {"id": "natural_average", "label": "Ventilation naturelle moyenne"},
-              {"id": "simple_flow", "label": "VMC simple flux"},
-              {"id": "double_flow_standard", "label": "VMC double flux"},
-              {"id": "airtight_recent", "label": "Logement récent étanche"}
+              {"id": "natural_leaky_old", "label": "Natural ventilation in an older home"},
+              {"id": "natural_average", "label": "Average natural ventilation"},
+              {"id": "simple_flow", "label": "Single-flow mechanical ventilation"},
+              {"id": "double_flow_standard", "label": "Dual-flow mechanical ventilation"},
+              {"id": "airtight_recent", "label": "Recent airtight home"}
             ]
           }
         ]
       },
       {
         "id": "roof",
-        "label": "Toiture",
+        "label": "Roof",
         "questions": [
           {
             "id": "roof_insulation_id",
             "type": "select",
-            "label": "Niveau d'isolation toiture actuel",
+            "label": "Current roof insulation level",
             "required": true,
             "options": [
-              {"id": "poor", "label": "Toiture ou combles peu isolés"},
-              {"id": "standard", "label": "Isolation toiture standard"},
-              {"id": "renovated", "label": "Toiture bien isolée ou rénovée"},
-              {"id": "unknown", "label": "Je ne sais pas"}
+              {"id": "poor", "label": "Roof or attic with weak insulation"},
+              {"id": "standard", "label": "Standard roof insulation"},
+              {"id": "renovated", "label": "Well-insulated or renovated roof"},
+              {"id": "unknown", "label": "I don't know"}
             ]
           },
           {
             "id": "roof_color_id",
             "type": "select",
-            "label": "Couleur dominante actuelle de la toiture",
+            "label": "Current dominant roof color",
             "required": true,
             "options": [
-              {"id": "dark", "label": "Foncée"},
-              {"id": "medium", "label": "Moyenne"},
-              {"id": "light", "label": "Claire"},
-              {"id": "unknown", "label": "Je ne sais pas"}
+              {"id": "dark", "label": "Dark"},
+              {"id": "medium", "label": "Medium"},
+              {"id": "light", "label": "Light"},
+              {"id": "unknown", "label": "I don't know"}
             ]
           },
           {
             "id": "attic_ventilation_id",
             "type": "select",
-            "label": "Configuration de toiture au-dessus du logement",
+            "label": "Roof configuration above the home",
             "required": true,
             "options": [
-              {"id": "attic", "label": "Combles au-dessus du logement"},
-              {"id": "sloped_ceiling", "label": "Toits rampants au-dessus du logement"},
-              {"id": "flat_roof", "label": "Toit terrasse au-dessus du logement"}
+              {"id": "attic", "label": "Attic above the home"},
+              {"id": "sloped_ceiling", "label": "Sloped roof above the home"},
+              {"id": "flat_roof", "label": "Flat roof above the home"}
             ]
           }
         ]
       },
       {
         "id": "rooms",
-        "label": "Pièces sous toiture",
+        "label": "Rooms under the roof",
         "questions": [
-          {"id": "rooms", "type": "room_list", "label": "Pièces à modéliser, avec contact toiture", "required": true}
+          {"id": "rooms", "type": "room_list", "label": "Rooms to model, with roof contact", "required": true}
         ]
       }
     ]

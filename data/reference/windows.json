@@ -9,31 +9,31 @@
   "windows": [
     {
       "id": "single_glazing_old",
-      "name": "Simple vitrage ancien",
+      "name": "Old single glazing",
       "u_value_w_m2k": 5.0,
       "g_value": 0.85
     },
     {
       "id": "double_glazing_old",
-      "name": "Double vitrage ancien",
+      "name": "Old double glazing",
       "u_value_w_m2k": 2.8,
       "g_value": 0.7
     },
     {
       "id": "double_glazing_standard",
-      "name": "Double vitrage standard",
+      "name": "Standard double glazing",
       "u_value_w_m2k": 1.6,
       "g_value": 0.55
     },
     {
       "id": "double_glazing_low_e",
-      "name": "Double vitrage faible emissivite",
+      "name": "Low-emissivity double glazing",
       "u_value_w_m2k": 1.2,
       "g_value": 0.5
     },
     {
       "id": "triple_glazing",
-      "name": "Triple vitrage",
+      "name": "Triple glazing",
       "u_value_w_m2k": 0.8,
       "g_value": 0.45
     }
@@ -41,7 +41,7 @@
   "shutters": [
     {
       "id": "none",
-      "name": "Aucune protection",
+      "name": "No protection",
       "type": "other",
       "solar_factor_closed": 1.0,
       "solar_factor_open": 1.0,
@@ -49,7 +49,7 @@
     },
         {
             "id": "roller_shutter_standard",
-            "name": "Volet roulant standard",
+            "name": "Standard roller shutter",
             "type": "roller_shutter",
             "solar_factor_closed": 0.15,
             "solar_factor_open": 1.0,
@@ -57,7 +57,7 @@
         },
         {
             "id": "roller_shutter_insulating",
-            "name": "Volet roulant isolant",
+            "name": "Insulating roller shutter",
             "type": "roller_shutter",
             "solar_factor_closed": 0.1,
             "solar_factor_open": 1.0,
@@ -65,7 +65,7 @@
         },
         {
             "id": "external_blind",
-            "name": "Store exterieur",
+            "name": "External blind",
             "type": "external_blind",
             "solar_factor_closed": 0.25,
             "solar_factor_open": 1.0,
@@ -73,7 +73,7 @@
         },
         {
             "id": "fixed_south_overhang",
-            "name": "Casquette solaire sud",
+            "name": "South-facing fixed overhang",
             "type": "other",
             "solar_factor_closed": 0.35,
             "solar_factor_open": 0.55,
@@ -84,7 +84,7 @@
         },
         {
             "id": "interior_blind",
-      "name": "Store interieur",
+      "name": "Interior blind",
       "type": "blind",
       "solar_factor_closed": 0.55,
       "solar_factor_open": 1.0,

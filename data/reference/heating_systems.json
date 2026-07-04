@@ -9,7 +9,7 @@
   "systems": [
         {
             "id": "electric_radiator",
-            "name": "Convecteur ou radiateur electrique",
+            "name": "Electric convector or radiator",
             "type": "electric_radiator",
             "energy_vector": "electricity",
             "performance_ref": {
@@ -19,7 +19,7 @@
         },
         {
             "id": "air_air_heat_pump_standard",
-            "name": "PAC air-air standard",
+            "name": "Standard air-to-air heat pump",
             "type": "heat_pump",
             "energy_vector": "electricity",
             "performance_ref": {
@@ -43,7 +43,7 @@
         },
         {
             "id": "air_water_heat_pump_standard",
-            "name": "PAC air-eau standard",
+            "name": "Standard air-to-water heat pump",
             "type": "heat_pump",
             "energy_vector": "electricity",
             "performance_ref": {
@@ -67,7 +67,7 @@
         },
         {
             "id": "gas_boiler_standard",
-            "name": "Chaudiere gaz standard",
+            "name": "Standard gas boiler",
             "type": "boiler",
             "energy_vector": "gas",
             "performance_ref": {
@@ -77,7 +77,7 @@
     },
     {
             "id": "gas_boiler_condensing",
-            "name": "Chaudiere gaz condensation",
+            "name": "Condensing gas boiler",
             "type": "boiler",
             "energy_vector": "gas",
             "performance_ref": {
@@ -87,7 +87,7 @@
     },
     {
             "id": "fuel_oil_boiler_standard",
-            "name": "Chaudiere fioul standard",
+            "name": "Standard oil boiler",
             "type": "boiler",
             "energy_vector": "fuel_oil",
             "performance_ref": {
@@ -97,7 +97,7 @@
     },
     {
             "id": "wood_stove_standard",
-            "name": "Chauffage bois standard",
+            "name": "Standard wood heating",
             "type": "boiler",
             "energy_vector": "wood",
             "performance_ref": {

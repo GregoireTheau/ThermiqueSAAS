@@ -336,31 +336,31 @@ def _comfort_gain_label(room_delta: dict[str, Any]) -> str:
     if room_delta["delta_hot_degree_hours"] > 0:
         return (
             f"{room_delta['room_name']}: "
-            f"{room_delta['delta_hot_degree_hours']:.0f} degres-heures chauds evites"
+            f"{room_delta['delta_hot_degree_hours']:.0f} warm degree-hours avoided"
         )
     if room_delta["delta_cold_degree_hours"] > 0:
         return (
             f"{room_delta['room_name']}: "
-            f"{room_delta['delta_cold_degree_hours']:.0f} degres-heures froids evites"
+            f"{room_delta['delta_cold_degree_hours']:.0f} cold degree-hours avoided"
         )
     if room_delta["delta_max_temperature_c"] > 0:
         return (
             f"{room_delta['room_name']}: "
-            f"{room_delta['delta_max_temperature_c']:.1f} C de temperature max en moins"
+            f"{room_delta['delta_max_temperature_c']:.1f} C lower max temperature"
         )
-    return "Confort maintenu"
+    return "Comfort maintained"
 
 
 def _energy_savings_label(deltas: dict[str, Any]) -> str:
     if deltas["final_energy_kwh"] > 0:
         return (
-            f"{deltas['final_energy_kwh']:.2f} kWh finaux, "
-            f"{deltas['energy_cost_eur']:.2f} EUR et "
-            f"{deltas['energy_co2_kg']:.2f} kg CO2 economises"
+            f"{deltas['final_energy_kwh']:.2f} final kWh, "
+            f"{deltas['energy_cost_eur']:.2f} EUR and "
+            f"{deltas['energy_co2_kg']:.2f} kg CO2 saved"
         )
     if deltas["final_energy_kwh"] < 0:
-        return f"{abs(deltas['final_energy_kwh']):.2f} kWh finaux supplementaires"
-    return "Consommation d'energie finale inchangee"
+        return f"{abs(deltas['final_energy_kwh']):.2f} additional final kWh"
+    return "Final energy consumption unchanged"
 
 
 def _main_gain_driver(deltas: dict[str, Any]) -> dict[str, Any]:
@@ -380,39 +380,39 @@ def _main_gain_driver(deltas: dict[str, Any]) -> dict[str, Any]:
     candidates = [
         (
             "system_efficiency",
-            "meilleure efficacite des equipements",
+            "better equipment efficiency",
             max(deltas["heating_final_kwh"], deltas["cooling_electric_kwh"]),
-            "kWh finaux",
+            "final kWh",
         ),
         (
             "solar_gains",
-            "apports solaires reduits",
+            "reduced solar gains",
             room_totals["solar_gain_kwh"],
-            "kWh solaires",
+            "solar kWh",
         ),
         (
             "transmission",
-            "echanges par transmission reduits",
+            "reduced transmission exchanges",
             abs(room_totals["transmission_exchange_kwh"]),
             "kWh",
         ),
         (
             "ventilation",
-            "echanges par ventilation reduits",
+            "reduced ventilation exchanges",
             abs(room_totals["ventilation_exchange_kwh"]),
             "kWh",
         ),
         (
             "heating_need",
-            "besoin de chauffage reduit",
+            "reduced heating need",
             room_totals["heating_thermal_kwh"],
-            "kWh thermiques",
+            "thermal kWh",
         ),
         (
             "cooling_need",
-            "besoin de climatisation reduit",
+            "reduced cooling need",
             room_totals["cooling_thermal_kwh"],
-            "kWh thermiques",
+            "thermal kWh",
         ),
     ]
     key, label, value, unit = max(candidates, key=lambda candidate: candidate[2])

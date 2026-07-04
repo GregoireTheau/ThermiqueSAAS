@@ -9,49 +9,49 @@
   "ventilation_types": [
     {
       "id": "natural_leaky_old",
-      "name": "Ventilation naturelle logement ancien peu etanche",
+      "name": "Natural ventilation in a leaky older home",
       "default_ach_h": 0.9,
       "recovery_efficiency": 0.0
     },
     {
       "id": "natural_average",
-      "name": "Ventilation naturelle moyenne",
+      "name": "Average natural ventilation",
       "default_ach_h": 0.6,
       "recovery_efficiency": 0.0
     },
         {
             "id": "simple_flow",
-            "name": "VMC simple flux",
+            "name": "Single-flow mechanical ventilation",
             "default_ach_h": 0.5,
             "recovery_efficiency": 0.0
         },
         {
             "id": "simple_flow_hygro_a",
-            "name": "VMC simple flux hygro A",
+            "name": "Single-flow humidity-controlled ventilation A",
             "default_ach_h": 0.42,
             "recovery_efficiency": 0.0
         },
         {
             "id": "simple_flow_hygro_b",
-            "name": "VMC simple flux hygro B",
+            "name": "Single-flow humidity-controlled ventilation B",
             "default_ach_h": 0.35,
             "recovery_efficiency": 0.0
         },
         {
             "id": "double_flow_standard",
-            "name": "VMC double flux standard",
+            "name": "Standard dual-flow mechanical ventilation",
             "default_ach_h": 0.45,
             "recovery_efficiency": 0.75
         },
         {
             "id": "double_flow_high_efficiency",
-            "name": "VMC double flux performante",
+            "name": "High-performance dual-flow mechanical ventilation",
             "default_ach_h": 0.4,
             "recovery_efficiency": 0.85
         },
     {
       "id": "airtight_recent",
-      "name": "Logement recent etanche avec ventilation controlee",
+      "name": "Recent airtight home with controlled ventilation",
       "default_ach_h": 0.35,
       "recovery_efficiency": 0.0
     }

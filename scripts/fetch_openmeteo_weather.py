@@ -85,7 +85,7 @@ def main() -> None:
     for city in selected_cities(args):
         yearly_dataframes = []
         for year in years:
-            print(f"Recuperation Open-Meteo: {city} {year}")
+            print(f"Fetching Open-Meteo: {city} {year}")
             dataframe = fetch_open_meteo_year(
                 city,
                 year,
@@ -95,7 +95,7 @@ def main() -> None:
             yearly_dataframes.append(dataframe)
             raw_path = raw_dir / f"{city_slug(city)}_{year}.parquet"
             write_parquet(dataframe, raw_path)
-            print(f"  parquet brut: {raw_path}")
+            print(f"  raw parquet: {raw_path}")
 
         annual_dataframe = combine_weather_years(yearly_dataframes, args.mode)
         label = str(years[-1]) if args.mode == "latest" else f"{years[0]}_{years[-1]}_mean"
@@ -103,7 +103,7 @@ def main() -> None:
         weather = build_thermal_weather(annual_dataframe, source=source)
         weather_path = thermal_dir / f"{city_slug(city)}_{label}.weather.json"
         write_thermal_weather_json(weather, weather_path)
-        print(f"  meteo ThermalTwin: {weather_path}")
+        print(f"  ThermalTwin weather: {weather_path}")
 
 
 if __name__ == "__main__":

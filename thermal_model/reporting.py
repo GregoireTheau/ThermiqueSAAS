@@ -192,8 +192,8 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
             ),
         },
         "sign_convention": (
-            "Delta = avant - après ; une valeur positive signifie une réduction "
-            "après intervention."
+            "Delta = before - after; a positive value means a reduction "
+            "after the intervention."
         ),
         "headline": {
             "electricity": _metric(
@@ -254,16 +254,16 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
             "value": round(driver["value"], 2),
             "unit": driver["unit"],
             "definition": (
-                "Indicateur heuristique: poste du bilan simule qui contribue le "
-                "plus au gain calcule, sans constituer une preuve causale mesuree."
+                "Heuristic indicator: simulated balance item contributing the most "
+                "to the calculated gain, without being measured causal proof."
             ),
         },
         "comfort": {
             "most_impacted_room_id": most_impacted_room["room_id"],
             "most_impacted_room_name": most_impacted_room["room_name"],
             "definition": (
-                "Les heures d'inconfort cumulées additionnent les heures passées "
-                "au-delà du seuil de confort, pondérées par l'écart de température."
+                "Cumulative discomfort hours add up the hours spent beyond the comfort "
+                "threshold, weighted by the temperature gap."
             ),
         },
         "temperature_profiles": _build_temperature_profiles(
@@ -275,10 +275,10 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
         "energy_breakdown": energy_breakdown,
         "rooms": rooms,
         "methodology": {
-            "model": "Simulation thermique horaire 1R1C piece par piece",
+            "model": "Hourly 1R1C thermal simulation, room by room",
             "reported_values": (
-                "Calculees depuis les simulations avant/apres; aucune performance "
-                "mesuree n'est inferee."
+                "Calculated from before/after simulations; no measured performance "
+                "is inferred."
             ),
         },
     }
@@ -328,11 +328,11 @@ def render_report_html(
     custom_color_css = _render_branding_css(branding)
 
     return f"""<!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Rapport thermique - {escape(source["dwelling_id"])}</title>
+  <title>Thermal report - {escape(source["dwelling_id"])}</title>
   <style>
     :root {{
       color-scheme: light;
@@ -718,12 +718,12 @@ def render_report_html(
     {alert_html}
 
     <section>
-      <h2>Synthèse exécutive</h2>
+      <h2>Executive Summary</h2>
       {executive_html}
     </section>
 
     <section>
-      <h2>Contexte</h2>
+      <h2>Context</h2>
       <div class="context-grid">
         <div class="context-text">
           <p>{_format_prose_html(narrative["context"])}</p>
@@ -739,24 +739,24 @@ def render_report_html(
     </section>
 
     <section>
-      <h2>Graphiques de température</h2>
+      <h2>Temperature Charts</h2>
       {charts_intro_html}
       {charts_html}
     </section>
 
     <section>
-      <h2>Résultats principaux</h2>
+      <h2>Main Results</h2>
       {results_sections_html}
       {contextual_notes_html}
     </section>
 
     <section>
-      <h2>Lecture des résultats</h2>
+      <h2>Reading the Results</h2>
       <p>{_format_prose_html(narrative["conclusion"])}</p>
     </section>
 
     <section>
-      <h2>Détail par pièce</h2>
+      <h2>Room Details</h2>
       {rooms_html}
     </section>
 
@@ -807,17 +807,17 @@ def _render_report_header(
         <div class="logo">THERMAL</div>
         <h1>{escape(experiment["title"])}</h1>
         <div class="ref-box">
-          <div><strong>Référence</strong></div>
+          <div><strong>Reference</strong></div>
           <div>{escape(source["dwelling_id"])}</div>
           <div>{escape(generated_date)}</div>
         </div>
       </div>
       <div class="header-meta">
-        <div><div class="label">Logement</div>{escape(source["dwelling_id"])}</div>
-        <div><div class="label">Scénario</div>{escape(_format_scenario_summary(experiment))}</div>
-        <div><div class="label">Durée</div>{_format_duration(experiment)}</div>
+        <div><div class="label">Home</div>{escape(source["dwelling_id"])}</div>
+        <div><div class="label">Scenario</div>{escape(_format_scenario_summary(experiment))}</div>
+        <div><div class="label">Duration</div>{_format_duration(experiment)}</div>
       </div>
-      <div class="print-action"><button type="button" onclick="printReport()">Imprimer / PDF</button></div>
+      <div class="print-action"><button type="button" onclick="printReport()">Print / PDF</button></div>
     </header>
 """
 
@@ -851,28 +851,28 @@ def _render_report_header(
         </div>
         <div class="header-center">
           <div class="header-divider"></div>
-          <h1>Étude thermique — {escape(project_name)}</h1>
-          <p>Scénario : {escape(scenario_label)}</p>
+          <h1>Thermal Study — {escape(project_name)}</h1>
+          <p>Scenario: {escape(scenario_label)}</p>
         </div>
         <div class="ref-box">
           <div>{escape(location_text)}</div>
           <div>{escape(generated_date)}</div>
-          <div><strong>Référence</strong> {escape(source["dwelling_id"])}</div>
+          <div><strong>Reference</strong> {escape(source["dwelling_id"])}</div>
         </div>
       </div>
       <div class="header-meta">
-        <div><div class="label">Logement</div>{escape(source["dwelling_id"])}</div>
-        <div><div class="label">Rapport préparé par</div>{escape(organization_name)}</div>
-        <div><div class="label">Durée</div>{_format_duration(experiment)}</div>
+        <div><div class="label">Home</div>{escape(source["dwelling_id"])}</div>
+        <div><div class="label">Report prepared by</div>{escape(organization_name)}</div>
+        <div><div class="label">Duration</div>{_format_duration(experiment)}</div>
       </div>
-      <div class="print-action"><button type="button" onclick="printReport()">Imprimer / PDF</button></div>
+      <div class="print-action"><button type="button" onclick="printReport()">Print / PDF</button></div>
     </header>
 """
 
 
 def _render_report_footer(branding: dict[str, Any] | None) -> str:
     if not branding:
-        return '<footer class="footer">Rapport généré automatiquement · ThermalTwin</footer>'
+        return '<footer class="footer">Report generated automatically · ThermalTwin</footer>'
     parts = [
         branding.get("organization_name"),
         branding.get("phone"),
@@ -970,13 +970,13 @@ def _build_temperature_profiles(
             "primary": threshold_key,
         },
         "comfort_rule": (
-            f"Les zones colorées indiquent les heures au-dessus de "
-            f"{hot_threshold_c:.1f} °C, seuil retenu pour compter les heures d'inconfort "
-            "chauds."
+            f"Colored zones indicate hours above "
+            f"{hot_threshold_c:.1f} °C, the threshold used to count hot discomfort "
+            "hours."
             if threshold_key == "hot"
             else (
-                f"Les zones colorées indiquent les heures sous {cold_threshold_c:.1f} °C, "
-                "seuil retenu pour compter les heures d'inconfort froids."
+                f"Colored zones indicate hours below {cold_threshold_c:.1f} °C, "
+                "the threshold used to count cold discomfort hours."
             )
         ),
         "rooms": [
@@ -1250,24 +1250,24 @@ def _format_day_month(hour: float) -> str:
     day_of_year = int(hour // 24)
     month_days = [
         ("jan", 31),
-        ("fév", 28),
+        ("feb", 28),
         ("mar", 31),
-        ("avr", 30),
-        ("mai", 31),
+        ("apr", 30),
+        ("may", 31),
         ("jun", 30),
         ("jul", 31),
-        ("aoû", 31),
+        ("aug", 31),
         ("sep", 30),
         ("oct", 31),
         ("nov", 30),
-        ("déc", 31),
+        ("dec", 31),
     ]
     day = day_of_year
     for month, days in month_days:
         if day < days:
             return f"{day + 1} {month}"
         day -= days
-    return "31 déc"
+    return "31 dec"
 
 
 def _average(values: Any) -> float:
@@ -1283,20 +1283,20 @@ def _temperature_x_axis(points: list[dict[str, Any]], season: str) -> dict[str, 
             "max_hour": 8760,
             "labels": [
                 ("Jan", 0),
-                ("Fév", 744),
+                ("Feb", 744),
                 ("Mar", 1416),
-                ("Avr", 2160),
-                ("Mai", 2880),
-                ("Juin", 3624),
-                ("Juil", 4344),
-                ("Aoû", 5088),
+                ("Apr", 2160),
+                ("May", 2880),
+                ("Jun", 3624),
+                ("Jul", 4344),
+                ("Aug", 5088),
                 ("Sep", 5832),
                 ("Oct", 6552),
                 ("Nov", 7296),
-                ("Déc", 8016),
+                ("Dec", 8016),
             ],
             "zones": [
-                {"label": "Été", "start_hour": 3624, "end_hour": 5832},
+                {"label": "Summer", "start_hour": 3624, "end_hour": 5832},
             ],
         }
     if not points:
@@ -1338,17 +1338,17 @@ def _season_month_labels(
 def _month_short_label(month: Any) -> str:
     labels = {
         1: "Jan",
-        2: "Fév",
+        2: "Feb",
         3: "Mar",
-        4: "Avr",
-        5: "Mai",
-        6: "Juin",
-        7: "Juil",
-        8: "Aoû",
+        4: "Apr",
+        5: "May",
+        6: "Jun",
+        7: "Jul",
+        8: "Aug",
         9: "Sep",
         10: "Oct",
         11: "Nov",
-        12: "Déc",
+        12: "Dec",
     }
     try:
         return labels[int(month)]
@@ -1497,16 +1497,16 @@ def _presentation_metrics(
 
 def _kpi_label(key: str) -> str:
     labels = {
-        "heating_thermal": "Besoin chauffage réduit",
-        "heating_final": "Énergie finale chauffage",
-        "cooling_thermal": "Besoin rafraîchissement",
-        "cooling_electric": "Climatisation électrique",
-        "final_energy": "Énergie finale économisée",
-        "cost": "Coût économisé",
-        "co2": "CO₂ évité",
-        "hot_discomfort": "Inconfort chaud évité",
-        "cold_discomfort": "Inconfort froid évité",
-        "max_temperature": "Température maximale réduite",
+        "heating_thermal": "Heating demand reduced",
+        "heating_final": "Final heating energy",
+        "cooling_thermal": "Cooling demand",
+        "cooling_electric": "Electric cooling",
+        "final_energy": "Final energy saved",
+        "cost": "Cost saved",
+        "co2": "CO₂ avoided",
+        "hot_discomfort": "Hot discomfort avoided",
+        "cold_discomfort": "Cold discomfort avoided",
+        "max_temperature": "Maximum temperature reduced",
     }
     return labels.get(key, key)
 
@@ -1627,11 +1627,11 @@ def _build_report_title(experiment: dict[str, Any], season: str) -> str:
     if experiment.get("label"):
         return f"Simulation {intervention} - {experiment['label'].lower()}"
     season_labels = {
-        "summer": "confort été",
-        "annual": "année complète",
-        "winter": "chauffage hiver",
+        "summer": "summer comfort",
+        "annual": "full year",
+        "winter": "winter heating",
     }
-    season_label = season_labels.get(season, "chauffage hiver")
+    season_label = season_labels.get(season, "winter heating")
     return f"Simulation {intervention} - {season_label}"
 
 
@@ -1639,36 +1639,36 @@ def _format_intervention_title(intervention: dict[str, Any]) -> str:
     if intervention["surface_overrides"]["count"]:
         fields = set(intervention["surface_overrides"]["changed_fields"])
         if "albedo" in fields:
-            return "toiture réfléchissante"
+            return "reflective roof"
         if "u_value_w_m2k" in fields:
-            return "isolation des parois"
-        return "modification des parois"
+            return "envelope insulation"
+        return "envelope modification"
     if intervention["window_overrides"]["count"]:
-        return "amélioration du vitrage"
+        return "glazing improvement"
     if intervention["shutter_overrides"]["count"]:
-        return "protections solaires"
+        return "solar protection"
     if intervention["system_overrides"]["count"] or intervention["add_systems"]["count"]:
-        return "equipement thermique"
-    return "scenario avant/apres"
+        return "thermal equipment"
+    return "before/after scenario"
 
 
 def _build_context_text(experiment: dict[str, Any], season: str) -> str:
     season_labels = {
-        "summer": "un épisode d'été chaud",
-        "annual": "une année météo complète",
-        "winter": "une séquence d'hiver froid",
+        "summer": "a hot summer episode",
+        "annual": "a full weather year",
+        "winter": "a cold winter sequence",
     }
-    season_label = season_labels.get(season, "une séquence d'hiver froid")
+    season_label = season_labels.get(season, "a cold winter sequence")
     weather = experiment["weather_summary"]
     setpoint_text = _format_setpoint_text(experiment)
     return (
-        f"L'expérience reproduit {season_label} pendant "
-        f"{_format_number(experiment['duration_days'])} jours ({_format_number(experiment['duration_hours'])} h). "
-        f"La météo utilisée fait varier l'extérieur de "
-        f"{_format_temperature(weather['outdoor_temperature_min_c'])} à "
-        f"{_format_temperature(weather['outdoor_temperature_max_c'])}. Le logement est ensuite "
-        f"simulé deux fois, avant puis après intervention, avec les mêmes consignes "
-        f"de confort : {setpoint_text}."
+        f"The experiment reproduces {season_label} for "
+        f"{_format_number(experiment['duration_days'])} days ({_format_number(experiment['duration_hours'])} h). "
+        f"The weather used varies the outdoor temperature from "
+        f"{_format_temperature(weather['outdoor_temperature_min_c'])} to "
+        f"{_format_temperature(weather['outdoor_temperature_max_c'])}. The home is then "
+        f"simulated twice, before and after the intervention, with the same comfort "
+        f"setpoints: {setpoint_text}."
     )
 
 
@@ -1677,12 +1677,12 @@ def _build_purpose_text(experiment: dict[str, Any], season: str) -> str:
         return experiment["reason"]
     if season == "summer":
         return (
-            "Vérifier si la modification réduit les pics de température et le temps "
-            "passe au-dessus du seuil de confort."
+            "Check whether the change reduces temperature peaks and time spent "
+            "above the comfort threshold."
         )
     return (
-        "Vérifier si la modification réduit le besoin de chauffage et le temps "
-        "passe sous la consigne de confort."
+        "Check whether the change reduces heating demand and time spent below "
+        "the comfort setpoint."
     )
 
 
@@ -1695,35 +1695,35 @@ def _build_tested_change_text(experiment: dict[str, Any]) -> str:
 def _format_scenario_summary(experiment: dict[str, Any]) -> str:
     period = _scenario_period_label(experiment)
     intervention = _scenario_intervention_label(experiment)
-    return f"Simulation thermique {period} avant et après {intervention}."
+    return f"Thermal simulation {period} before and after {intervention}."
 
 
 def _scenario_period_label(experiment: dict[str, Any]) -> str:
     weather_variant = experiment.get("weather_variant", "")
     season = experiment.get("season", "")
     if weather_variant == "openmeteo_june_september":
-        return "de juin à septembre"
+        return "from June to September"
     if weather_variant == "summer_long_with_heatwave":
-        return "au cours d'un été entier"
+        return "over a full summer"
     if weather_variant == "summer_heatwave" or season == "summer":
-        return "pendant un épisode de canicule"
+        return "during a heatwave episode"
     if weather_variant == "winter_cold" or season == "winter":
-        return "pendant un épisode hivernal froid"
+        return "during a cold winter episode"
     if weather_variant == "openmeteo_annual" or season == "annual":
-        return "sur une année complète de météo réelle"
-    return "sur la période simulée"
+        return "over a full year of real weather"
+    return "over the simulated period"
 
 
 def _scenario_intervention_label(experiment: dict[str, Any]) -> str:
     adaptation_id = experiment.get("adaptation_id", "")
     labels = {
-        "reflective_roof": "l'ajout d'une peinture réfléchissante sur la toiture",
-        "roof_insulation": "l'amélioration de l'isolation de la toiture",
-        "better_windows": "le remplacement des vitrages",
-        "solar_protection": "l'ajout de protections solaires",
-        "heat_pump": "l'installation d'une pompe à chaleur",
+        "reflective_roof": "adding a reflective roof coating",
+        "roof_insulation": "improving roof insulation",
+        "better_windows": "replacing glazing",
+        "solar_protection": "adding solar protection",
+        "heat_pump": "installing a heat pump",
     }
-    return labels.get(adaptation_id, "la modification testée")
+    return labels.get(adaptation_id, "the tested change")
 
 
 def _build_conclusion_text(
@@ -1744,74 +1744,74 @@ def _build_conclusion_text(
 
     if template == "heat_pump":
         return (
-            "La PAC fournit le même besoin de chaleur "
-            f"({_format_value(energy['heating_thermal']['before'], 'kWh_th')}) avec "
-            "un meilleur rendement, réduisant l'énergie électrique consommée de "
+            "The heat pump provides the same heat demand "
+            f"({_format_value(energy['heating_thermal']['before'], 'kWh_th')}) "
+            "with better efficiency, reducing consumed electricity by "
             f"{_format_pct(energy['final_energy'])}."
         )
     if template == "roof_insulation_winter":
         if season == "annual":
             return (
-                "L'isolation réduit le besoin de chauffage annuel de "
+                "Insulation reduces annual heating demand by "
                 f"{_format_pct(energy['heating_thermal'])}. "
-                "Le confort d'été reste affiché séparément pour éviter de mélanger les effets."
+                "Summer comfort remains shown separately to avoid mixing effects."
             )
         return (
-            "L'isolation réduit le besoin de chauffage de "
+            "Insulation reduces heating demand by "
             f"{_format_pct(energy['heating_thermal'])}. "
-            "L'impact été est à lire séparément."
+            "The summer impact should be read separately."
         )
     if template == "roof_insulation_summer":
         return (
-            "L'isolation seule a un effet limité en été. Combinée à des volets "
-            "et à une ventilation nocturne, l'effet sur la surchauffe devient plus significatif."
+            "Insulation alone has a limited effect in summer. Combined with shutters "
+            "and night ventilation, the effect on overheating becomes more significant."
         )
     if template == "reflective_roof":
         return (
-            "Le revêtement réfléchissant réduit l'inconfort estival de "
-            f"{_format_pct(hot_discomfort)}. L'impact sur la facture annuelle est secondaire."
+            "The reflective coating reduces summer discomfort by "
+            f"{_format_pct(hot_discomfort)}. The impact on the annual bill is secondary."
         )
     if template == "solar_protection":
         return (
-            "Les protections solaires réduisent l'inconfort chaud de "
+            "Solar protection reduces hot discomfort by "
             f"{_format_pct(hot_discomfort)}."
         )
     if template == "windows_winter":
         return (
-            "Le vitrage performant réduit les pertes par transmission de "
-            f"{_format_value(max(0.0, transmission_delta), 'kWh')} sur la période."
+            "High-performance glazing reduces transmission losses by "
+            f"{_format_value(max(0.0, transmission_delta), 'kWh')} over the period."
         )
     if template == "windows_summer":
         return (
-            "Le vitrage performant réduit les apports et les pics de température "
-            f"jusqu'à {_format_delta(max_temperature)} sur cette séquence chaude."
+            "High-performance glazing reduces gains and temperature peaks "
+            f"by up to {_format_delta(max_temperature)} over this hot sequence."
         )
     if template == "windows_annual":
         return (
-            "Le remplacement des fenêtres agit sur les pertes hivernales et sur "
-            "le confort estival. Le bilan annuel combine ces deux effets."
+            "Window replacement acts on winter losses and summer comfort. "
+            "The annual balance combines both effects."
         )
 
     if season == "summer":
         return (
-            f"La pièce la plus sensible est {most_impacted_room['room_name']} pour la température. "
-            f"Le principal facteur explicatif identifié est : {driver['label']}."
+            f"The most temperature-sensitive room is {most_impacted_room['room_name']}. "
+            f"The main explanatory factor identified is: {driver['label']}."
         )
     return (
-        "La modification agit sur le bilan thermique du logement. "
-        f"Le principal facteur explicatif identifié est : {driver['label']}."
+        "The change acts on the home's thermal balance. "
+        f"The main explanatory factor identified is: {driver['label']}."
     )
 
 
 def _format_experiment_role(experiment: dict[str, Any]) -> str:
     role_labels = {
-        "primary": "Expérience principale",
-        "secondary": "Expérience secondaire",
-        "annual": "Expérience annuelle",
+        "primary": "Main experiment",
+        "secondary": "Secondary experiment",
+        "annual": "Annual experiment",
     }
-    role_label = role_labels.get(experiment.get("role"), "Expérience")
+    role_label = role_labels.get(experiment.get("role"), "Experiment")
     label = experiment.get("label") or "simulation"
-    reason = experiment.get("reason") or "Aucune justification spécifique renseignée."
+    reason = experiment.get("reason") or "No specific reason provided."
     return f"{role_label}: {label}. {reason}"
 
 
@@ -1828,10 +1828,10 @@ def _render_headline_metric(label: str, metric: dict[str, Any]) -> str:
 
 def get_comfort_mode(experiment_data: dict) -> str:
     """
-    Détermine le mode de confort dominant de l'expérience.
-    "hot"   → épisode chaud, seuil inconfort = 26°C
-    "cold"  → épisode froid, seuil inconfort = 18°C
-    "mixed" → hybride (ex: fenêtres avec expériences été + hiver)
+    Determine the dominant comfort mode for the experiment.
+    "hot"   -> hot episode, discomfort threshold = 26°C
+    "cold"  -> cold episode, discomfort threshold = 18°C
+    "mixed" -> hybrid, for example windows with summer and winter experiments
     """
     total_hot = experiment_data.get("total_hot_discomfort_before", 0)
     total_cold = experiment_data.get("total_cold_discomfort_before", 0)
@@ -1850,25 +1850,25 @@ def get_comfort_mode(experiment_data: dict) -> str:
 
 def get_room_status(room_data: dict, comfort_mode: str) -> tuple[str, str]:
     """
-    Retourne (label, css_class).
-    Conserve la logique hot existante, ajoute cold.
+    Return (label, css_class).
+    Keep the existing hot logic and add cold.
     """
     if comfort_mode == "hot":
         temp_max = room_data.get("temp_max_before", 0)
         dh_reduction_pct = room_data.get("hot_dh_reduction_pct", 0)
         if temp_max > 35:
-            return ("Critique", "status-critical")
+            return ("Critical", "status-critical")
         if dh_reduction_pct > 30:
-            return ("Amélioré", "status-improved")
+            return ("Improved", "status-improved")
         return ("Stable", "status-stable")
 
     if comfort_mode in ("cold", "mixed"):
         temp_min = room_data.get("temp_min_before", 99)
         dh_reduction_pct = room_data.get("cold_dh_reduction_pct", 0)
         if temp_min < 16:
-            return ("Critique", "status-critical")
+            return ("Critical", "status-critical")
         if dh_reduction_pct > 30:
-            return ("Amélioré", "status-improved")
+            return ("Improved", "status-improved")
         return ("Stable", "status-stable")
 
     return ("Stable", "status-stable")
@@ -1877,7 +1877,7 @@ def get_room_status(room_data: dict, comfort_mode: str) -> tuple[str, str]:
 def _render_executive_summary(report: dict[str, Any]) -> str:
     primary_kpis = report["primary_kpis"]
     if not primary_kpis:
-        return '<div class="info-note">Aucun indicateur de synthèse significatif sur cette période.</div>'
+        return '<div class="info-note">No significant summary indicator over this period.</div>'
     return f"""
       <div class="summary-grid">
         {"".join(_render_kpi(kpi["label"], kpi["metric"]) for kpi in primary_kpis)}
@@ -1892,7 +1892,7 @@ def _render_kpi(label: str, metric: dict[str, Any]) -> str:
           <div class="label">{escape(label)}</div>
           <div class="kpi-value {value_class}">{_format_delta(metric)}</div>
           <div class="kpi-sub">{_format_before_after(metric)}</div>
-          <div class="kpi-sub">{_format_pct(metric)} de variation</div>
+          <div class="kpi-sub">{_format_pct(metric)} variation</div>
         </div>
 """
 
@@ -1925,16 +1925,16 @@ def _render_temperature_alert(
 
 def get_alert_banner(rooms: list[dict], comfort_mode: str) -> str | None:
     """
-    Retourne le HTML du bandeau d'alerte, ou None si pas d'alerte.
-    Conserve la logique chaud existante, ajoute la logique froid.
+    Return the alert banner HTML, or None when there is no alert.
+    Keep the existing hot logic and add cold logic.
     """
     hot_critical = [room for room in rooms if room.get("temp_max_before", 0) > 35]
     if hot_critical:
         room = hot_critical[0]
         return f"""
     <section class="alert alert-hot">
-      <strong>Alerte confort thermique.</strong>
-      La pièce <strong>{escape(room['name'])}</strong> dépasse 35 °C dans la simulation, avec un maximum à {_format_temperature(room['temp_max_before'])}.
+      <strong>Thermal comfort alert.</strong>
+      Room <strong>{escape(room['name'])}</strong> exceeds 35 °C in the simulation, with a maximum of {_format_temperature(room['temp_max_before'])}.
     </section>
 """
 
@@ -1943,8 +1943,8 @@ def get_alert_banner(rooms: list[dict], comfort_mode: str) -> str | None:
         room = cold_critical[0]
         return f"""
     <section class="alert alert-cold">
-      <strong>Alerte confort thermique.</strong>
-      La pièce <strong>{escape(room['name'])}</strong> descend sous 16 °C dans la simulation, avec un minimum à {_format_temperature(room['temp_min_before'])}.
+      <strong>Thermal comfort alert.</strong>
+      Room <strong>{escape(room['name'])}</strong> drops below 16 °C in the simulation, with a minimum of {_format_temperature(room['temp_min_before'])}.
     </section>
 """
 
@@ -1958,26 +1958,26 @@ def _render_context_params(
     weather = experiment["weather_summary"]
     thresholds = temperature_profiles["thresholds"]
     rows = [
-        ("Durée", _format_duration(experiment)),
+        ("Duration", _format_duration(experiment)),
         (
-            "Météo",
+            "Weather",
             (
                 f"{_format_temperature(weather['outdoor_temperature_min_c'])} → "
                 f"{_format_temperature(weather['outdoor_temperature_max_c'])}"
             ),
         ),
         (
-            "Consignes",
+            "Setpoints",
             _format_setpoint_text(experiment),
         ),
         (
-            "Seuil inconfort",
+            "Discomfort threshold",
             (
-                f"Chaud {_format_temperature(thresholds['hot_c'])}, "
-                f"froid {_format_temperature(thresholds['cold_c'])}"
+                f"Hot {_format_temperature(thresholds['hot_c'])}, "
+                f"cold {_format_temperature(thresholds['cold_c'])}"
             ),
         ),
-        ("Modification testée", escape(experiment["tested_change_text"])),
+        ("Tested change", escape(experiment["tested_change_text"])),
     ]
     table_rows = "\n".join(
         f"<tr><td>{escape(label)}</td><td>{value}</td></tr>"
@@ -2000,27 +2000,27 @@ def _build_presentation_notes(
     for note_key in config.get("fixed_notes", []):
         if note_key == "roof_summer_limited":
             effect_notes.append({
-                "title": "Effet été de l'isolation seule",
+                "title": "Summer effect of insulation alone",
                 "text": (
-                    "L'isolation seule a un effet limité en été. Combinée à des volets "
-                    "ou à une ventilation nocturne, l'effet sur la surchauffe devient significatif."
+                    "Insulation alone has a limited effect in summer. Combined with shutters "
+                    "or night ventilation, the effect on overheating becomes significant."
                 ),
             })
         elif note_key == "windows_winter_scope":
             context_notes.append(
-                "Ce rapport couvre l'effet hivernal. Voir le rapport été pour "
-                "l'effet sur le confort estival.",
+                "This report covers the winter effect. See the summer report for "
+                "the effect on summer comfort.",
             )
         elif note_key == "windows_summer_scope":
             context_notes.append(
-                "Un vitrage performant réduit les apports solaires directs en été. "
-                "L'effet sur le confort dépend de l'orientation et de la surface vitrée exposée.",
+                "High-performance glazing reduces direct solar gains in summer. "
+                "The effect on comfort depends on orientation and exposed glazed area.",
             )
         elif note_key == "roof_insulation_annual_scope":
             context_notes.append(
-                "Ce rapport annuel estime les besoins avant/après isolation de toiture "
-                "avec la même météo réelle et les mêmes consignes. Il ne remplace pas "
-                "un DPE, un audit énergétique ou une étude réglementaire.",
+                "This annual report estimates demand before/after roof insulation "
+                "with the same real weather and the same setpoints. It does not replace "
+                "an EPC, an energy audit, or a regulatory study.",
             )
 
     for note_key in config.get("conditional_notes", []):
@@ -2030,20 +2030,20 @@ def _build_presentation_notes(
         heating_increase = _format_value(abs(heating_delta), "kWh_final")
         if note_key == "reduced_winter_solar_gains":
             effect_notes.append({
-                "title": "Pourquoi le chauffage augmente-t-il légèrement ?",
+                "title": "Why does heating increase slightly?",
                 "text": (
-                    "Le revêtement réfléchissant limite aussi les apports solaires "
-                    f"gratuits en hiver ({heating_increase} de chauffage en plus). "
-                    "Sur l'année, le bilan confort reste très favorable."
+                    "The reflective coating also limits free solar gains in winter "
+                    f"({heating_increase} of extra heating). "
+                    "Over the year, the comfort balance remains very favorable."
                 ),
             })
         elif note_key == "blocked_winter_solar_gains":
             effect_notes.append({
-                "title": "Pourquoi le chauffage augmente-t-il légèrement ?",
+                "title": "Why does heating increase slightly?",
                 "text": (
-                    "Les volets bloquent aussi des apports solaires gratuits en hiver "
-                    f"({heating_increase} de chauffage en plus). Sur l'année, le gain "
-                    "confort reste l'argument principal."
+                    "Shutters also block free solar gains in winter "
+                    f"({heating_increase} of extra heating). Over the year, the comfort "
+                    "gain remains the main argument."
                 ),
             })
 
@@ -2053,10 +2053,10 @@ def _build_presentation_notes(
         and hot_discomfort["delta"] < 0
     ):
         effect_notes.append({
-            "title": "Impact été",
+            "title": "Summer impact",
             "text": (
-                "L'isolation ralentit aussi l'évacuation de chaleur en été. "
-                "À combiner avec volets ou ventilation nocturne."
+                "Insulation also slows heat release in summer. "
+                "Combine it with shutters or night ventilation."
             ),
         })
 
@@ -2082,8 +2082,8 @@ def _render_short_scenario_note(experiment: dict[str, Any]) -> str:
         return ""
     return """
       <div class="info-note">
-        Les coûts affichés correspondent à la période simulée. Estimation annuelle :
-        voir le rapport annuel pour les montants sur 12 mois.
+        Costs shown correspond to the simulated period. For a 12-month estimate,
+        see the annual report.
       </div>
 """
 
@@ -2111,27 +2111,27 @@ def _render_special_sections(report: dict[str, Any]) -> str:
     hot_discomfort = _aggregate_comfort_metric(report["rooms"], "hot_degree_hours")
     return f"""
       <div class="info-note">
-        <strong>Double effet.</strong>
-        Hiver : {_format_delta(energy["heating_final"])} économisés.
-        Été : {_format_delta(hot_discomfort)} d'inconfort chaud évité.
+        <strong>Double effect.</strong>
+        Winter: {_format_delta(energy["heating_final"])} saved.
+        Summer: {_format_delta(hot_discomfort)} of hot discomfort avoided.
       </div>
 """
 
 
 def _format_setpoint_text(experiment: dict[str, Any]) -> str:
     setpoints = experiment["setpoints"]
-    parts = [f"Chauffage {_format_temperature(setpoints['heating_c'])}"]
+    parts = [f"Heating {_format_temperature(setpoints['heating_c'])}"]
     if experiment.get("has_cooling"):
         day = setpoints.get("cooling_day_c")
         night = setpoints.get("cooling_night_c")
         if day is not None and night is not None:
             parts.append(
-                "rafraîchissement "
-                f"{_format_temperature(day)} en journée, "
-                f"{_format_temperature(night)} la nuit",
+                "cooling "
+                f"{_format_temperature(day)} during the day, "
+                f"{_format_temperature(night)} at night",
             )
         else:
-            parts.append(f"rafraîchissement {_format_temperature(setpoints['cooling_c'])}")
+            parts.append(f"cooling {_format_temperature(setpoints['cooling_c'])}")
     return ", ".join(parts)
 
 
@@ -2159,15 +2159,15 @@ def _render_result_block(title: str, body_html: str, note: str = "") -> str:
 def _render_needs_result_block(report: dict[str, Any]) -> str:
     energy = report["energy_breakdown"]
     return _render_result_block(
-        "Besoins du logement",
+        "Home Demand",
         _render_metric_table([
-            ("Besoin chauffage thermique", energy["heating_thermal"]),
-            ("Climatisation thermique", energy["cooling_thermal"]),
+            ("Thermal heating demand", energy["heating_thermal"]),
+            ("Thermal cooling demand", energy["cooling_thermal"]),
         ]),
         (
-            "Besoin thermique = chaleur à fournir ou à extraire pour tenir la consigne. "
-            "Le besoin thermique dépend de l'enveloppe et de la météo — "
-            "pas du système de chauffage."
+            "Thermal demand = heat to provide or remove to hold the setpoint. "
+            "Thermal demand depends on the envelope and weather, "
+            "not on the heating system."
         ),
     )
 
@@ -2175,40 +2175,40 @@ def _render_needs_result_block(report: dict[str, Any]) -> str:
 def _render_energy_cost_result_block(report: dict[str, Any]) -> str:
     energy = report["energy_breakdown"]
     vector_rows = [
-        (f"Énergie finale {_energy_vector_label(vector)}", metric)
+        (f"Final energy {_energy_vector_label(vector)}", metric)
         for vector, metric in energy["final_energy_by_vector"].items()
     ]
     return _render_result_block(
-        "Énergie et coût",
+        "Energy and Cost",
         _render_metric_table(
             vector_rows
             + [
-                ("Énergie finale totale", energy["final_energy"]),
-                ("Coût estimé", energy["cost"]),
+                ("Total final energy", energy["final_energy"]),
+                ("Estimated cost", energy["cost"]),
                 ("CO₂", energy["co2"]),
             ],
         ),
         (
-            "Énergie finale = énergie facturée après rendement ou COP du système. "
-            "Dans le tableau, la variation est calculée après - avant : une valeur "
-            "positive indique une hausse, une valeur négative une baisse."
+            "Final energy = billed energy after system efficiency or COP. "
+            "In the table, variation is calculated as after - before: a positive value "
+            "means an increase, a negative value means a decrease."
         ),
     )
 
 
 def _render_comfort_result_block(report: dict[str, Any]) -> str:
     return _render_result_block(
-        "Confort thermique",
+        "Thermal Comfort",
         _render_comfort_result_table(report),
     )
 
 
 def _energy_vector_label(vector: str) -> str:
     labels = {
-        "electricity": "électricité",
-        "gas": "gaz",
-        "fuel_oil": "fioul",
-        "wood": "bois",
+        "electricity": "electricity",
+        "gas": "gas",
+        "fuel_oil": "oil",
+        "wood": "wood",
     }
     return labels.get(vector, vector.replace("_", " "))
 
@@ -2240,15 +2240,15 @@ def _render_comfort_result_table(report: dict[str, Any]) -> str:
     )
     return _render_metric_table([
         (
-            "Température maximale",
+            "Maximum temperature",
             _metric(max_before, max_after, max_before - max_after, "C"),
         ),
         (
-            "Heures d'inconfort cumulées (chaud)",
+            "Cumulative discomfort hours (hot)",
             _metric(hot_before, hot_after, hot_before - hot_after, "°C·h"),
         ),
         (
-            "Heures d'inconfort cumulées (froid)",
+            "Cumulative discomfort hours (cold)",
             _metric(cold_before, cold_after, cold_before - cold_after, "°C·h"),
         ),
     ])
@@ -2270,17 +2270,17 @@ def _render_room_html(
         </div>
         <div class="room-tables">
           {_render_metric_table([
-              ("Température maximale", comfort["max_temperature_c"]),
-              ("Température finale", comfort["final_temperature_c"]),
-              ("Heures d'inconfort cumulées (chaud)", comfort["hot_degree_hours"]),
-              ("Heures d'inconfort cumulées (froid)", comfort["cold_degree_hours"]),
+              ("Maximum temperature", comfort["max_temperature_c"]),
+              ("Final temperature", comfort["final_temperature_c"]),
+              ("Cumulative discomfort hours (hot)", comfort["hot_degree_hours"]),
+              ("Cumulative discomfort hours (cold)", comfort["cold_degree_hours"]),
           ])}
           {_render_delta_table([
-              ("Gains solaires", balance["solar_gain"]),
-              ("Pertes par transmission", balance["transmission_exchange"]),
-              ("Pertes par ventilation", balance["ventilation_exchange"]),
-              ("Chauffage thermique", balance["heating_thermal"]),
-              ("Climatisation thermique", balance["cooling_thermal"]),
+              ("Solar gains", balance["solar_gain"]),
+              ("Transmission losses", balance["transmission_exchange"]),
+              ("Ventilation losses", balance["ventilation_exchange"]),
+              ("Thermal heating", balance["heating_thermal"]),
+              ("Thermal cooling", balance["cooling_thermal"]),
           ])}
         </div>
       </div>
@@ -2292,32 +2292,32 @@ def _render_temperature_profile_html(profile: dict[str, Any], comfort_mode: str)
     status_label, status_class = _room_status(profile, comfort_mode)
     if profile.get("aggregation") == "daily_max":
         discomfort_note = (
-            "Courbes principales en température maximale journalière ; traits fins = "
-            "moyenne journalière intérieure ; extérieur = maximum journalier ; "
-            "zone colorée = inconfort présent avant et évité après."
+            "Main curves show daily maximum temperature; thin lines = "
+            "daily indoor average; outdoor = daily maximum; "
+            "colored area = discomfort present before and avoided after."
         )
     elif profile.get("x_axis", {}).get("type") in {"annual", "season_months"}:
         discomfort_note = (
-            "Courbes en moyenne journalière, extérieur inclus ; zone ombrée = "
-            "amplitude min/max simulée sur chaque journée."
+            "Curves show daily average, including outdoor temperature; shaded area = "
+            "simulated min/max range for each day."
         )
     elif comfort_mode == "hot":
         before_value = summary["before_hot_degree_hours"]
         after_value = summary["after_hot_degree_hours"]
         discomfort_note = (
-            "Heures d'inconfort cumulées : "
+            "Cumulative discomfort hours: "
             f"{_format_value(before_value, '°C·h')} → {_format_value(after_value, '°C·h')} "
             f"({_format_signed_pct(_reduction_pct(before_value, after_value))}). "
-            "Zone colorée = inconfort présent avant et évité après."
+            "Colored area = discomfort present before and avoided after."
         )
     else:
         before_value = summary["before_cold_degree_hours"]
         after_value = summary["after_cold_degree_hours"]
         discomfort_note = (
-            "Heures d'inconfort cumulées : "
+            "Cumulative discomfort hours: "
             f"{_format_value(before_value, '°C·h')} → {_format_value(after_value, '°C·h')} "
             f"({_format_signed_pct(_reduction_pct(before_value, after_value))}). "
-            "Zone colorée = inconfort présent avant et évité après."
+            "Colored area = discomfort present before and avoided after."
         )
     return f"""
       <div class="chart-card">
@@ -2339,15 +2339,15 @@ def _render_temperature_charts_intro(profiles: list[dict[str, Any]]) -> str:
     aggregations = {profile.get("aggregation") for profile in profiles}
     if aggregations == {"daily_max"}:
         note = (
-            "Les courbes affichent la température maximale de chaque journée. "
-            "Les moyennes journalières intérieures sont indiquées en traits fins pour contexte."
+            "The curves show the maximum temperature for each day. "
+            "Daily indoor averages are shown as thin lines for context."
         )
     elif aggregations == {"hourly"}:
-        note = "Les courbes affichent la température simulée heure par heure."
+        note = "The curves show the simulated temperature hour by hour."
     elif aggregations == {"daily_average"}:
         note = (
-            "Les courbes affichent la température moyenne de chaque journée. "
-            "La zone ombrée indique l'amplitude min/max simulée."
+            "The curves show the average temperature for each day. "
+            "The shaded area indicates the simulated min/max range."
         )
     else:
         return ""
@@ -2451,7 +2451,7 @@ def _render_temperature_svg(profile: dict[str, Any], comfort_mode: str) -> str:
     critical_markers = _svg_critical_markers(profile, x_at_hour, y_at)
 
     return f"""
-          <svg class="chart" viewBox="0 0 {width} {height}" role="img" aria-label="Courbes de température - {escape(profile["room_name"])}">
+          <svg class="chart" viewBox="0 0 {width} {height}" role="img" aria-label="Temperature curves - {escape(profile["room_name"])}">
             <rect x="0" y="0" width="{width}" height="{height}" fill="#ffffff"></rect>
             {season_zones}
             {discomfort_rects}
@@ -2480,13 +2480,13 @@ def _chart_threshold(profile: dict[str, Any], comfort_mode: str) -> dict[str, An
         value = profile["thresholds"]["cold_c"]
         return {
             "value": value,
-            "label": f"Seuil froid {_format_temperature(value)}",
+            "label": f"Cold threshold {_format_temperature(value)}",
             "color": "#2563eb",
         }
     value = profile["thresholds"]["hot_c"]
     return {
         "value": value,
-        "label": f"Seuil chaud {_format_temperature(value)}",
+        "label": f"Hot threshold {_format_temperature(value)}",
         "color": "#dc2626",
     }
 
@@ -2712,10 +2712,10 @@ def _svg_legend(
     aggregation: str,
 ) -> str:
     zone_fill = "#fee2e2" if primary_discomfort == "hot" else "#dbeafe"
-    outdoor_label = "Ext. max/j" if aggregation == "daily_max" else "Extérieur"
-    before_label = "Avant max/j" if aggregation == "daily_max" else "Avant"
-    after_label = "Après max/j" if aggregation == "daily_max" else "Après"
-    avoided_label = "Inconfort évité"
+    outdoor_label = "Outdoor max/day" if aggregation == "daily_max" else "Outdoor"
+    before_label = "Before max/day" if aggregation == "daily_max" else "Before"
+    after_label = "After max/day" if aggregation == "daily_max" else "After"
+    avoided_label = "Discomfort avoided"
     average_legend = ""
     legend_width = 746
     threshold_x = x + 560
@@ -2724,7 +2724,7 @@ def _svg_legend(
         average_legend = (
             f'<line x1="{x + 528:.1f}" y1="{y:.1f}" x2="{x + 552:.1f}" y2="{y:.1f}" '
             'stroke="#334155" stroke-width="1.1" opacity="0.36"></line>'
-            f'<text x="{x + 558:.1f}" y="{y + 4:.1f}" font-size="11" fill="#475569">Moy. int./j</text>'
+            f'<text x="{x + 558:.1f}" y="{y + 4:.1f}" font-size="11" fill="#475569">Indoor avg/day</text>'
         )
         legend_width = 900
         threshold_x = x + 674
@@ -2762,14 +2762,14 @@ def get_svg_annotation(
     before_label_y = max(18, before_y - 10)
     after_label_y = min(before_label_y + 18, max(18, after_y + 18))
     before_label = (
-        f"Pic avant {_format_temperature(before_value)}"
+        f"Before peak {_format_temperature(before_value)}"
         if comfort_mode == "hot"
-        else f"Min. avant {_format_temperature(before_value)}"
+        else f"Before min. {_format_temperature(before_value)}"
     )
     after_label = (
-        f"Pic après {_format_temperature(after_value)}"
+        f"After peak {_format_temperature(after_value)}"
         if comfort_mode == "hot"
-        else f"Min. après {_format_temperature(after_value)}"
+        else f"After min. {_format_temperature(after_value)}"
     )
     return f"""
             <text x="{before_label_x:.1f}" y="{before_label_y:.1f}" font-size="11" fill="#1d4ed8">{escape(before_label)}</text>
@@ -2801,9 +2801,9 @@ def _render_metric_table(rows: list[tuple[str, dict[str, Any]]]) -> str:
       <table class="data-table">
         <thead>
           <tr>
-            <th>Indicateur</th>
-            <th>Avant</th>
-            <th>Après</th>
+            <th>Indicator</th>
+            <th>Before</th>
+            <th>After</th>
             <th>Variation</th>
           </tr>
         </thead>
@@ -2833,8 +2833,8 @@ def _render_delta_table(rows: list[tuple[str, dict[str, Any]]]) -> str:
       <table class="data-table">
         <thead>
           <tr>
-            <th>Delta technique</th>
-            <th>Valeur</th>
+            <th>Technical delta</th>
+            <th>Value</th>
           </tr>
         </thead>
         <tbody>
@@ -2853,8 +2853,8 @@ def _metric_has_display_value(metric: dict[str, Any]) -> bool:
 
 def _format_before_after(metric: dict[str, Any]) -> str:
     return (
-        f"Avant {_format_value(metric['before'], metric['unit'])} - "
-        f"après {_format_value(metric['after'], metric['unit'])}"
+        f"Before {_format_value(metric['before'], metric['unit'])} - "
+        f"after {_format_value(metric['after'], metric['unit'])}"
     )
 
 
@@ -2998,19 +2998,19 @@ def _render_status_badge(label: str, css_class: str) -> str:
 def _format_intervention(intervention: dict[str, Any]) -> str:
     parts = []
     labels = {
-        "surface_overrides": "parois modifiées",
-        "window_overrides": "fenêtres modifiées",
-        "shutter_overrides": "protections solaires modifiées",
-        "system_overrides": "systèmes modifiés",
-        "add_systems": "systèmes ajoutés",
+        "surface_overrides": "modified surfaces",
+        "window_overrides": "modified windows",
+        "shutter_overrides": "modified solar protection",
+        "system_overrides": "modified systems",
+        "add_systems": "added systems",
     }
     for key, label in labels.items():
         item = intervention[key]
         if item["count"]:
-            fields = ", ".join(item["changed_fields"]) or "paramètres"
+            fields = ", ".join(item["changed_fields"]) or "parameters"
             parts.append(f"{item['count']} {label} ({fields})")
     if not parts:
-        return "aucune modification technique appliquée"
+        return "no technical change applied"
     return "; ".join(parts)
 
 

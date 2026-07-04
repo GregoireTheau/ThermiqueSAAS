@@ -1,7 +1,7 @@
 {
   "id": "heat_pump_seller",
-  "label": "Vendeur de PAC",
-  "description": "Parcours spécialisé pour qualifier un logement et simuler le remplacement du chauffage actuel par une PAC.",
+  "label": "Heat pump seller",
+  "description": "Specialized flow to qualify a home and simulate replacing the current heating system with a heat pump.",
   "allowed_adaptations": ["heat_pump"],
   "default_adaptation": "heat_pump",
   "include_annual_experiment": true,
@@ -10,86 +10,86 @@
     "sections": [
       {
         "id": "project",
-        "label": "Projet",
+        "label": "Project",
         "questions": [
-          {"id": "project_name", "type": "text", "label": "Nom du projet", "required": true},
-          {"id": "city", "type": "text", "label": "Ville", "required": true},
-          {"id": "postal_code", "type": "text", "label": "Code postal", "required": true}
+          {"id": "project_name", "type": "text", "label": "Project name", "required": true},
+          {"id": "city", "type": "text", "label": "City", "required": true},
+          {"id": "postal_code", "type": "text", "label": "Postal code", "required": true}
         ]
       },
       {
         "id": "dwelling",
-        "label": "Logement",
+        "label": "Home",
         "questions": [
           {
             "id": "dwelling_type",
             "type": "select",
-            "label": "Type de logement",
+            "label": "Home type",
             "required": true,
             "options": [
-              {"id": "house", "label": "Maison"},
-              {"id": "apartment", "label": "Appartement"}
+              {"id": "house", "label": "House"},
+              {"id": "apartment", "label": "Apartment"}
             ]
           },
           {
             "id": "position_id",
             "type": "select",
-            "label": "Position du logement",
+            "label": "Home position",
             "required": true,
             "options": [
-              {"id": "single_storey_house", "label": "Maison de plain-pied"},
-              {"id": "multi_storey_house", "label": "Maison avec étage"},
-              {"id": "apartment_ground_floor", "label": "Appartement en rez-de-chaussée"},
-              {"id": "apartment_middle_floor", "label": "Appartement en étage intermédiaire"},
-              {"id": "apartment_top_floor", "label": "Appartement au dernier étage"}
+              {"id": "single_storey_house", "label": "Single-storey house"},
+              {"id": "multi_storey_house", "label": "Multi-storey house"},
+              {"id": "apartment_ground_floor", "label": "Ground-floor apartment"},
+              {"id": "apartment_middle_floor", "label": "Middle-floor apartment"},
+              {"id": "apartment_top_floor", "label": "Top-floor apartment"}
             ]
           },
           {
             "id": "period_id",
             "type": "select",
-            "label": "Période de construction ou rénovation",
+            "label": "Construction or renovation period",
             "required": true,
             "options_ref": "envelope_defaults"
           },
           {
             "id": "wall_insulation_id",
             "type": "select",
-            "label": "Isolation des murs donnant dehors",
+            "label": "Insulation of exterior walls",
             "required": true,
             "options": [
-              {"id": "poor", "label": "Non, ou probablement pas isolés"},
-              {"id": "standard", "label": "Je ne sais pas / standard pour l'âge du logement"},
-              {"id": "renovated", "label": "Oui, isolation ajoutée ou rénovée"}
+              {"id": "poor", "label": "No, or probably not insulated"},
+              {"id": "standard", "label": "I don't know / typical for the home's age"},
+              {"id": "renovated", "label": "Yes, insulation added or renovated"}
             ]
           },
           {
             "id": "airtightness_id",
             "type": "select",
-            "label": "Ressentez-vous des courants d'air ?",
+            "label": "Do you feel drafts?",
             "required": true,
             "options": [
-              {"id": "leaky", "label": "Oui, courants d'air sensibles aux fenêtres, portes ou prises"},
-              {"id": "standard", "label": "Je ne sais pas / rien de particulier"},
-              {"id": "good", "label": "Non, logement plutôt étanche"}
+              {"id": "leaky", "label": "Yes, noticeable drafts around windows, doors, or outlets"},
+              {"id": "standard", "label": "I don't know / nothing specific"},
+              {"id": "good", "label": "No, fairly airtight home"}
             ]
           },
           {
             "id": "ventilation_id",
             "type": "select",
-            "label": "Ventilation principale",
+            "label": "Main ventilation",
             "required": true,
             "options": [
-              {"id": "natural_leaky_old", "label": "Ventilation naturelle logement ancien"},
-              {"id": "natural_average", "label": "Ventilation naturelle moyenne"},
-              {"id": "simple_flow", "label": "VMC simple flux"},
-              {"id": "double_flow_standard", "label": "VMC double flux"},
-              {"id": "airtight_recent", "label": "Logement récent étanche"}
+              {"id": "natural_leaky_old", "label": "Natural ventilation in an older home"},
+              {"id": "natural_average", "label": "Average natural ventilation"},
+              {"id": "simple_flow", "label": "Single-flow mechanical ventilation"},
+              {"id": "double_flow_standard", "label": "Dual-flow mechanical ventilation"},
+              {"id": "airtight_recent", "label": "Recent airtight home"}
             ]
           },
           {
             "id": "has_cooling",
             "type": "boolean",
-            "label": "Le logement a-t-il déjà une climatisation active ?",
+            "label": "Does the home already have active cooling?",
             "required": false,
             "default": false
           }
@@ -97,42 +97,42 @@
       },
       {
         "id": "heating",
-        "label": "Chauffage actuel",
+        "label": "Current heating",
         "questions": [
           {
             "id": "current_energy_id",
             "type": "select",
-            "label": "Énergie actuelle du chauffage",
+            "label": "Current heating energy",
             "required": true,
             "options": [
-              {"id": "electricity", "label": "Électricité"},
+              {"id": "electricity", "label": "Electricity"},
               {"id": "gas", "label": "Gaz"},
-              {"id": "fuel_oil", "label": "Fioul"},
-              {"id": "wood", "label": "Bois"},
-              {"id": "unknown", "label": "Je ne sais pas"}
+              {"id": "fuel_oil", "label": "Oil"},
+              {"id": "wood", "label": "Wood"},
+              {"id": "unknown", "label": "I don't know"}
             ]
           },
           {
             "id": "heat_emitters_id",
             "type": "select",
-            "label": "Diffusion de chaleur actuelle",
+            "label": "Current heat distribution",
             "required": true,
             "options": [
-              {"id": "electric_radiators", "label": "Radiateurs électriques"},
-              {"id": "water_radiators", "label": "Radiateurs à eau"},
-              {"id": "underfloor", "label": "Plancher chauffant"},
-              {"id": "air_units", "label": "Unités murales / soufflage d'air"},
-              {"id": "mixed", "label": "Mixte ou incertain"}
+              {"id": "electric_radiators", "label": "Electric radiators"},
+              {"id": "water_radiators", "label": "Water radiators"},
+              {"id": "underfloor", "label": "Underfloor heating"},
+              {"id": "air_units", "label": "Wall units / air supply"},
+              {"id": "mixed", "label": "Mixed or uncertain"}
             ]
           },
-          {"id": "heating_setpoint_c", "type": "number", "label": "Température de chauffage visée en hiver", "required": true, "default": 19.0}
+          {"id": "heating_setpoint_c", "type": "number", "label": "Target winter heating temperature", "required": true, "default": 19.0}
         ]
       },
       {
         "id": "rooms",
-        "label": "Pièces",
+        "label": "Rooms",
         "questions": [
-          {"id": "rooms", "type": "room_list", "label": "Pièces à modéliser", "required": true}
+          {"id": "rooms", "type": "room_list", "label": "Rooms to model", "required": true}
         ]
       }
     ]

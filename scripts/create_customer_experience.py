@@ -34,178 +34,178 @@ from thermal_model.reference_loader import ReferenceDataError  # noqa: E402
 
 
 ORIENTATIONS = {
-    "N": ("north", 0, "Nord"),
-    "NE": ("northeast", 45, "Nord-Est"),
-    "E": ("east", 90, "Est"),
-    "SE": ("southeast", 135, "Sud-Est"),
-    "S": ("south", 180, "Sud"),
-    "SW": ("southwest", 225, "Sud-Ouest"),
-    "W": ("west", 270, "Ouest"),
-    "NW": ("northwest", 315, "Nord-Ouest"),
+    "N": ("north", 0, "North"),
+    "NE": ("northeast", 45, "North-East"),
+    "E": ("east", 90, "East"),
+    "SE": ("southeast", 135, "South-East"),
+    "S": ("south", 180, "South"),
+    "SW": ("southwest", 225, "South-West"),
+    "W": ("west", 270, "West"),
+    "NW": ("northwest", 315, "North-West"),
 }
 
 ROOM_TYPES = [
-    {"id": "living", "label": "Salon / sejour"},
-    {"id": "bedroom", "label": "Chambre"},
-    {"id": "kitchen", "label": "Cuisine"},
-    {"id": "bathroom", "label": "Salle de bain"},
-    {"id": "office", "label": "Bureau"},
-    {"id": "corridor", "label": "Couloir / entree"},
-    {"id": "staircase", "label": "Escalier"},
-    {"id": "other", "label": "Autre"},
+    {"id": "living", "label": "Living room"},
+    {"id": "bedroom", "label": "Bedroom"},
+    {"id": "kitchen", "label": "Kitchen"},
+    {"id": "bathroom", "label": "Bathroom"},
+    {"id": "office", "label": "Office"},
+    {"id": "corridor", "label": "Hallway / entrance"},
+    {"id": "staircase", "label": "Staircase"},
+    {"id": "other", "label": "Other"},
 ]
 
 DWELLING_TYPES = [
-    {"id": "house", "label": "Maison"},
-    {"id": "apartment", "label": "Appartement"},
+    {"id": "house", "label": "House"},
+    {"id": "apartment", "label": "Apartment"},
 ]
 
 DWELLING_POSITIONS = [
-    {"id": "single_storey_house", "label": "Maison de plain-pied"},
-    {"id": "multi_storey_house", "label": "Maison avec etage"},
-    {"id": "apartment_ground_floor", "label": "Appartement en rez-de-chaussee"},
-    {"id": "apartment_middle_floor", "label": "Appartement en etage intermediaire"},
-    {"id": "apartment_top_floor", "label": "Appartement au dernier etage"},
-    {"id": "apartment_ground_top_floor", "label": "Appartement en rez-de-chaussee directement sous toiture"},
+    {"id": "single_storey_house", "label": "Single-storey house"},
+    {"id": "multi_storey_house", "label": "Multi-storey house"},
+    {"id": "apartment_ground_floor", "label": "Ground-floor apartment"},
+    {"id": "apartment_middle_floor", "label": "Middle-floor apartment"},
+    {"id": "apartment_top_floor", "label": "Top-floor apartment"},
+    {"id": "apartment_ground_top_floor", "label": "Ground-floor apartment directly under the roof"},
 ]
 
 ADJACENCY_LEVELS = [
-    {"id": "detached", "label": "Logement isole, facades surtout dehors"},
-    {"id": "one_side", "label": "Mitoyen ou voisin chauffe sur un cote"},
-    {"id": "two_sides", "label": "Mitoyen ou voisin chauffe sur deux cotes"},
-    {"id": "surrounded", "label": "Tres entoure par des logements chauffes"},
+    {"id": "detached", "label": "Detached home, most facades facing outside"},
+    {"id": "one_side", "label": "Adjoining or heated neighbor on one side"},
+    {"id": "two_sides", "label": "Adjoining or heated neighbors on two sides"},
+    {"id": "surrounded", "label": "Strongly surrounded by heated homes"},
 ]
 
 WALL_INSULATION_LEVELS = [
-    {"id": "poor", "label": "Non, ou probablement pas isoles", "u_factor": 1.25},
-    {"id": "standard", "label": "Je ne sais pas / standard pour l'age du logement", "u_factor": 1.0},
-    {"id": "renovated", "label": "Oui, isolation ajoutee ou renovee", "u_factor": 0.75},
+    {"id": "poor", "label": "No, or probably not insulated", "u_factor": 1.25},
+    {"id": "standard", "label": "I don't know / typical for the home's age", "u_factor": 1.0},
+    {"id": "renovated", "label": "Yes, insulation added or renovated", "u_factor": 0.75},
 ]
 
 ROOF_INSULATION_LEVELS = [
-    {"id": "unknown", "label": "Je ne sais pas", "u_factor": 1.0},
-    {"id": "not_concerned", "label": "Pas de toiture directement concernee", "u_factor": 1.0},
-    {"id": "poor", "label": "Toiture ou combles peu isoles", "u_factor": 1.35},
-    {"id": "standard", "label": "Isolation toiture standard", "u_factor": 1.0},
-    {"id": "renovated", "label": "Toiture bien isolee ou renovee", "u_factor": 0.65},
+    {"id": "unknown", "label": "I don't know", "u_factor": 1.0},
+    {"id": "not_concerned", "label": "No directly affected roof", "u_factor": 1.0},
+    {"id": "poor", "label": "Roof or attic with weak insulation", "u_factor": 1.35},
+    {"id": "standard", "label": "Standard roof insulation", "u_factor": 1.0},
+    {"id": "renovated", "label": "Well-insulated or renovated roof", "u_factor": 0.65},
 ]
 
 FLOOR_INSULATION_LEVELS = [
-    {"id": "unknown", "label": "Je ne sais pas", "u_factor": 1.0},
-    {"id": "not_concerned", "label": "Pas de plancher bas directement concerne", "u_factor": 1.0},
-    {"id": "poor", "label": "Plancher bas peu isole", "u_factor": 1.25},
-    {"id": "standard", "label": "Plancher bas standard", "u_factor": 1.0},
-    {"id": "renovated", "label": "Plancher bas isole/renove", "u_factor": 0.75},
+    {"id": "unknown", "label": "I don't know", "u_factor": 1.0},
+    {"id": "not_concerned", "label": "No directly affected ground floor", "u_factor": 1.0},
+    {"id": "poor", "label": "Weak ground-floor insulation", "u_factor": 1.25},
+    {"id": "standard", "label": "Standard ground-floor insulation", "u_factor": 1.0},
+    {"id": "renovated", "label": "Insulated/renovated ground floor", "u_factor": 0.75},
 ]
 
 AIRTIGHTNESS_LEVELS = [
-    {"id": "leaky", "label": "Oui, courants d'air sensibles aux fenetres, portes ou prises", "ach_factor": 1.2},
-    {"id": "standard", "label": "Je ne sais pas / rien de particulier", "ach_factor": 1.0},
-    {"id": "good", "label": "Non, logement plutot etanche", "ach_factor": 0.85},
+    {"id": "leaky", "label": "Yes, noticeable drafts around windows, doors, or outlets", "ach_factor": 1.2},
+    {"id": "standard", "label": "I don't know / nothing specific", "ach_factor": 1.0},
+    {"id": "good", "label": "No, fairly airtight home", "ach_factor": 0.85},
 ]
 
 EXTERIOR_CONTACTS = [
-    {"id": "exterior", "label": "Oui, une ou plusieurs facades donnent dehors"},
-    {"id": "interior", "label": "Non, piece interieure"},
-    {"id": "unheated_space", "label": "Non, contre garage/cave/combles non chauffes"},
-    {"id": "party", "label": "Non, contre voisin ou mitoyen"},
+    {"id": "exterior", "label": "Yes, one or more facades face outside"},
+    {"id": "interior", "label": "No, interior room"},
+    {"id": "unheated_space", "label": "No, against an unheated garage/cellar/attic"},
+    {"id": "party", "label": "No, against a neighbor or party wall"},
 ]
 
 THERMAL_LAYOUTS = [
-    {"id": "open_living", "label": "Les pieces donnent surtout sur le sejour"},
-    {"id": "corridor", "label": "Les pieces donnent surtout sur un couloir / une entree"},
-    {"id": "manual", "label": "Indiquer les portes ou ouvertures principales une par une"},
+    {"id": "open_living", "label": "Rooms mostly open onto the living area"},
+    {"id": "corridor", "label": "Rooms mostly open onto a hallway / entrance"},
+    {"id": "manual", "label": "Enter the main doors or openings one by one"},
 ]
 
 WINDOW_SIZES = [
-    {"id": "none", "label": "Aucune fenetre", "factor": 0.0},
-    {"id": "small", "label": "Petite: une fenetre standard", "factor": 0.08},
-    {"id": "medium", "label": "Moyenne: deux fenetres ou une porte-fenetre", "factor": 0.14},
-    {"id": "large", "label": "Grande: baie vitree ou grande surface vitree", "factor": 0.22},
-    {"id": "custom", "label": "Entrer une surface approximative en m2"},
+    {"id": "none", "label": "No window", "factor": 0.0},
+    {"id": "small", "label": "Small: one standard window", "factor": 0.08},
+    {"id": "medium", "label": "Medium: two windows or one French door", "factor": 0.14},
+    {"id": "large", "label": "Large: bay window or large glazed area", "factor": 0.22},
+    {"id": "custom", "label": "Enter an approximate area in m2"},
 ]
 
 WINDOW_LEVELS = [
-    {"id": "single_glazing_old", "label": "Simple vitrage"},
-    {"id": "double_glazing_old", "label": "Double vitrage ancien"},
-    {"id": "double_glazing_standard", "label": "Double vitrage recent standard"},
-    {"id": "double_glazing_low_e", "label": "Double vitrage performant"},
+    {"id": "single_glazing_old", "label": "Single glazing"},
+    {"id": "double_glazing_old", "label": "Old double glazing"},
+    {"id": "double_glazing_standard", "label": "Recent standard double glazing"},
+    {"id": "double_glazing_low_e", "label": "High-performance double glazing"},
 ]
 
 SHUTTER_LEVELS = [
-    {"id": "none", "label": "Pas de volet/protection"},
-    {"id": "roller_shutter_standard", "label": "Volets roulants ou battants"},
-    {"id": "external_blind", "label": "Stores exterieurs"},
-    {"id": "interior_blind", "label": "Stores interieurs"},
+    {"id": "none", "label": "No shutter/protection"},
+    {"id": "roller_shutter_standard", "label": "Roller or hinged shutters"},
+    {"id": "external_blind", "label": "External blinds"},
+    {"id": "interior_blind", "label": "Interior blinds"},
 ]
 
 SOLAR_MASK_LEVELS = [
-    {"id": "none", "label": "Aucun masque, soleil direct", "mask_factor": 1.0},
-    {"id": "light", "label": "Masque leger: arbre clair, garde-corps, petit debord", "mask_factor": 0.85},
-    {"id": "medium", "label": "Masque moyen: balcon, arbre dense, vis-a-vis proche", "mask_factor": 0.65},
-    {"id": "strong", "label": "Masque fort: loggia, immeuble tres proche, ombre frequente", "mask_factor": 0.4},
+    {"id": "none", "label": "No shading, direct sun", "mask_factor": 1.0},
+    {"id": "light", "label": "Light shading: sparse tree, railing, small overhang", "mask_factor": 0.85},
+    {"id": "medium", "label": "Medium shading: balcony, dense tree, nearby opposite building", "mask_factor": 0.65},
+    {"id": "strong", "label": "Strong shading: loggia, very close building, frequent shade", "mask_factor": 0.4},
 ]
 
 SHUTTER_USAGE_LEVELS = [
-    {"id": "day_closed", "label": "En ete, fermes en journee quand il fait chaud"},
-    {"id": "partial", "label": "En ete, partiellement fermes ou selon presence"},
-    {"id": "rare", "label": "Rarement fermes en journee"},
+    {"id": "day_closed", "label": "In summer, closed during the day when it is hot"},
+    {"id": "partial", "label": "In summer, partly closed or depending on occupancy"},
+    {"id": "rare", "label": "Rarely closed during the day"},
 ]
 
 HEATING_SYSTEMS = [
-    {"id": "electric_radiator", "label": "Radiateurs electriques"},
-    {"id": "air_air_heat_pump_standard", "label": "PAC air-air"},
-    {"id": "air_water_heat_pump_standard", "label": "PAC air-eau"},
+    {"id": "electric_radiator", "label": "Electric radiators"},
+    {"id": "air_air_heat_pump_standard", "label": "Air-to-air heat pump"},
+    {"id": "air_water_heat_pump_standard", "label": "Air-to-water heat pump"},
 ]
 
 HEAT_PUMP_CURRENT_ENERGIES = [
-    {"id": "electricity", "label": "Electricite"},
-    {"id": "gas", "label": "Gaz"},
-    {"id": "fuel_oil", "label": "Fioul"},
-    {"id": "wood", "label": "Bois"},
-    {"id": "unknown", "label": "Je ne sais pas"},
+    {"id": "electricity", "label": "Electricity"},
+    {"id": "gas", "label": "Gas"},
+    {"id": "fuel_oil", "label": "Oil"},
+    {"id": "wood", "label": "Wood"},
+    {"id": "unknown", "label": "I don't know"},
 ]
 
 HEAT_EMITTERS = [
-    {"id": "electric_radiators", "label": "Radiateurs electriques"},
-    {"id": "water_radiators", "label": "Radiateurs a eau"},
-    {"id": "underfloor", "label": "Plancher chauffant"},
-    {"id": "air_units", "label": "Unites murales / soufflage d'air"},
-    {"id": "mixed", "label": "Mixte ou incertain"},
+    {"id": "electric_radiators", "label": "Electric radiators"},
+    {"id": "water_radiators", "label": "Water radiators"},
+    {"id": "underfloor", "label": "Underfloor heating"},
+    {"id": "air_units", "label": "Wall units / air supply"},
+    {"id": "mixed", "label": "Mixed or uncertain"},
 ]
 
 VENTILATION_SYSTEMS = [
-    {"id": "natural_leaky_old", "label": "Ventilation naturelle logement ancien"},
-    {"id": "natural_average", "label": "Ventilation naturelle moyenne"},
-    {"id": "simple_flow", "label": "VMC simple flux"},
-    {"id": "double_flow_standard", "label": "VMC double flux"},
-    {"id": "airtight_recent", "label": "Logement recent etanche"},
+    {"id": "natural_leaky_old", "label": "Natural ventilation in an older home"},
+    {"id": "natural_average", "label": "Average natural ventilation"},
+    {"id": "simple_flow", "label": "Single-flow mechanical ventilation"},
+    {"id": "double_flow_standard", "label": "Dual-flow mechanical ventilation"},
+    {"id": "airtight_recent", "label": "Recent airtight home"},
 ]
 
 CHANGES = [
     {
         "id": "roof_insulation",
-        "label": "Ameliorer l'isolation de la toiture / des combles",
+        "label": "Improve roof / attic insulation",
         "experiments": ["winter_cold_primary", "summer_heatwave_secondary"],
     },
     {
         "id": "reflective_roof",
-        "label": "Ajouter un revêtement réfléchissant sur la toiture contre la chaleur",
+        "label": "Add a reflective roof coating against heat",
         "experiments": ["summer_openmeteo_period_primary", "summer_openmeteo_heatwave_zoom"],
     },
     {
         "id": "better_windows",
-        "label": "Remplacer les fenetres par du double vitrage performant",
+        "label": "Replace windows with high-performance double glazing",
         "experiments": ["winter_cold_primary", "summer_heatwave_if_exposed"],
     },
     {
         "id": "solar_protection",
-        "label": "Ajouter des volets ou protections solaires",
+        "label": "Add shutters or solar protection",
         "experiments": ["summer_heatwave_primary"],
     },
     {
         "id": "heat_pump",
-        "label": "Remplacer le chauffage actuel par une PAC",
+        "label": "Replace the current heating system with a heat pump",
         "experiments": ["winter_cold_primary"],
     },
 ]
@@ -219,8 +219,8 @@ EXPERIMENT_SPECS = {
         "weather_mode": "synthetic",
         "duration_days": 7,
         "role": "primary",
-        "label": "Hiver froid",
-        "reason": "Experience principale pour mesurer les pertes et les besoins de chauffage.",
+        "label": "Cold winter",
+        "reason": "Main experiment to measure heat losses and heating demand.",
     },
     "summer_heatwave_primary": {
         "id": "summer_heatwave",
@@ -230,8 +230,8 @@ EXPERIMENT_SPECS = {
         "weather_mode": "synthetic",
         "duration_days": 3,
         "role": "primary",
-        "label": "Été canicule",
-        "reason": "Expérience principale pour mesurer le confort d'été et les apports solaires.",
+        "label": "Summer heatwave",
+        "reason": "Main experiment to measure summer comfort and solar gains.",
     },
     "summer_heatwave_secondary": {
         "id": "summer_heatwave",
@@ -241,8 +241,8 @@ EXPERIMENT_SPECS = {
         "weather_mode": "synthetic",
         "duration_days": 3,
         "role": "secondary",
-        "label": "Été canicule",
-        "reason": "Expérience secondaire pour vérifier l'effet sur la surchauffe.",
+        "label": "Summer heatwave",
+        "reason": "Secondary experiment to check the effect on overheating.",
     },
     "summer_heatwave_if_exposed": {
         "id": "summer_heatwave",
@@ -253,8 +253,8 @@ EXPERIMENT_SPECS = {
         "duration_days": 3,
         "role": "secondary",
         "condition": "exposed_windows",
-        "label": "Été canicule",
-        "reason": "Expérience secondaire lancée si des vitrages exposés peuvent influencer les apports solaires.",
+        "label": "Summer heatwave",
+        "reason": "Secondary experiment run when exposed glazing can influence solar gains.",
     },
     "summer_long_secondary": {
         "id": "summer_long",
@@ -264,8 +264,8 @@ EXPERIMENT_SPECS = {
         "weather_mode": "synthetic",
         "duration_days": 60,
         "role": "secondary",
-        "label": "Été long avec canicule",
-        "reason": "Expérience secondaire sur deux mois d'été type avec un épisode de canicule intégré.",
+        "label": "Long summer with heatwave",
+        "reason": "Secondary experiment over two typical summer months with an integrated heatwave episode.",
     },
     "summer_openmeteo_period_primary": {
         "id": "summer_real_period",
@@ -275,8 +275,8 @@ EXPERIMENT_SPECS = {
         "weather_mode": "openmeteo_summer_period",
         "duration_days": 107,
         "role": "primary",
-        "label": "Début juin à mi-septembre",
-        "reason": "Expérience principale sur météo réelle pour mesurer le confort d'été sur la période exposée.",
+        "label": "Early June to mid-September",
+        "reason": "Main real-weather experiment to measure summer comfort over the exposed period.",
     },
     "summer_openmeteo_heatwave_zoom": {
         "id": "summer_real_heatwave_zoom",
@@ -286,8 +286,8 @@ EXPERIMENT_SPECS = {
         "weather_mode": "openmeteo_heatwave_zoom",
         "duration_days": 5,
         "role": "secondary",
-        "label": "Zoom canicule réelle",
-        "reason": "Zoom sur les 5 jours consécutifs les plus chauds de la période début juin à mi-septembre.",
+        "label": "Real heatwave zoom",
+        "reason": "Zoom on the 5 hottest consecutive days between early June and mid-September.",
     },
     "annual_openmeteo": {
         "id": "annual",
@@ -297,35 +297,35 @@ EXPERIMENT_SPECS = {
         "weather_mode": "openmeteo_annual",
         "duration_days": 365,
         "role": "annual",
-        "label": "Année complète",
-        "reason": "Expérience annuelle pour estimer les besoins et gains sur une météo représentative.",
+        "label": "Full year",
+        "reason": "Annual experiment to estimate demand and savings on representative weather.",
     },
 }
 
 CLIMATE_ZONES = [
-    {"id": "FR_H1a", "label": "Nord / Est froid"},
-    {"id": "FR_H2b", "label": "Ouest / climat tempere"},
-    {"id": "FR_H2c", "label": "Sud-Ouest / tempere chaud"},
-    {"id": "FR_H3", "label": "Mediterranee / climat chaud"},
+    {"id": "FR_H1a", "label": "North / cold East"},
+    {"id": "FR_H2b", "label": "West / temperate climate"},
+    {"id": "FR_H2c", "label": "South-West / warm temperate climate"},
+    {"id": "FR_H3", "label": "Mediterranean / warm climate"},
 ]
 
 ROOF_TYPES = [
-    {"id": "attic", "label": "Combles au-dessus du logement"},
-    {"id": "sloped_ceiling", "label": "Toits rampants au-dessus du logement"},
-    {"id": "flat_roof", "label": "Toit terrasse au-dessus du logement"},
+    {"id": "attic", "label": "Attic above the home"},
+    {"id": "sloped_ceiling", "label": "Sloped roof above the home"},
+    {"id": "flat_roof", "label": "Flat roof above the home"},
 ]
 
 ROOF_COLORS = [
-    {"id": "dark", "label": "Foncee", "albedo": 0.18},
-    {"id": "medium", "label": "Moyenne", "albedo": 0.25},
-    {"id": "light", "label": "Claire", "albedo": 0.4},
-    {"id": "unknown", "label": "Je ne sais pas", "albedo": 0.25},
+    {"id": "dark", "label": "Dark", "albedo": 0.18},
+    {"id": "medium", "label": "Medium", "albedo": 0.25},
+    {"id": "light", "label": "Light", "albedo": 0.4},
+    {"id": "unknown", "label": "I don't know", "albedo": 0.25},
 ]
 
 ATTIC_VENTILATION_LEVELS = [
-    {"id": "attic", "label": "Combles au-dessus du logement", "solar_to_room_factor": 0.0225},
-    {"id": "sloped_ceiling", "label": "Toits rampants au-dessus du logement", "solar_to_room_factor": 0.05},
-    {"id": "flat_roof", "label": "Toit terrasse au-dessus du logement", "solar_to_room_factor": 0.07},
+    {"id": "attic", "label": "Attic above the home", "solar_to_room_factor": 0.0225},
+    {"id": "sloped_ceiling", "label": "Sloped roof above the home", "solar_to_room_factor": 0.05},
+    {"id": "flat_roof", "label": "Flat roof above the home", "solar_to_room_factor": 0.07},
 ]
 
 
@@ -389,7 +389,7 @@ def choose_one(title: str, options: list[dict[str, Any]]) -> dict[str, Any]:
         value = input("> ").strip()
         if value.isdigit() and 1 <= int(value) <= len(options):
             return options[int(value) - 1]
-        print(f"Choix invalide. Entrez un nombre entre 1 et {len(options)}.")
+        print(f"Invalid choice. Enter a number between 1 and {len(options)}.")
 
 
 def ask_text(label: str, default: str | None = None) -> str:
@@ -400,7 +400,7 @@ def ask_text(label: str, default: str | None = None) -> str:
             return value
         if default is not None:
             return default
-        print("Valeur requise.")
+        print("Value required.")
 
 
 def ask_float(label: str, default: float | None = None, minimum: float = 0.0) -> float:
@@ -412,11 +412,11 @@ def ask_float(label: str, default: float | None = None, minimum: float = 0.0) ->
         try:
             value = float(raw_value.replace(",", "."))
         except ValueError:
-            print("Entrez un nombre.")
+            print("Enter a number.")
             continue
         if value >= minimum:
             return value
-        print(f"La valeur doit etre superieure ou egale a {minimum:g}.")
+        print(f"The value must be greater than or equal to {minimum:g}.")
 
 
 def ask_int(label: str, default: int | None = None, minimum: int = 1) -> int:
@@ -427,11 +427,11 @@ def ask_int(label: str, default: int | None = None, minimum: int = 1) -> int:
             return default
         if raw_value.isdigit() and int(raw_value) >= minimum:
             return int(raw_value)
-        print(f"Entrez un entier superieur ou egal a {minimum}.")
+        print(f"Enter an integer greater than or equal to {minimum}.")
 
 
 def ask_yes_no(label: str, default: bool) -> bool:
-    suffix = "O/n" if default else "o/N"
+    suffix = "Y/n" if default else "y/N"
     value = input(f"{label} ({suffix}) > ").strip().lower()
     if not value:
         return default
@@ -447,9 +447,9 @@ def choose_orientation(title: str) -> str:
 
 
 def choose_window_area(room_type: str, area_m2: float, orientation_code: str) -> float:
-    size = choose_one("Surface vitree sur cette facade", WINDOW_SIZES)
+    size = choose_one("Glazing area on this facade", WINDOW_SIZES)
     if size["id"] == "custom":
-        return ask_float("Surface vitree approximative en m2", minimum=0.0)
+        return ask_float("Approximate glazing area in m2", minimum=0.0)
     if size["id"] == "none":
         return 0.0
 
@@ -467,41 +467,41 @@ def get_catalog_item(catalog: dict[str, Any], collection: str, item_id: str) -> 
 
 
 def collect_customer_input(catalog: dict[str, Any]) -> dict[str, Any]:
-    print("Creation d'une experience client ThermalTwin")
-    print("On commence par le changement a etudier, puis on decrit le logement utile a cette simulation.")
-    print("Les scenarios meteo seront choisis automatiquement.")
+    print("Create a ThermalTwin customer experience")
+    print("We start with the change to test, then describe the dwelling needed for this simulation.")
+    print("Weather scenarios will be selected automatically.")
     print()
 
-    project_name = ask_text("Nom du logement/projet", "mon_logement")
-    city = ask_text("Ville", "Bordeaux")
-    postal_code = ask_text("Code postal", "33000")
+    project_name = ask_text("Dwelling/project name", "my_dwelling")
+    city = ask_text("City", "Bordeaux")
+    postal_code = ask_text("Postal code", "33000")
     climate_zone_id = infer_climate_zone(catalog, postal_code)
     if not climate_zone_id:
-        climate_zone_id = choose_one("Zone climatique approximative", CLIMATE_ZONES)["id"]
+        climate_zone_id = choose_one("Approximate climate zone", CLIMATE_ZONES)["id"]
 
-    dwelling_type = choose_one("Type de logement", DWELLING_TYPES)
+    dwelling_type = choose_one("Dwelling type", DWELLING_TYPES)
     position = choose_dwelling_position(dwelling_type["id"])
-    adjacency = choose_one("Le logement est-il mitoyen ou entoure par des voisins chauffes ?", ADJACENCY_LEVELS)
-    change = choose_one("Changement a etudier", CHANGES)
+    adjacency = choose_one("Is the dwelling attached or surrounded by heated neighbors?", ADJACENCY_LEVELS)
+    change = choose_one("Change to test", CHANGES)
     change_details = collect_change_details(change["id"])
 
     period = choose_one(
-        "Quand le logement a-t-il ete construit ou fortement renove ?",
+        "When was the dwelling built or heavily renovated?",
         envelope_period_options(catalog),
     )
-    wall_insulation = choose_one("Les murs donnant dehors sont-ils isoles ?", WALL_INSULATION_LEVELS)
+    wall_insulation = choose_one("Are exterior walls insulated?", WALL_INSULATION_LEVELS)
     roof_insulation = collect_roof_insulation(dwelling_type["id"], position["id"])
     floor_insulation = collect_floor_insulation(dwelling_type["id"], position["id"])
-    airtightness = choose_one("Ressentez-vous des courants d'air ?", AIRTIGHTNESS_LEVELS)
-    ventilation = choose_one("Ventilation principale", VENTILATION_SYSTEMS)
-    window_level = choose_one("Type de vitrage principal", WINDOW_LEVELS)
-    shutter_level = choose_one("Protections solaires actuelles", SHUTTER_LEVELS)
-    heating = choose_one("Chauffage principal", HEATING_SYSTEMS)
-    has_cooling = ask_yes_no("Le logement a-t-il deja une climatisation active", False)
+    airtightness = choose_one("Do you feel drafts?", AIRTIGHTNESS_LEVELS)
+    ventilation = choose_one("Main ventilation", VENTILATION_SYSTEMS)
+    window_level = choose_one("Main glazing type", WINDOW_LEVELS)
+    shutter_level = choose_one("Current solar protection", SHUTTER_LEVELS)
+    heating = choose_one("Main heating", HEATING_SYSTEMS)
+    has_cooling = ask_yes_no("Does the dwelling already have active air conditioning", False)
     setpoints = collect_setpoints()
     shutter_usage = collect_shutter_usage(shutter_level["id"])
 
-    room_count = ask_int("Nombre de pieces a modeliser", default=3, minimum=1)
+    room_count = ask_int("Number of rooms to model", default=3, minimum=1)
     rooms = []
     for index in range(room_count):
         rooms.append(collect_room(index + 1, dwelling_type["id"], position["id"], change["id"]))
@@ -509,8 +509,8 @@ def collect_customer_input(catalog: dict[str, Any]) -> dict[str, Any]:
     thermal_layout = collect_thermal_layout(rooms)
 
     target_scope = choose_one(
-        "Zone concernee par le changement",
-        [{"id": "all", "label": "Tout le logement"}]
+        "Area affected by the change",
+        [{"id": "all", "label": "Whole dwelling"}]
         + [{"id": room["id"], "label": room["name"]} for room in rooms],
     )
 
@@ -555,55 +555,55 @@ def choose_dwelling_position(dwelling_type: str) -> dict[str, Any]:
             for option in DWELLING_POSITIONS
             if option["id"].startswith("apartment_")
         ]
-    return choose_one("Position du logement", options)
+    return choose_one("Dwelling position", options)
 
 
 def collect_change_details(change_id: str) -> dict[str, Any]:
     if change_id in {"reflective_roof", "roof_insulation"}:
         return {
-            "roof_type": choose_one("Type de toiture concernee", ROOF_TYPES),
-            "roof_color": choose_one("Couleur dominante actuelle de la toiture", ROOF_COLORS),
-            "attic_ventilation": choose_one("Configuration de toiture au-dessus du logement", ATTIC_VENTILATION_LEVELS),
+            "roof_type": choose_one("Roof type concerned", ROOF_TYPES),
+            "roof_color": choose_one("Current dominant roof color", ROOF_COLORS),
+            "attic_ventilation": choose_one("Roof configuration above the dwelling", ATTIC_VENTILATION_LEVELS),
         }
     if change_id in {"better_windows", "solar_protection"}:
         return {
             "window_air_leakage": choose_one(
-                "Ressentez-vous des infiltrations d'air autour des fenetres ?",
+                "Do you feel air leakage around the windows?",
                 AIRTIGHTNESS_LEVELS,
             ),
         }
     if change_id == "heat_pump":
         return {
-            "current_energy": choose_one("Energie actuelle du chauffage", HEAT_PUMP_CURRENT_ENERGIES),
-            "heat_emitters": choose_one("Emetteurs de chauffage actuels", HEAT_EMITTERS),
+            "current_energy": choose_one("Current heating energy", HEAT_PUMP_CURRENT_ENERGIES),
+            "heat_emitters": choose_one("Current heat emitters", HEAT_EMITTERS),
         }
     return {}
 
 
 def collect_setpoints() -> dict[str, float]:
     print()
-    print("Consignes habituelles")
-    heating_c = ask_float("Temperature de chauffage visee en hiver en C", default=19.0, minimum=5.0)
-    cooling_c = ask_float("Temperature de rafraichissement visee en ete en C", default=26.0, minimum=heating_c)
+    print("Usual setpoints")
+    heating_c = ask_float("Target winter heating temperature in C", default=19.0, minimum=5.0)
+    cooling_c = ask_float("Target summer cooling temperature in C", default=26.0, minimum=heating_c)
     return {"heating_c": heating_c, "cooling_c": cooling_c}
 
 
 def collect_shutter_usage(shutter_ref: str) -> dict[str, Any]:
     if shutter_ref == "none":
-        return {"id": "none", "label": "Pas de protection solaire actuelle"}
-    return choose_one("En ete, comment les volets/stores sont-ils utilises ?", SHUTTER_USAGE_LEVELS)
+        return {"id": "none", "label": "No current solar protection"}
+    return choose_one("In summer, how are shutters/blinds used?", SHUTTER_USAGE_LEVELS)
 
 
 def collect_roof_insulation(dwelling_type: str, dwelling_position: str) -> dict[str, Any]:
     if not dwelling_has_roof_contact(dwelling_type, dwelling_position):
         return option_by_id(ROOF_INSULATION_LEVELS, "not_concerned")
-    return choose_one("La toiture ou les combles sont-ils isoles ?", ROOF_INSULATION_LEVELS)
+    return choose_one("Is the roof or attic insulated?", ROOF_INSULATION_LEVELS)
 
 
 def collect_floor_insulation(dwelling_type: str, dwelling_position: str) -> dict[str, Any]:
     if not dwelling_has_floor_contact(dwelling_type, dwelling_position):
         return option_by_id(FLOOR_INSULATION_LEVELS, "not_concerned")
-    return choose_one("Le plancher bas est-il isole ?", FLOOR_INSULATION_LEVELS)
+    return choose_one("Is the ground floor insulated?", FLOOR_INSULATION_LEVELS)
 
 
 def option_by_id(options: list[dict[str, Any]], option_id: str) -> dict[str, Any]:
@@ -632,34 +632,34 @@ def collect_room(
     change_id: str,
 ) -> dict[str, Any]:
     print()
-    print(f"Piece {index}")
-    name = ask_text("Nom de la piece", f"Piece {index}")
-    room_type = choose_one("Type de piece", ROOM_TYPES)
-    area_m2 = ask_float("Surface de la piece en m2", minimum=1.0)
-    height_m = ask_float("Hauteur sous plafond en m", default=2.5, minimum=1.5)
-    exterior_contact = choose_one("Cette piece a-t-elle un mur qui donne dehors ?", EXTERIOR_CONTACTS)
+    print(f"Room {index}")
+    name = ask_text("Room name", f"Room {index}")
+    room_type = choose_one("Room type", ROOM_TYPES)
+    area_m2 = ask_float("Room area in m2", minimum=1.0)
+    height_m = ask_float("Ceiling height in m", default=2.5, minimum=1.5)
+    exterior_contact = choose_one("Does this room have an exterior wall?", EXTERIOR_CONTACTS)
     facades = []
     if exterior_contact["id"] == "exterior":
-        facade_count = ask_int("Nombre de facades donnant dehors", default=1, minimum=1)
+        facade_count = ask_int("Number of exterior facades", default=1, minimum=1)
         facade_count = min(facade_count, 4)
         used_orientations = set()
         for facade_index in range(facade_count):
             while True:
-                orientation = choose_orientation(f"Orientation facade {facade_index + 1}")
+                orientation = choose_orientation(f"Facade {facade_index + 1} orientation")
                 if orientation not in used_orientations:
                     used_orientations.add(orientation)
                     break
-                print("Cette orientation est deja saisie pour la piece.")
+                print("This orientation has already been entered for the room.")
             window_area = choose_window_area(room_type["id"], area_m2, orientation)
             wall_length_m = ask_float(
-                "Longueur approximative de cette facade en m",
+                "Approximate length of this facade in m",
                 default=round(math.sqrt(area_m2), 1),
                 minimum=0.5,
             )
             mask = collect_solar_mask(window_area, change_id)
             window_ref = None
             if change_id in {"better_windows", "solar_protection"} and window_area > 0:
-                window_ref = choose_one("Type de vitrage sur cette facade", WINDOW_LEVELS)["id"]
+                window_ref = choose_one("Glazing type on this facade", WINDOW_LEVELS)["id"]
             facades.append(
                 {
                     "orientation": orientation,
@@ -674,16 +674,16 @@ def collect_room(
     has_ground_floor = default_has_ground_floor(dwelling_type, dwelling_position)
     if should_ask_room_roof(dwelling_type, dwelling_position):
         label = (
-            "Cette piece est-elle directement sous toiture ou combles"
+            "Is this room directly under the roof or attic"
             if dwelling_type == "house"
-            else "Cette piece est-elle directement sous la toiture"
+            else "Is this room directly under the roof"
         )
         has_roof = ask_yes_no(label, has_roof)
     if should_ask_room_ground_floor(dwelling_type, dwelling_position):
         label = (
-            "Cette piece est-elle au contact du sol"
+            "Is this room in contact with the ground"
             if dwelling_type == "house"
-            else "Cette piece est-elle au-dessus d'un local non chauffe ou du sol"
+            else "Is this room above an unheated space or the ground"
         )
         has_ground_floor = ask_yes_no(label, has_ground_floor)
 
@@ -717,7 +717,7 @@ def collect_solar_mask(window_area_m2: float, change_id: str) -> dict[str, Any]:
         return SOLAR_MASK_LEVELS[0]
     if change_id not in {"reflective_roof", "better_windows", "solar_protection"}:
         return SOLAR_MASK_LEVELS[0]
-    return choose_one("Masque solaire devant cette fenetre", SOLAR_MASK_LEVELS)
+    return choose_one("Solar shading in front of this window", SOLAR_MASK_LEVELS)
 
 
 def default_has_roof(dwelling_type: str, dwelling_position: str) -> bool:
@@ -744,18 +744,18 @@ def collect_thermal_layout(rooms: list[dict[str, Any]]) -> dict[str, Any]:
     if len(rooms) < 2:
         return {"type": "single_room", "connections": []}
 
-    layout = choose_one("Comment les pieces communiquent-elles entre elles ?", THERMAL_LAYOUTS)
+    layout = choose_one("How do the rooms connect to each other?", THERMAL_LAYOUTS)
     if layout["id"] != "manual":
         return {"type": layout["id"], "connections": []}
 
     print()
-    print("Portes ou ouvertures principales")
-    print("Repondez oui si les deux pieces sont reliees par une porte ou une ouverture souvent ouverte.")
+    print("Main doors or openings")
+    print("Answer yes if the two rooms are connected by a door or an opening often left open.")
     connections = []
     for index, first_room in enumerate(rooms):
         for second_room in rooms[index + 1:]:
             if ask_yes_no(
-                f"Porte ou ouverture souvent ouverte entre {first_room['name']} et {second_room['name']}",
+                f"Door or opening often left open between {first_room['name']} and {second_room['name']}",
                 False,
             ):
                 connections.append(
@@ -871,8 +871,8 @@ def build_dwelling_description(customer: dict[str, Any]) -> str:
         if value
     ]
     if not details:
-        return "Logement cree depuis la CLI client ThermalTwin."
-    return "Logement cree depuis la CLI client ThermalTwin. " + " / ".join(details)
+        return "Dwelling created from the ThermalTwin customer CLI."
+    return "Dwelling created from the ThermalTwin customer CLI. " + " / ".join(details)
 
 
 def build_room(
@@ -1217,16 +1217,16 @@ def ensure_applicable_target(customer: dict[str, Any], dwelling: dict[str, Any])
         return True
 
     print()
-    print("Le changement choisi ne s'applique pas a la zone selectionnee.")
+    print("The selected change does not apply to the selected area.")
     print(change_inapplicable_reason(dwelling, customer["change"]["id"], room_ids))
     options = applicable_target_options(customer, dwelling)
     if not options:
         return False
 
-    if not ask_yes_no("Choisir une autre zone compatible", True):
+    if not ask_yes_no("Choose another compatible area", True):
         return False
 
-    target = choose_one("Zone compatible", options)
+    target = choose_one("Compatible area", options)
     customer["target_scope"] = target["id"]
     return True
 
@@ -1239,7 +1239,7 @@ def applicable_target_options(
     options = []
     all_room_ids = [room["id"] for room in dwelling["rooms"]]
     if change_applies(dwelling, change_id, all_room_ids):
-        options.append({"id": "all", "label": "Tout le logement"})
+        options.append({"id": "all", "label": "Whole dwelling"})
     for room in dwelling["rooms"]:
         if change_applies(dwelling, change_id, [room["id"]]):
             options.append({"id": room["id"], "label": room["name"]})
@@ -1252,12 +1252,12 @@ def change_inapplicable_reason(
     room_ids: list[str],
 ) -> str:
     if change_id in {"roof_insulation", "reflective_roof"}:
-        return "Aucune toiture n'a ete decrite dans la zone cible."
+        return "No roof was described in the target area."
     if change_id in {"better_windows", "solar_protection"}:
-        return "Aucune fenetre n'a ete decrite dans la zone cible."
+        return "No window was described in the target area."
     if change_id == "heat_pump":
-        return "Aucun systeme de chauffage ne dessert la zone cible."
-    return "La zone cible ne contient aucun element compatible."
+        return "No heating system serves the target area."
+    return "The target area does not contain any compatible element."
 
 
 def build_experiments(
@@ -1396,7 +1396,7 @@ def build_scenario(
         "schema_version": "0.1",
         "scenario_id": f"{base_id}_{'after' if apply_change else 'before'}",
         "dwelling_id": dwelling["dwelling_id"],
-        "description": f"{experiment_spec['label']} {'apres' if apply_change else 'avant'}",
+        "description": f"{experiment_spec['label']} {'after' if apply_change else 'before'}",
         "experiment": {
             "adaptation_id": change["id"],
             "adaptation_label": change["label"],
@@ -1755,10 +1755,10 @@ def run_customer_experience(args: argparse.Namespace) -> None:
     output_dir = Path(args.output_dir) / dwelling["dwelling_id"]
     write_json(output_dir / "dwelling.json", dwelling)
     print()
-    print(f"Logement exporte: {output_dir / 'dwelling.json'}")
+    print(f"Dwelling exported: {output_dir / 'dwelling.json'}")
 
     if not target_is_applicable or not experiments:
-        print("Aucune expérience lancée: le changement choisi ne s'applique pas aux elements saisis.")
+        print("No experience launched: the selected change does not apply to the entered elements.")
         return
 
     for experiment in experiments:
@@ -1789,12 +1789,12 @@ def run_customer_experience(args: argparse.Namespace) -> None:
         write_text(html_path, render_report_html(report))
         customer_summary = build_customer_summary(experiment["season"], comparison)
         write_json(summary_path, customer_summary)
-        print(f"Scenario avant: {before_path}")
-        print(f"Scenario apres: {after_path}")
-        print(f"Comparaison: {comparison_path}")
-        print(f"Rapport JSON: {report_path}")
-        print(f"Rapport HTML: {html_path}")
-        print(f"Resume client: {summary_path}")
+        print(f"Before scenario: {before_path}")
+        print(f"After scenario: {after_path}")
+        print(f"Comparison: {comparison_path}")
+        print(f"JSON report: {report_path}")
+        print(f"HTML report: {html_path}")
+        print(f"Customer summary: {summary_path}")
         print_customer_summary(customer_summary)
 
 
@@ -1812,7 +1812,7 @@ def prepare_experiment_weather(experiment: dict[str, Any], args: argparse.Namesp
         model=args.openmeteo_model,
         cache_dir=args.openmeteo_cache_dir,
     )
-    print(f"Meteo annuelle Open-Meteo: {weather_city} {weather_year} -> {weather_path}")
+    print(f"Annual Open-Meteo weather: {weather_city} {weather_year} -> {weather_path}")
 
     for scenario_key in ("before", "after"):
         resolve_scenario_weather_reference(experiment[scenario_key], Path.cwd())
@@ -1844,13 +1844,13 @@ def build_customer_summary(season: str, comparison: dict[str, Any]) -> dict[str,
             "duration_hours": round(experiment["duration_hours"], 2),
             "duration_days": round(experiment["duration_days"], 2),
             "scope_notice": (
-                "Ces resultats portent uniquement sur une simulation de "
-                f"{experiment['duration_days']:.2f} jours."
+                "These results cover only a simulation of "
+                f"{experiment['duration_days']:.2f} days."
             ),
             "annual_projection_notice": (
-                "Cette experience est une simulation annuelle."
+                "This experience is an annual simulation."
                 if experiment.get("simulation_type") == "annual"
-                else "Aucune projection annuelle n'est calculee dans ce rapport."
+                else "No annual projection is calculated in this report."
             ),
             "weather_source": experiment["weather_source"],
             "outdoor_temperature_min_c": round(
@@ -1904,80 +1904,80 @@ def most_improved_room(comparison: dict[str, Any]) -> tuple[str, dict[str, Any]]
 def discomfort_explanation(room: dict[str, Any]) -> str:
     if room["delta_hot_degree_hours"] > 0:
         return (
-            "L'inconfort chaud cumule correspond aux heures passees au-dessus "
-            "de la consigne de confort, ponderees par l'ecart de temperature."
+            "Cumulative warm discomfort corresponds to hours spent above "
+            "the comfort setpoint, weighted by the temperature gap."
         )
     if room["delta_cold_degree_hours"] > 0:
         return (
-            "L'inconfort froid cumule correspond aux heures passees sous la "
-            "consigne de chauffage, ponderees par l'ecart de temperature."
+            "Cumulative cold discomfort corresponds to hours spent below the "
+            "heating setpoint, weighted by the temperature gap."
         )
     if room["delta_max_temperature_c"] > 0:
-        return "La temperature maximale baisse, sans gain significatif sur l'inconfort cumule."
-    return "Le confort simule reste globalement stable."
+        return "The maximum temperature decreases, without a significant gain on cumulative discomfort."
+    return "Simulated comfort remains broadly stable."
 
 
 def print_customer_summary(summary: dict[str, Any]) -> None:
     comfort = summary["comfort"]
     experiment = summary["experiment"]
     headline = summary["headline"]
-    print(f"Lecture {summary['season']}:")
+    print(f"{summary['season'].title()} reading:")
     role_labels = {
-        "primary": "principale",
-        "secondary": "secondaire",
-        "annual": "annuelle",
+        "primary": "primary",
+        "secondary": "secondary",
+        "annual": "annual",
     }
     role_label = role_labels.get(experiment["role"], "simulation")
     print(
         "- Experience: "
         f"{role_label}, {experiment['label'] or summary['season']}, "
-        f"{experiment['duration_days']:.1f} jours "
+        f"{experiment['duration_days']:.1f} days "
         f"({experiment['duration_hours']:.0f} h), "
-        f"meteo {experiment['weather_source']}, "
+        f"weather {experiment['weather_source']}, "
         f"{experiment['outdoor_temperature_min_c']:.1f} C -> "
         f"{experiment['outdoor_temperature_max_c']:.1f} C ext."
     )
     if experiment.get("simulation_type") == "annual":
-        print("- Portee: resultats simules sur une annee meteo complete.")
+        print("- Scope: simulated results over a complete weather year.")
     else:
-        print("- Portee: resultats simules sur cette periode, sans projection annuelle.")
+        print("- Scope: simulated results over this period, without annual projection.")
     if headline["electricity_saved_kwh"] > 0:
         print(
-            "- Energie: "
+            "- Energy: "
             f"{headline['electricity_saved_kwh']:.2f} kWh, "
             f"{headline['cost_saved_eur']:.2f} EUR, "
-            f"{headline['co2_saved_kg']:.2f} kg CO2 economises"
+            f"{headline['co2_saved_kg']:.2f} kg CO2 saved"
         )
     elif headline["electricity_saved_kwh"] < 0:
         print(
-            "- Energie: "
-            f"{abs(headline['electricity_saved_kwh']):.2f} kWh supplementaires"
+            "- Energy: "
+            f"{abs(headline['electricity_saved_kwh']):.2f} additional kWh"
         )
     else:
-        print("- Energie: consommation inchangee dans cette simulation")
+        print("- Energy: consumption unchanged in this simulation")
     print(
-        "- Piece la plus impactee: "
+        "- Most impacted room: "
         f"{comfort['room_name']} "
         f"({comfort['max_temperature_before_c']:.1f} C -> "
-        f"{comfort['max_temperature_after_c']:.1f} C en temperature max)"
+        f"{comfort['max_temperature_after_c']:.1f} C max temperature)"
     )
     if comfort["hot_discomfort_reduced_c_h"] > 0:
         print(
-            "- Confort ete: inconfort chaud reduit de "
+            "- Summer comfort: warm discomfort reduced by "
             f"{comfort['hot_discomfort_reduced_c_h']:.0f} C.h "
             f"({comfort['hot_discomfort_before_c_h']:.0f} -> "
             f"{comfort['hot_discomfort_after_c_h']:.0f} C.h)"
         )
     elif comfort["cold_discomfort_reduced_c_h"] > 0:
         print(
-            "- Confort hiver: inconfort froid reduit de "
+            "- Winter comfort: cold discomfort reduced by "
             f"{comfort['cold_discomfort_reduced_c_h']:.0f} C.h "
             f"({comfort['cold_discomfort_before_c_h']:.0f} -> "
             f"{comfort['cold_discomfort_after_c_h']:.0f} C.h)"
         )
     else:
-        print("- Confort: stable dans cette simulation")
-    print(f"- Explication principale: {headline['main_gain_driver']}")
+        print("- Comfort: stable in this simulation")
+    print(f"- Main explanation: {headline['main_gain_driver']}")
 
 
 def main() -> None:

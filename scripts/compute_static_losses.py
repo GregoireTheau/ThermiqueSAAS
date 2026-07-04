@@ -28,17 +28,17 @@ def print_static_losses(
     outdoor_temperature_c: float,
 ) -> None:
     """Print a compact text report."""
-    print(f"Logement: {dwelling['dwelling_id']}")
+    print(f"Dwelling: {dwelling['dwelling_id']}")
     print(
-        "Hypothese: "
+        "Assumption: "
         f"T_int={indoor_temperature_c:.1f} C, "
         f"T_ext={outdoor_temperature_c:.1f} C"
     )
     print()
-    print("Pertes statiques par piece")
+    print("Static losses by room")
     print(
-        "piece | H transmission W/K | H ventilation W/K | "
-        "H total W/K | perte totale W"
+        "room | H transmission W/K | H ventilation W/K | "
+        "H total W/K | total loss W"
     )
     print("-" * 78)
 
@@ -63,12 +63,12 @@ def print_static_losses(
         f"{totals['total_loss_w']:.0f}"
     )
     print()
-    print("Detail logement")
-    print(f"- UA parois: {totals['surface_ua_w_k']:.1f} W/K")
-    print(f"- UA vitrages: {totals['window_ua_w_k']:.1f} W/K")
-    print(f"- Majoration ponts thermiques: {totals['thermal_bridge_h_w_k']:.1f} W/K")
-    print(f"- Pertes transmission: {totals['transmission_loss_w']:.0f} W")
-    print(f"- Pertes ventilation: {totals['ventilation_loss_w']:.0f} W")
+    print("Dwelling detail")
+    print(f"- Surface UA: {totals['surface_ua_w_k']:.1f} W/K")
+    print(f"- Glazing UA: {totals['window_ua_w_k']:.1f} W/K")
+    print(f"- Thermal bridge allowance: {totals['thermal_bridge_h_w_k']:.1f} W/K")
+    print(f"- Transmission losses: {totals['transmission_loss_w']:.0f} W")
+    print(f"- Ventilation losses: {totals['ventilation_loss_w']:.0f} W")
 
 
 def parse_args() -> argparse.Namespace:

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -21,21 +21,21 @@
   <main class="layout">
     <aside class="sidebar">
       <section>
-        <h2>Connexion</h2>
+        <h2>Sign In</h2>
         <div id="loggedOutAccount">
           <label>
             Email
             <input id="email" type="email" autocomplete="email">
           </label>
           <label>
-            Mot de passe
+            Password
             <input id="password" type="password" autocomplete="current-password">
           </label>
-          <button id="login" type="button">Se connecter</button>
+          <button id="login" type="button">Sign in</button>
           <select id="profileSelect" hidden></select>
         </div>
         <div id="loggedInAccount" class="stateBox success" hidden>
-          <span>Connecté en tant que</span>
+          <span>Signed in as</span>
           <strong id="connectedEmail"></strong>
           <strong id="connectedProfile" hidden></strong>
         </div>
@@ -44,37 +44,37 @@
       </section>
 
       <section>
-        <h2>Projet</h2>
+        <h2>Project</h2>
         <div class="subBlock">
-          <h3>Créer un nouveau projet</h3>
-          <button id="newProject" type="button" disabled>Nouveau projet</button>
+          <h3>Create a new project</h3>
+          <button id="newProject" type="button" disabled>New project</button>
           <div id="projectCreateFields" class="projectCreateFields" hidden>
             <label>
-              Nom projet
-              <input id="projectName" type="text" value="Maison client">
+              Project name
+              <input id="projectName" type="text" value="Client house">
             </label>
             <label>
               Client
-              <input id="customerName" type="text" value="Client test">
+              <input id="customerName" type="text" value="Test client">
             </label>
-            <button id="createProject" type="button" disabled>Créer projet</button>
+            <button id="createProject" type="button" disabled>Create project</button>
           </div>
         </div>
-        <div class="separator">ou</div>
+        <div class="separator">or</div>
         <div class="subBlock">
-          <h3>Charger un projet existant</h3>
+          <h3>Load an existing project</h3>
           <label>
-            Projets existants
+            Existing projects
             <select id="projectSelect"></select>
           </label>
-          <p id="emptyProjects" class="emptyState" hidden>Aucun projet pour cette organisation — créez-en un ci-dessus</p>
-          <button id="loadProject" type="button" disabled>Charger projet</button>
+          <p id="emptyProjects" class="emptyState" hidden>No project for this organization. Create one above.</p>
+          <button id="loadProject" type="button" disabled>Load project</button>
         </div>
         <p id="projectStatus" class="status"></p>
       </section>
 
       <details id="brandingSection" class="settingsSection" hidden>
-        <summary>Paramètres du rapport</summary>
+        <summary>Report settings</summary>
         <div id="brandingSummary" class="brandingSummary"></div>
         <div id="brandingForm" hidden>
           <label>
@@ -83,31 +83,31 @@
           </label>
           <div id="brandingLogoPreview" class="logoPreview"></div>
           <label>
-            Couleur principale
+            Primary color
             <div class="colorControl">
               <input id="brandingColorPicker" type="color" value="#1a5c3a">
               <input id="brandingPrimaryColor" type="text" value="#1a5c3a" maxlength="7">
             </div>
           </label>
           <label>
-            Téléphone
+            Phone
             <input id="brandingPhone" type="text">
           </label>
           <label>
-            Email de contact
+            Contact email
             <input id="brandingEmail" type="email">
           </label>
           <label>
-            Site web
+            Website
             <input id="brandingWebsite" type="text">
           </label>
           <label>
-            Mention légale
+            Legal note
             <textarea id="brandingLegalMention" rows="3"></textarea>
           </label>
           <div class="buttonRow">
-            <button id="skipBranding" type="button">Fermer</button>
-            <button id="saveBranding" type="button">Sauvegarder</button>
+            <button id="skipBranding" type="button">Close</button>
+            <button id="saveBranding" type="button">Save</button>
           </div>
         </div>
         <p id="brandingStatus" class="status"></p>
@@ -116,9 +116,9 @@
 
     <section class="workspace">
       <div class="steps" id="progressSteps" aria-label="Progression">
-        <div class="step" data-step="account"><span>1</span><strong>Compte</strong></div>
-        <div class="step" data-step="project"><span>2</span><strong>Projet</strong></div>
-        <div class="step" data-step="dwelling"><span>3</span><strong>Logement</strong></div>
+        <div class="step" data-step="account"><span>1</span><strong>Account</strong></div>
+        <div class="step" data-step="project"><span>2</span><strong>Project</strong></div>
+        <div class="step" data-step="dwelling"><span>3</span><strong>Home</strong></div>
         <div class="step" data-step="simulation"><span>4</span><strong>Simulation</strong></div>
       </div>
 
@@ -128,35 +128,35 @@
         <div class="panelHeader">
           <div>
             <h2>Questionnaire</h2>
-            <p id="questionnaireIntro">Connectez-vous pour charger le questionnaire.</p>
+            <p id="questionnaireIntro">Sign in to load the questionnaire.</p>
           </div>
           <div class="actionStack">
-            <span id="saveIndicator" class="saveIndicator unsaved">● Non sauvegardé</span>
-            <button id="saveAnswers" type="button" disabled>Sauvegarder réponses</button>
+            <span id="saveIndicator" class="saveIndicator unsaved">● Not saved</span>
+            <button id="saveAnswers" type="button" disabled>Save answers</button>
           </div>
         </div>
         <form id="questionnaireForm" class="questionnaire"></form>
         <div class="roomsHeader">
-          <h3>Pièces</h3>
+          <h3>Rooms</h3>
           <div class="roomAdd">
-            <button id="addRoomMenuButton" type="button" disabled>Ajouter une pièce</button>
+            <button id="addRoomMenuButton" type="button" disabled>Add room</button>
             <div id="roomTypeMenu" class="dropdownMenu" hidden>
-              <button type="button" data-room-type="living">Salon / séjour</button>
-              <button type="button" data-room-type="bedroom">Chambre</button>
-              <button type="button" data-room-type="kitchen">Cuisine</button>
-              <button type="button" data-room-type="bathroom">Salle de bain</button>
-              <button type="button" data-room-type="toilet">Toilettes</button>
-              <button type="button" data-room-type="office">Bureau</button>
-              <button type="button" data-room-type="corridor">Couloir / entrée</button>
-              <button type="button" data-room-type="staircase">Escalier</button>
-              <button type="button" data-room-type="utility">Buanderie / local technique</button>
-              <button type="button" data-room-type="other">Pièce personnalisée</button>
+              <button type="button" data-room-type="living">Living room</button>
+              <button type="button" data-room-type="bedroom">Bedroom</button>
+              <button type="button" data-room-type="kitchen">Kitchen</button>
+              <button type="button" data-room-type="bathroom">Bathroom</button>
+              <button type="button" data-room-type="toilet">Toilet</button>
+              <button type="button" data-room-type="office">Office</button>
+              <button type="button" data-room-type="corridor">Hallway / entrance</button>
+              <button type="button" data-room-type="staircase">Staircase</button>
+              <button type="button" data-room-type="utility">Utility / plant room</button>
+              <button type="button" data-room-type="other">Custom room</button>
             </div>
           </div>
         </div>
         <div id="rooms"></div>
         <div class="bottomActionBar">
-          <button id="saveAnswersBottom" type="button" disabled>Sauvegarder réponses</button>
+          <button id="saveAnswersBottom" type="button" disabled>Save answers</button>
         </div>
         <p id="answersStatus" class="status"></p>
       </div>
@@ -165,11 +165,11 @@
         <div class="panelHeader">
           <div>
             <h2>Simulation</h2>
-            <p>Lance les calculs depuis les dernières réponses sauvegardées.</p>
+            <p>Runs the calculation from the latest saved answers.</p>
           </div>
-          <button id="runSimulation" type="button" disabled>Lancer simulation</button>
+          <button id="runSimulation" type="button" disabled>Run simulation</button>
         </div>
-        <div id="simulationState" class="stateBox">Aucune simulation lancée — remplissez le questionnaire puis cliquez sur Lancer simulation</div>
+        <div id="simulationState" class="stateBox">No simulation run yet. Fill in the questionnaire, then click Run simulation.</div>
         <div id="simulationRuns" class="runs"></div>
         <div id="resultSummary" class="summary"></div>
       </div>
@@ -177,7 +177,7 @@
   </main>
 
   <footer class="appFooter">
-    <a href="/legal" target="_blank" rel="noopener">CGU · Confidentialité · Mentions légales</a>
+    <a href="/legal" target="_blank" rel="noopener">Terms · Privacy · Legal notice</a>
   </footer>
 
   <script src="/static/app.js?v=20260527-beta-login"></script>

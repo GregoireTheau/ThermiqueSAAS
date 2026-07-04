@@ -27,7 +27,7 @@ def main() -> int:
     args = parse_args()
     admin_token = os.environ.get("THERMAL_SAAS_ADMIN_TOKEN", "").strip()
     if not admin_token:
-        print("Erreur: THERMAL_SAAS_ADMIN_TOKEN doit être défini dans l'environnement.")
+        print("Error: THERMAL_SAAS_ADMIN_TOKEN must be set in the environment.")
         return 1
 
     endpoint = args.url.rstrip("/") + "/admin/beta-users"
@@ -47,15 +47,15 @@ def main() -> int:
             detail = response.json().get("detail", response.text)
         except requests.JSONDecodeError:
             detail = response.text
-        print(f"Erreur création compte beta ({response.status_code}): {detail}")
+        print(f"Beta account creation error ({response.status_code}): {detail}")
         return 1
 
     payload = response.json()
     user = payload["user"]
     organization = payload["organization"]
-    print("Compte beta créé")
+    print("Beta account created")
     print(f"Email: {user['email']}")
-    print(f"Organisation: {organization['name']}")
+    print(f"Organization: {organization['name']}")
     return 0
 
 

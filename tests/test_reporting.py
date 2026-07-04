@@ -38,10 +38,10 @@ def test_report_model_keeps_traceable_headline_metrics():
     assert report["experiment"]["duration_days"] == 1
     assert report["experiment"]["weather_source"] == "synthetic"
     assert report["experiment"]["title"].startswith("Simulation")
-    assert "expérience" in report["narrative"]["context"].lower()
-    assert "scénario après applique" not in report["narrative"]["tested_change"]
-    assert "Dans le modèle" not in report["narrative"]["tested_change"]
-    assert "température" in report["narrative"]["conclusion"]
+    assert "experiment" in report["narrative"]["context"].lower()
+    assert "after scenario applies" not in report["narrative"]["tested_change"]
+    assert "In the model" not in report["narrative"]["tested_change"]
+    assert "temperature" in report["narrative"]["conclusion"]
     assert report["temperature_profiles"]["thresholds"]["primary"] == "hot"
     assert report["comfort_mode"] == "hot"
     assert report["experiment"]["scenario_type"] == "unknown"
@@ -82,7 +82,7 @@ def test_report_model_excludes_hourly_traces():
     assert "hourly" not in report
     assert "before" not in report
     assert "after" not in report
-    assert report["methodology"]["reported_values"].startswith("Calculees depuis")
+    assert report["methodology"]["reported_values"].startswith("Calculated from")
     assert "temperature_profiles" in report
 
 
@@ -108,20 +108,20 @@ def test_render_report_html_contains_report_sections_without_hourly_traces():
     html = render_report_html(report)
 
     assert "<!doctype html>" in html
-    assert "Simulation toiture réfléchissante - confort été" in html
-    assert "Synthèse exécutive" in html
-    assert "Scénario</div>Simulation thermique pendant un épisode de canicule" in html
-    assert "en toiture" not in html
-    assert "Scénarios" not in html
-    assert "Contexte" in html
-    assert "Graphiques de température" in html
-    assert "Résultats principaux" in html
-    assert "Besoin thermique = chaleur à fournir ou à extraire" in html
-    assert "Énergie finale totale" in html
-    assert "Lecture des résultats" in html
-    assert "Détail par pièce" in html
-    assert "Rapport généré automatiquement" in html
-    assert "Limites de la simulation" not in html
+    assert "Simulation reflective roof - summer comfort" in html
+    assert "Executive Summary" in html
+    assert "Scenario</div>Thermal simulation during a heatwave episode" in html
+    assert "roofing" not in html
+    assert "Scenarios" not in html
+    assert "Context" in html
+    assert "Temperature Charts" in html
+    assert "Main Results" in html
+    assert "Thermal demand" in html
+    assert "Total final energy" in html
+    assert "Reading the Results" in html
+    assert "Room Details" in html
+    assert "Report generated automatically" in html
+    assert "Simulation limits" not in html
     assert "24 h" in html
     assert "°C" in html
     assert '<svg class="chart" viewBox="0 0 1040 370"' in html
@@ -146,13 +146,13 @@ def test_report_context_only_mentions_cooling_setpoints_when_cooling_exists():
 
     comparison["experiment"]["has_cooling"] = False
     no_cooling_html = render_report_html(build_report_model(comparison))
-    assert "Consignes" in no_cooling_html
-    assert "Chauffage 19 °C" in no_cooling_html
-    assert "rafraîchissement" not in no_cooling_html
+    assert "Setpoints" in no_cooling_html
+    assert "Heating 19 °C" in no_cooling_html
+    assert "cooling 27 °C during the day, 24 °C at night" not in no_cooling_html
 
     comparison["experiment"]["has_cooling"] = True
     cooling_html = render_report_html(build_report_model(comparison))
-    assert "Chauffage 19 °C, rafraîchissement 27 °C en journée, 24 °C la nuit" in cooling_html
+    assert "Heating 19 °C, cooling 27 °C during the day, 24 °C at night" in cooling_html
 
 
 def test_comfort_mode_and_room_status_handle_cold_symmetrically():
@@ -176,11 +176,11 @@ def test_comfort_mode_and_room_status_handle_cold_symmetrically():
     assert get_room_status(
         {"temp_min_before": 15.5, "cold_dh_reduction_pct": 0},
         "cold",
-    ) == ("Critique", "status-critical")
+    ) == ("Critical", "status-critical")
     assert get_room_status(
         {"temp_min_before": 18.0, "cold_dh_reduction_pct": 35},
         "cold",
-    ) == ("Amélioré", "status-improved")
+    ) == ("Improved", "status-improved")
 
 
 def test_render_report_html_hides_zero_rows():
@@ -192,8 +192,8 @@ def test_render_report_html_hides_zero_rows():
 
     html = render_report_html(report)
 
-    assert "Chauffage thermique" not in html
-    assert "Heures d&#x27;inconfort cumulées (froid)" not in html
+    assert "Heating demand" not in html
+    assert "Cumulative discomfort hours (cold)" not in html
 
 
 def test_report_kpis_are_adapted_to_business_scenario_type():
@@ -231,11 +231,11 @@ def test_report_kpis_are_adapted_to_business_scenario_type():
 
     assert heat_pump_report["experiment"]["scenario_type"] == "heat_pump"
     assert [kpi["label"] for kpi in heat_pump_report["primary_kpis"]] == [
-        "Énergie finale économisée",
-        "Coût économisé",
-        "CO₂ évité",
+        "Final energy saved",
+        "Cost saved",
+        "CO₂ avoided",
     ]
-    assert "La PAC fournit le même besoin de chaleur" in heat_pump_report["narrative"]["conclusion"]
+    assert "The heat pump provides the same heat demand" in heat_pump_report["narrative"]["conclusion"]
 
 
 def test_business_report_presentation_is_profile_specific():
@@ -274,11 +274,11 @@ def test_business_report_presentation_is_profile_specific():
         include_report_html=False,
     )["simulation_runs"][-1]["report"]
     assert [kpi["label"] for kpi in heat_pump["primary_kpis"]] == [
-        "Énergie finale économisée",
-        "Coût économisé",
-        "CO₂ évité",
+        "Final energy saved",
+        "Cost saved",
+        "CO₂ avoided",
     ]
-    assert "Inconfort chaud évité" not in [
+    assert "Hot discomfort avoided" not in [
         kpi["label"] for kpi in heat_pump["primary_kpis"]
     ]
 
@@ -288,11 +288,11 @@ def test_business_report_presentation_is_profile_specific():
         include_report_html=True,
     )["simulation_runs"][-1]
     assert [kpi["label"] for kpi in roof["report"]["primary_kpis"]] == [
-        "Besoin chauffage réduit",
-        "Énergie finale chauffage",
-        "Coût économisé",
+        "Heating demand reduced",
+        "Final heating energy",
+        "Cost saved",
     ]
-    assert "Impact été" in roof["report_html"]
+    assert "Summer impact" in roof["report_html"]
 
     reflective_result = run_profile_experience(
         "reflective_roof_seller",
@@ -306,26 +306,26 @@ def test_business_report_presentation_is_profile_specific():
     assert long_profile["points"][0]["before_temperature_c"] == long_profile["points"][0]["before_max_temperature_c"]
     assert "before_average_temperature_c" in long_profile["points"][0]
     assert long_profile["x_axis"]["labels"] == [
-        ("Juin", 0),
-        ("Juil", 1272),
+        ("Jun", 0),
+        ("Jul", 1272),
         ("Sep", 2544),
     ]
     assert ">h0<" not in reflective_result["simulation_runs"][0]["report_html"]
-    assert ">Juin<" in reflective_result["simulation_runs"][0]["report_html"]
-    assert ">Mai<" not in reflective_result["simulation_runs"][0]["report_html"]
+    assert ">Jun<" in reflective_result["simulation_runs"][0]["report_html"]
+    assert ">May<" not in reflective_result["simulation_runs"][0]["report_html"]
     assert (
-        "Scénario</div>Simulation thermique de juin à septembre avant et après "
-        "l&#x27;ajout d&#x27;une peinture réfléchissante sur la toiture."
+        "Scenario</div>Thermal simulation from June to September before and after "
+        "adding a reflective roof coating."
         in reflective_result["simulation_runs"][0]["report_html"]
     )
     assert (
-        "<tr><td>Modification testée</td><td>Ajouter un revêtement réfléchissant sur la toiture contre la chaleur</td></tr>"
+        "<tr><td>Tested change</td><td>Add a reflective roof coating against heat</td></tr>"
         in reflective_result["simulation_runs"][0]["report_html"]
     )
-    assert "Dans le modèle, cela correspond" not in reflective_result["simulation_runs"][0]["report_html"]
-    assert "en toiture" not in reflective_result["simulation_runs"][0]["report_html"]
-    assert "température maximale de chaque journée" in reflective_result["simulation_runs"][0]["report_html"]
-    assert "Moy. int./j" in reflective_result["simulation_runs"][0]["report_html"]
+    assert "In the model, this corresponds" not in reflective_result["simulation_runs"][0]["report_html"]
+    assert "roofing" not in reflective_result["simulation_runs"][0]["report_html"]
+    assert "maximum temperature for each day" in reflective_result["simulation_runs"][0]["report_html"]
+    assert "Indoor avg/day" in reflective_result["simulation_runs"][0]["report_html"]
     assert (
         reflective_result["simulation_runs"][1]["report"]["temperature_profiles"]["rooms"][0]["x_axis"]["type"]
         == "hours"
@@ -338,14 +338,14 @@ def test_business_report_presentation_is_profile_specific():
 
     reflective = reflective_result["simulation_runs"][1]
     assert [kpi["label"] for kpi in reflective["report"]["primary_kpis"]] == [
-        "Inconfort chaud évité",
-        "Température maximale réduite",
+        "Hot discomfort avoided",
+        "Maximum temperature reduced",
     ]
-    assert "Énergie finale économisée" not in [
+    assert "Final energy saved" not in [
         kpi["label"] for kpi in reflective["report"]["primary_kpis"]
     ]
-    assert "zoom canicule réelle" in reflective["report_html"]
-    assert "température simulée heure par heure" in reflective["report_html"]
+    assert "real heatwave zoom" in reflective["report_html"]
+    assert "simulated temperature hour by hour" in reflective["report_html"]
 
     windows_result = run_profile_experience(
         "window_seller",
@@ -354,21 +354,21 @@ def test_business_report_presentation_is_profile_specific():
     )
     windows_summer = windows_result["simulation_runs"][1]
     assert (
-        "Un vitrage performant réduit les apports solaires directs en été.<br>"
-        "L&#x27;effet sur le confort dépend de l&#x27;orientation"
+        "High-performance glazing reduces direct solar gains in summer.<br>"
+        "The effect on comfort depends on orientation"
         in windows_summer["report_html"]
     )
 
     windows = windows_result["simulation_runs"][-1]
     assert [kpi["label"] for kpi in windows["report"]["primary_kpis"]] == [
-        "Énergie finale économisée",
-        "Coût économisé",
-        "Inconfort chaud évité",
+        "Final energy saved",
+        "Cost saved",
+        "Hot discomfort avoided",
     ]
-    assert "Double effet" in windows["report_html"]
+    assert "Double effect" in windows["report_html"]
     assert (
-        "Énergie finale = énergie facturée après rendement ou COP du système.<br>"
-        "Dans le tableau, la variation est calculée après - avant"
+        "Final energy = billed energy after system efficiency or COP.<br>"
+        "In the table, variation is calculated as after - before"
         in windows["report_html"]
     )
 
@@ -418,15 +418,15 @@ def test_annual_temperature_profile_uses_daily_points_and_month_labels():
     assert profile["critical_markers"][0]["type"] == "hot"
     assert room["thermal_balance_deltas"]["solar_gain"]["delta"] != 0
     assert room["thermal_balance_deltas"]["transmission_exchange"]["delta"] != 0
-    assert profile["x_axis"]["labels"][1] == ("Fév", 744)
+    assert profile["x_axis"]["labels"][1] == ("Feb", 744)
     assert profile["x_axis"]["zones"][0] == {
-        "label": "Été",
+        "label": "Summer",
         "start_hour": 3624,
         "end_hour": 5832,
     }
 
     html = render_report_html(annual_report)
 
-    assert "Courbes en moyenne journalière" in html
+    assert "Curves show daily average" in html
     assert "<polygon" in html
     assert "<title>" in html

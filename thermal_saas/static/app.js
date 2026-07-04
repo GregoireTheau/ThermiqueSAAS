@@ -95,7 +95,7 @@ async function api(path, options = {}) {
   });
   if (!response.ok) {
     const error = await response.json().catch(() => ({detail: response.statusText}));
-    throw new Error(toFrenchError(error.detail || response.statusText));
+    throw new Error(toUserError(error.detail || response.statusText));
   }
   return response.json();
 }
@@ -106,26 +106,26 @@ function setStatus(element, message, isError = false) {
   element.classList.toggle("success", Boolean(message) && !isError);
 }
 
-function toFrenchError(message) {
+function toUserError(message) {
   const text = String(message || "");
   const known = {
-    "Authentication required.": "Connexion requise.",
-    "Invalid email or password.": "Email ou mot de passe invalide.",
-    "Password must contain at least 8 characters.": "Le mot de passe doit contenir au moins 8 caractères.",
-    "A user with this email already exists.": "Un compte existe déjà avec cet email.",
-    "Unknown project.": "Projet introuvable pour votre organisation.",
-    "Unknown simulation run.": "Simulation introuvable pour votre organisation.",
-    "No answers saved for project": "Aucune réponse sauvegardée pour ce projet.",
-    "Organization already exists with a different business profile.": "Cette organisation existe déjà avec une autre configuration.",
-    "Unknown business profile.": "Configuration inconnue.",
-    "primary_color must be a hex color.": "La couleur doit être au format hexadécimal, par exemple #1a5c3a.",
-    "logo_url must be an image data URL.": "Le logo doit être une image PNG, JPG ou SVG.",
-    "logo_url is too large.": "Le logo est trop volumineux.",
+    "Authentication required.": "Sign in required.",
+    "Invalid email or password.": "Invalid email or password.",
+    "Password must contain at least 8 characters.": "Password must contain at least 8 characters.",
+    "A user with this email already exists.": "An account already exists with this email.",
+    "Unknown project.": "Project not found for your organization.",
+    "Unknown simulation run.": "Simulation not found for your organization.",
+    "No answers saved for project": "No answers saved for this project.",
+    "Organization already exists with a different business profile.": "This organization already exists with another configuration.",
+    "Unknown business profile.": "Unknown configuration.",
+    "primary_color must be a hex color.": "The color must be hexadecimal, for example #1a5c3a.",
+    "logo_url must be an image data URL.": "The logo must be a PNG, JPG, or SVG image.",
+    "logo_url is too large.": "The logo is too large.",
   };
   for (const [source, target] of Object.entries(known)) {
     if (text.includes(source)) return target;
   }
-  return text || "Une erreur est survenue.";
+  return text || "Something went wrong.";
 }
 
 function updateUiState() {
@@ -138,7 +138,7 @@ function updateUiState() {
   els.logout.disabled = !isLoggedIn;
   els.brandingSection.hidden = !isLoggedIn;
   els.saveBranding.disabled = !isLoggedIn;
-  els.saveBranding.textContent = "Sauvegarder";
+  els.saveBranding.textContent = "Save";
   els.login.disabled = isLoggedIn || state.authSubmitting === "login";
   els.brandingForm.hidden = !state.brandingEditorOpen;
   els.skipBranding.hidden = true;
@@ -146,7 +146,7 @@ function updateUiState() {
   if (!isLoggedIn) {
     els.projectSelect.hidden = true;
     els.emptyProjects.hidden = false;
-    els.emptyProjects.textContent = "Créez un compte ou connectez-vous pour accéder aux projets";
+    els.emptyProjects.textContent = "Create an account or sign in to access projects";
     els.loadProject.disabled = true;
   }
 
@@ -158,7 +158,7 @@ function updateUiState() {
   els.addRoomMenuButton.disabled = !state.project;
   if (!state.project) els.roomTypeMenu.hidden = true;
 
-  els.saveIndicator.textContent = state.answersSaved ? "✓ Sauvegardé" : "● Non sauvegardé";
+  els.saveIndicator.textContent = state.answersSaved ? "✓ Saved" : "● Not saved";
   els.saveIndicator.className = `saveIndicator ${state.answersSaved ? "saved" : "unsaved"}`;
   renderProgress();
   renderProjectSummary();
@@ -230,7 +230,7 @@ async function saveBranding() {
     });
     applyBranding(payload.branding);
     state.brandingEditorOpen = false;
-    setStatus(els.brandingStatus, "✓ Sauvegardé");
+    setStatus(els.brandingStatus, "✓ Saved");
     window.setTimeout(() => setStatus(els.brandingStatus, ""), 2000);
   } catch (error) {
     setStatus(els.brandingStatus, error.message, true);
@@ -271,10 +271,10 @@ function renderBrandingSummary() {
     <div class="brandingSummaryRow">
       <div class="brandingIdentity">
         <span class="brandingSwatch" style="background:${color}"></span>
-        <span>${configured ? "Personnalisation configurée" : "Non personnalisé"}</span>
+        <span>${configured ? "Customization configured" : "Not customized"}</span>
         ${configured ? "<strong>✓</strong>" : ""}
       </div>
-      <button type="button" data-open-branding>${configured ? "Modifier" : "Configurer"}</button>
+      <button type="button" data-open-branding>${configured ? "Edit" : "Configure"}</button>
     </div>
   `;
 }
@@ -293,7 +293,7 @@ async function handleLogoUpload(event) {
 
 function logoDataUrl(file) {
   if (!["image/png", "image/jpeg", "image/svg+xml"].includes(file.type)) {
-    throw new Error("Logo PNG, JPG ou SVG uniquement.");
+    throw new Error("PNG, JPG, or SVG logo only.");
   }
   if (file.type === "image/svg+xml") return readFileAsDataUrl(file);
   return new Promise((resolve, reject) => {
@@ -307,7 +307,7 @@ function logoDataUrl(file) {
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
       resolve(canvas.toDataURL(file.type, 0.9));
     };
-    image.onerror = () => reject(new Error("Logo illisible."));
+    image.onerror = () => reject(new Error("Logo cannot be read."));
     readFileAsDataUrl(file).then((dataUrl) => {
       image.src = dataUrl;
     }).catch(reject);
@@ -318,7 +318,7 @@ function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("Impossible de lire le logo."));
+    reader.onerror = () => reject(new Error("Unable to read the logo."));
     reader.readAsDataURL(file);
   });
 }
@@ -334,13 +334,13 @@ async function refreshSession() {
     const payload = await api("/auth/me");
     state.user = payload.user;
     els.logout.disabled = false;
-    setStatus(els.authStatus, `Connecté : ${state.user.email}`);
+    setStatus(els.authStatus, `Signed in: ${state.user.email}`);
     await setOrganizationFromUser();
   } catch {
     state.token = "";
     state.user = null;
     els.logout.disabled = true;
-    setStatus(els.authStatus, "Non connecté");
+    setStatus(els.authStatus, "Not signed in");
   }
   updateUiState();
 }
@@ -384,11 +384,11 @@ async function refreshProjects() {
   const payload = await api("/projects");
   const hasProjects = payload.projects.length > 0;
   els.projectSelect.innerHTML = payload.projects
-    .map((project) => `<option value="${project.id}">${project.name} · ${project.customer_name || "Sans client"}</option>`)
+    .map((project) => `<option value="${project.id}">${project.name} · ${project.customer_name || "No client"}</option>`)
     .join("");
   els.projectSelect.hidden = !hasProjects;
   els.emptyProjects.hidden = hasProjects;
-  els.emptyProjects.textContent = "Aucun projet pour cette organisation — créez-en un ci-dessus";
+  els.emptyProjects.textContent = "No project for this organization. Create one above.";
   els.loadProject.disabled = !hasProjects;
   if (!hasProjects) {
     startNewProject();
@@ -417,12 +417,12 @@ function renderQuestionnaire() {
 
 function questionnaireIntroLabel() {
   if (state.profileId === "roof_insulation_seller") {
-    return "Questionnaire isolation toiture";
+    return "Roof insulation questionnaire";
   }
   if (state.profileId === "reflective_roof_seller") {
-    return "Questionnaire toiture réfléchissante";
+    return "Reflective roof questionnaire";
   }
-  return "Questionnaire projet";
+  return "Project questionnaire";
 }
 
 function renderQuestion(question) {
@@ -440,11 +440,11 @@ function renderQuestion(question) {
       <div class="booleanPills">
         <label>
           <input id="${question.id}_false" name="${question.id}" type="radio" value="false" ${selected === "false" ? "checked" : ""}>
-          <span>Non</span>
+          <span>No</span>
         </label>
         <label>
           <input id="${question.id}_true" name="${question.id}" type="radio" value="true" ${selected === "true" ? "checked" : ""}>
-          <span>Oui</span>
+          <span>Yes</span>
         </label>
       </div>
     </div>`;
@@ -471,14 +471,14 @@ function updateCoolingVisibility() {
 
 const positionOptions = {
   house: [
-    ["single_storey_house", "Maison de plain-pied"],
-    ["multi_storey_house", "Maison avec étage"],
+    ["single_storey_house", "Single-storey house"],
+    ["multi_storey_house", "Multi-storey house"],
   ],
   apartment: [
-    ["apartment_ground_floor", "Appartement en rez-de-chaussée"],
-    ["apartment_middle_floor", "Appartement en étage intermédiaire"],
-    ["apartment_top_floor", "Appartement au dernier étage"],
-    ["apartment_ground_top_floor", "Appartement en rez-de-chaussée directement sous toiture"],
+    ["apartment_ground_floor", "Ground-floor apartment"],
+    ["apartment_middle_floor", "Middle-floor apartment"],
+    ["apartment_top_floor", "Top-floor apartment"],
+    ["apartment_ground_top_floor", "Ground-floor apartment directly under the roof"],
   ],
 };
 
@@ -546,16 +546,16 @@ function defaultRoom() {
 
 function roomPreset(kind) {
   const presets = {
-    living: ["Salon", "living", 24, 4.0, 5.0, 2.5, "exterior"],
-    bedroom: ["Chambre", "bedroom", 12, 1.5, 3.5, 2.5, "exterior"],
-    kitchen: ["Cuisine", "kitchen", 10, 1.2, 3.2, 2.5, "exterior"],
-    bathroom: ["Salle de bain", "bathroom", 6, 0.6, 2.5, 2.5, "exterior"],
-    toilet: ["Toilettes", "utility", 2, 0.3, 1.4, 2.5, "exterior"],
-    office: ["Bureau", "office", 9, 1.2, 3.0, 2.5, "exterior"],
-    corridor: ["Couloir", "corridor", 6, 0.0, 2.5, 2.5, "interior"],
-    staircase: ["Escalier", "staircase", 6, 0.0, 2.5, 4.5, "interior"],
-    utility: ["Buanderie", "utility", 5, 0.4, 2.2, 2.5, "exterior"],
-    other: ["Pièce", "other", 15, 1.2, 4.0, 2.5, "exterior"],
+    living: ["Living room", "living", 24, 4.0, 5.0, 2.5, "exterior"],
+    bedroom: ["Bedroom", "bedroom", 12, 1.5, 3.5, 2.5, "exterior"],
+    kitchen: ["Kitchen", "kitchen", 10, 1.2, 3.2, 2.5, "exterior"],
+    bathroom: ["Bathroom", "bathroom", 6, 0.6, 2.5, 2.5, "exterior"],
+    toilet: ["Toilet", "utility", 2, 0.3, 1.4, 2.5, "exterior"],
+    office: ["Office", "office", 9, 1.2, 3.0, 2.5, "exterior"],
+    corridor: ["Hallway", "corridor", 6, 0.0, 2.5, 2.5, "interior"],
+    staircase: ["Staircase", "staircase", 6, 0.0, 2.5, 4.5, "interior"],
+    utility: ["Utility room", "utility", 5, 0.4, 2.2, 2.5, "exterior"],
+    other: ["Room", "other", 15, 1.2, 4.0, 2.5, "exterior"],
   };
   const [name, type, area, windowArea, wallLength, height, exteriorContact] = presets[kind] || presets.other;
   return {
@@ -596,31 +596,31 @@ function renderRooms() {
   els.rooms.innerHTML = rooms.map((room, index) => `
     <div class="room" data-room-index="${index}" data-room-id="${room.id}">
       <div class="roomTitle">
-        <h3>Pièce ${index + 1}</h3>
-        <button class="removeRoom" type="button" data-remove-room="${index}">Retirer</button>
+        <h3>Room ${index + 1}</h3>
+        <button class="removeRoom" type="button" data-remove-room="${index}">Remove</button>
       </div>
-      ${renderRoomField("name", `<label>Nom<input data-room-field="name" value="${escapeHtml(room.name)}"></label>`, room)}
+      ${renderRoomField("name", `<label>Name<input data-room-field="name" value="${escapeHtml(room.name)}"></label>`, room)}
       ${renderRoomField("type", `<label>Type
         <select data-room-field="type">
-          ${option("living", "Salon / séjour", room.type)}
-          ${option("bedroom", "Chambre", room.type)}
-          ${option("kitchen", "Cuisine", room.type)}
-          ${option("bathroom", "Salle de bain", room.type)}
-          ${option("office", "Bureau", room.type)}
-          ${option("corridor", "Couloir / entrée", room.type)}
-          ${option("staircase", "Escalier", room.type)}
-          ${option("utility", "Toilettes / buanderie", room.type)}
-          ${option("other", "Autre", room.type)}
+          ${option("living", "Living room", room.type)}
+          ${option("bedroom", "Bedroom", room.type)}
+          ${option("kitchen", "Kitchen", room.type)}
+          ${option("bathroom", "Bathroom", room.type)}
+          ${option("office", "Office", room.type)}
+          ${option("corridor", "Hallway / entrance", room.type)}
+          ${option("staircase", "Staircase", room.type)}
+          ${option("utility", "Toilet / utility room", room.type)}
+          ${option("other", "Other", room.type)}
         </select>
       </label>`, room)}
-      ${renderRoomField("floor_area_m2", `<label>Surface m²<input data-room-field="floor_area_m2" type="number" value="${room.floor_area_m2}"></label>`, room)}
-      ${renderRoomField("height_m", `<label>Hauteur m<input data-room-field="height_m" type="number" value="${room.height_m}"></label>`, room)}
-      ${renderRoomField("exterior_contact", `<label>Type de frontière principale
+      ${renderRoomField("floor_area_m2", `<label>Area m²<input data-room-field="floor_area_m2" type="number" value="${room.floor_area_m2}"></label>`, room)}
+      ${renderRoomField("height_m", `<label>Height m<input data-room-field="height_m" type="number" value="${room.height_m}"></label>`, room)}
+      ${renderRoomField("exterior_contact", `<label>Main boundary type
         <select data-room-field="exterior_contact">
-          ${option("exterior", "Façade(s) donnant sur l'extérieur", room.exterior_contact || "exterior")}
-          ${option("interior", "Pièce intérieure (pas de mur extérieur)", room.exterior_contact || "exterior")}
-          ${option("unheated_space", "Contre un local non chauffé (garage, cave, combles)", room.exterior_contact || "exterior")}
-          ${option("party", "Contre un voisin ou mur mitoyen", room.exterior_contact || "exterior")}
+          ${option("exterior", "Facade(s) facing outside", room.exterior_contact || "exterior")}
+          ${option("interior", "Interior room (no exterior wall)", room.exterior_contact || "exterior")}
+          ${option("unheated_space", "Against an unheated space (garage, cellar, attic)", room.exterior_contact || "exterior")}
+          ${option("party", "Against a neighbor or party wall", room.exterior_contact || "exterior")}
         </select>
       </label>`, room)}
       ${renderRoomField("orientation", `<label>Orientation
@@ -628,32 +628,32 @@ function renderRooms() {
           ${["N", "E", "S", "W", "SE", "SW"].map((value) => option(value, value, room.orientation || room.facades?.[0]?.orientation || "S")).join("")}
         </select>
       </label>`, room)}
-      ${renderRoomField("window_area_m2", `<label>Vitrage m²<input data-room-field="window_area_m2" type="number" value="${room.window_area_m2 ?? room.facades?.[0]?.window_area_m2 ?? 0}"></label>`, room)}
-      ${renderRoomField("wall_length_m", `<label>Longueur façade m<input data-room-field="wall_length_m" type="number" value="${room.wall_length_m ?? room.facades?.[0]?.wall_length_m ?? 4}"></label>`, room)}
-      ${renderRoomField("mask_factor", `<label>Masque solaire
+      ${renderRoomField("window_area_m2", `<label>Glazing m²<input data-room-field="window_area_m2" type="number" value="${room.window_area_m2 ?? room.facades?.[0]?.window_area_m2 ?? 0}"></label>`, room)}
+      ${renderRoomField("wall_length_m", `<label>Facade length m<input data-room-field="wall_length_m" type="number" value="${room.wall_length_m ?? room.facades?.[0]?.wall_length_m ?? 4}"></label>`, room)}
+      ${renderRoomField("mask_factor", `<label>Solar shading
         <select data-room-field="mask_factor">
-          ${option("1", "Aucun masque", String(room.mask_factor ?? room.facades?.[0]?.mask_factor ?? 1))}
-          ${option("0.85", "Masque léger", String(room.mask_factor ?? room.facades?.[0]?.mask_factor ?? 1))}
-          ${option("0.65", "Masque moyen", String(room.mask_factor ?? room.facades?.[0]?.mask_factor ?? 1))}
-          ${option("0.4", "Masque fort", String(room.mask_factor ?? room.facades?.[0]?.mask_factor ?? 1))}
+          ${option("1", "No shading", String(room.mask_factor ?? room.facades?.[0]?.mask_factor ?? 1))}
+          ${option("0.85", "Light shading", String(room.mask_factor ?? room.facades?.[0]?.mask_factor ?? 1))}
+          ${option("0.65", "Medium shading", String(room.mask_factor ?? room.facades?.[0]?.mask_factor ?? 1))}
+          ${option("0.4", "Strong shading", String(room.mask_factor ?? room.facades?.[0]?.mask_factor ?? 1))}
         </select>
       </label>`, room)}
-      ${renderRoomField("has_roof", `<label>Sous toiture
+      ${renderRoomField("has_roof", `<label>Under roof
         <select data-room-field="has_roof">
-          ${option("true", "Oui", String(room.has_roof))}
-          ${option("false", "Non", String(room.has_roof))}
+          ${option("true", "Yes", String(room.has_roof))}
+          ${option("false", "No", String(room.has_roof))}
         </select>
       </label>`, room)}
       ${renderRoomField("has_cooling", `<div class="booleanQuestion roomBooleanQuestion">
-        <span class="fieldLabel">Pièce climatisée</span>
+        <span class="fieldLabel">Cooled room</span>
         <div class="booleanPills">
           <label>
             <input data-room-field="has_cooling" name="room_${index}_has_cooling" type="radio" value="false" ${String(room.has_cooling) !== "true" ? "checked" : ""}>
-            <span>Non</span>
+            <span>No</span>
           </label>
           <label>
             <input data-room-field="has_cooling" name="room_${index}_has_cooling" type="radio" value="true" ${String(room.has_cooling) === "true" ? "checked" : ""}>
-            <span>Oui</span>
+            <span>Yes</span>
           </label>
         </div>
       </div>`, room)}
@@ -677,7 +677,7 @@ function escapeHtml(value) {
 function roomsWithIds(rooms) {
   const used = new Set();
   return rooms.map((room, index) => {
-    let id = room.id || slugify(room.name || `piece-${index + 1}`) || `room_${index + 1}`;
+    let id = room.id || slugify(room.name || `room-${index + 1}`) || `room_${index + 1}`;
     if (used.has(id)) id = `${id}_${index + 1}`;
     used.add(id);
     return {...room, id};
@@ -702,7 +702,7 @@ function linkForPair(roomA, roomB) {
 }
 
 function roomLabel(room, index) {
-  return room.name || `Pièce ${index + 1}`;
+  return room.name || `Room ${index + 1}`;
 }
 
 function renderConnections(room, rooms) {
@@ -716,8 +716,8 @@ function renderConnections(room, rooms) {
     .filter((link) => connectionOwnerRoomId(link, rooms) === room.id);
   return `
     <div class="connectionFields">
-      <div class="connectionPills" role="group" aria-label="Connexions avec les autres pièces">
-        <span>Connexions avec les autres pièces</span>
+      <div class="connectionPills" role="group" aria-label="Connections with other rooms">
+        <span>Connections with other rooms</span>
         <div>
           ${rooms
             .filter((other) => other.id !== room.id)
@@ -765,8 +765,8 @@ function renderConnectionParams(link, rooms, roomId) {
   const key = pairKey(link.room_a, link.room_b);
   return `
     <div class="connectionParams" data-link-key="${key}">
-      <h4>Lien avec ${roomLabel(other || {name: otherId}, otherIndex)}</h4>
-      <label>Surface commune m²<input data-link-field="area_m2" type="number" min="0.1" step="0.1" value="${link.area_m2 ?? 4}"></label>
+      <h4>Connection to ${roomLabel(other || {name: otherId}, otherIndex)}</h4>
+      <label>Shared area m²<input data-link-field="area_m2" type="number" min="0.1" step="0.1" value="${link.area_m2 ?? 4}"></label>
     </div>
   `;
 }
@@ -794,7 +794,7 @@ function syncRoomsFromDom(connectionChange = null) {
     const maskFactor = Number(value("mask_factor", 1));
     return {
       id: roomElement.dataset.roomId || `room_${index + 1}`,
-      name: value("name", "Pièce"),
+      name: value("name", "Room"),
       type: value("type", "living"),
       floor_area_m2: Number(value("floor_area_m2", 20)),
       height_m: Number(value("height_m", 2.5)),
@@ -928,7 +928,7 @@ async function logout() {
   els.projectSelect.innerHTML = "";
   els.simulationRuns.innerHTML = "";
   els.resultSummary.innerHTML = "";
-  setStatus(els.authStatus, "Déconnecté");
+  setStatus(els.authStatus, "Signed out");
   setStatus(els.brandingStatus, "");
   applyBranding({});
   updateUiState();
@@ -943,7 +943,7 @@ function setSession(payload) {
     exists: true,
   };
   els.logout.disabled = false;
-  setStatus(els.authStatus, `Connecté : ${state.user.email}`);
+  setStatus(els.authStatus, `Signed in: ${state.user.email}`);
   updateUiState();
 }
 
@@ -955,7 +955,7 @@ async function setOrganizationFromUser(organization = null) {
     state.organization = payload.organizations[0] || null;
   }
   if (!state.organization) {
-    setStatus(els.authStatus, "Aucune organisation associée à ce compte.", true);
+    setStatus(els.authStatus, "No organization is associated with this account.", true);
     updateUiState();
     return;
   }
@@ -971,7 +971,7 @@ async function setOrganizationFromUser(organization = null) {
   els.createProject.disabled = false;
   await refreshProjects();
   await loadBranding();
-  setStatus(els.authStatus, `Connecté : ${state.user.email}`);
+  setStatus(els.authStatus, `Signed in: ${state.user.email}`);
   updateUiState();
 }
 
@@ -996,7 +996,7 @@ async function createProject() {
     setSaveAnswersDisabled(false);
     els.runSimulation.disabled = true;
     await refreshProjects();
-    setStatus(els.projectStatus, `✓ Projet créé : ${state.project.name} — ${state.project.customer_name || "Sans client"}`);
+    setStatus(els.projectStatus, `✓ Project created: ${state.project.name} — ${state.project.customer_name || "No client"}`);
     if (state.pendingDemoAnswers) {
       applyAnswers(state.pendingDemoAnswers);
     }
@@ -1018,11 +1018,11 @@ function startNewProject() {
   state.simulationStatus = "idle";
   state.projectDraftOpen = true;
   state.rooms = [defaultRoom()];
-  els.projectName.value = "Maison client";
-  els.customerName.value = "Client test";
+  els.projectName.value = "Client house";
+  els.customerName.value = "Test client";
   els.resultSummary.innerHTML = "";
   els.simulationRuns.innerHTML = "";
-  setStatus(els.projectStatus, "Nouveau projet prêt à créer.");
+  setStatus(els.projectStatus, "New project ready to create.");
   setStatus(els.answersStatus, "");
   renderRooms();
   updateUiState();
@@ -1049,13 +1049,13 @@ async function loadProject() {
     setStatus(
       els.answersStatus,
       reportCount
-        ? `Dernières réponses : version ${state.latestAnswers.version}. Simulation déjà faite, rapports disponibles.`
-        : `Dernières réponses : version ${state.latestAnswers.version}`,
+        ? `Latest answers: version ${state.latestAnswers.version}. Simulation already run, reports available.`
+        : `Latest answers: version ${state.latestAnswers.version}`,
     );
   }
   renderSimulationRuns();
   await renderLatestSummary();
-  setStatus(els.projectStatus, `Projet chargé : ${state.project.id}`);
+  setStatus(els.projectStatus, `Project loaded: ${state.project.id}`);
   updateUiState();
 }
 
@@ -1107,8 +1107,8 @@ async function saveAnswers() {
       setStatus(
         els.answersStatus,
         usefulReportRuns().length
-          ? `Réponses inchangées : simulation déjà faite, rapports disponibles.`
-          : `Réponses inchangées : version ${state.latestAnswers.version}`,
+          ? `Answers unchanged: simulation already run, reports available.`
+          : `Answers unchanged: version ${state.latestAnswers.version}`,
       );
       updateUiState();
       return;
@@ -1121,7 +1121,7 @@ async function saveAnswers() {
     state.answersSaved = true;
     state.simulationStatus = usefulReportRuns().length ? "success" : "idle";
     state.lastSimulationError = "";
-    setStatus(els.answersStatus, `Réponses sauvegardées : version ${saved.version}`);
+    setStatus(els.answersStatus, `Answers saved: version ${saved.version}`);
     updateUiState();
   } catch (error) {
     state.lastSimulationError = error.message;
@@ -1141,7 +1141,7 @@ async function runSimulation() {
     state.simulationStatus = "success";
     renderSimulationRuns();
     await renderLatestSummary();
-    setStatus(els.answersStatus, "Simulation terminée");
+    setStatus(els.answersStatus, "Simulation complete");
   } catch (error) {
     state.simulationStatus = "error";
     state.lastSimulationError = error.message;
@@ -1160,13 +1160,13 @@ function renderSimulationRuns(runs = state.simulationRuns) {
   }
   if (!visibleRuns.length) {
     els.simulationRuns.innerHTML = `
-      <div class="stateBox">Des simulations existent pour d'anciennes réponses. Sauvegardez puis relancez pour générer les rapports des données affichées.</div>
+      <div class="stateBox">Simulations exist for older answers. Save and run again to generate reports for the displayed data.</div>
     `;
     return;
   }
   const hiddenCount = runs.length - visibleRuns.length;
   els.simulationRuns.innerHTML = `
-    ${hiddenCount > 0 ? `<div class="stateBox success">Affichage des ${visibleRuns.length} rapport${visibleRuns.length > 1 ? "s" : ""} utile${visibleRuns.length > 1 ? "s" : ""}. ${hiddenCount} simulation${hiddenCount > 1 ? "s" : ""} technique${hiddenCount > 1 ? "s" : ""} masquée${hiddenCount > 1 ? "s" : ""}.</div>` : ""}
+    ${hiddenCount > 0 ? `<div class="stateBox success">Showing ${visibleRuns.length} useful report${visibleRuns.length > 1 ? "s" : ""}. ${hiddenCount} technical simulation${hiddenCount > 1 ? "s" : ""} hidden.</div>` : ""}
     ${visibleRuns.map((run) => `
     <div class="run">
       <div>
@@ -1174,7 +1174,7 @@ function renderSimulationRuns(runs = state.simulationRuns) {
         <p>${simulationRunStatus(run)}</p>
       </div>
       <div class="runActions">
-        <button type="button" data-open-report="${run.id}">Rapport HTML</button>
+        <button type="button" data-open-report="${run.id}">HTML report</button>
         <button type="button" data-download-report="${run.id}">PDF</button>
       </div>
     </div>
@@ -1184,36 +1184,36 @@ function renderSimulationRuns(runs = state.simulationRuns) {
 
 function simulationRunLabel(run) {
   if (run.adaptation_id === "roof_insulation" && run.season === "annual") {
-    return "Simulation annuelle météo réelle";
+    return "Real-weather annual simulation";
   }
   if (run.adaptation_id === "roof_insulation" && run.season === "winter" && run.role === "primary") {
-    return "Simulation hiver";
+    return "Winter simulation";
   }
   if (run.adaptation_id === "roof_insulation" && run.season === "summer") {
-    return "Impact été";
+    return "Summer impact";
   }
   if (run.adaptation_id === "reflective_roof" && run.season === "summer" && run.role === "primary") {
-    return "Simulation de juin à septembre";
+    return "June to September simulation";
   }
   if (run.adaptation_id === "reflective_roof" && run.season === "summer" && run.role === "secondary") {
-    return "Simulation sur 5 jours de canicule";
+    return "5-day heatwave simulation";
   }
   const adaptationLabels = {
-    reflective_roof: "Peinture réfléchissante",
-    roof_insulation: "Isolation toiture",
-    better_windows: "Fenêtres",
-    solar_protection: "Protections solaires",
-    heat_pump: "Pompe à chaleur",
+    reflective_roof: "Reflective coating",
+    roof_insulation: "Roof insulation",
+    better_windows: "Windows",
+    solar_protection: "Solar protection",
+    heat_pump: "Heat pump",
   };
   const seasonLabels = {
-    summer: "Confort d'été",
-    winter: "Chauffage hiver",
-    annual: "Année complète",
+    summer: "Summer comfort",
+    winter: "Winter heating",
+    annual: "Full year",
   };
   const roleLabels = {
-    primary: "rapport principal",
-    secondary: "rapport complémentaire",
-    annual: "rapport annuel",
+    primary: "main report",
+    secondary: "supplementary report",
+    annual: "annual report",
   };
   return [
     adaptationLabels[run.adaptation_id] || run.adaptation_id,
@@ -1223,7 +1223,7 @@ function simulationRunLabel(run) {
 }
 
 function simulationRunStatus(run) {
-  const statusLabel = run.status === "completed" ? "Simulation réalisée" : run.status;
+  const statusLabel = run.status === "completed" ? "Simulation complete" : run.status;
   if (["reflective_roof", "roof_insulation"].includes(run.adaptation_id)) {
     return statusLabel;
   }
@@ -1233,9 +1233,9 @@ function simulationRunStatus(run) {
 async function openReport(simulationRunId) {
   const reportWindow = window.open("", "_blank");
   if (!reportWindow) {
-    throw new Error("Le navigateur a bloqué l'ouverture du rapport.");
+    throw new Error("The browser blocked the report window.");
   }
-  reportWindow.document.write("<p>Chargement du rapport...</p>");
+  reportWindow.document.write("<p>Loading report...</p>");
   const headers = state.token ? {Authorization: `Bearer ${state.token}`} : {};
   const response = await fetch(`/simulation-runs/${simulationRunId}/report-html`, {
     headers,
@@ -1243,7 +1243,7 @@ async function openReport(simulationRunId) {
   });
   if (!response.ok) {
     reportWindow.close();
-    throw new Error("Rapport inaccessible.");
+    throw new Error("Report unavailable.");
   }
   const html = await response.text();
   reportWindow.document.open();
@@ -1258,13 +1258,13 @@ async function downloadReportPdf(simulationRunId) {
     credentials: "same-origin",
   });
   if (!response.ok) {
-    throw new Error("PDF inaccessible.");
+    throw new Error("PDF unavailable.");
   }
   const blob = await response.blob();
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = reportPdfFilename(response) || `rapport-${simulationRunId}.pdf`;
+  link.download = reportPdfFilename(response) || `report-${simulationRunId}.pdf`;
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -1298,27 +1298,27 @@ async function renderLatestSummary() {
   const afterTotals = payload.result.comparison.after.totals;
   if (summaryRun.adaptation_id === "reflective_roof") {
     els.resultSummary.innerHTML = `
-      <div class="metric accent"><span>Réduction température max</span><strong>${formatNumber(headline.max_temperature_reduction_c)} °C</strong></div>
-      <div class="metric accent"><span>Inconfort chaud évité</span><strong>${formatInteger(headline.hot_degree_hours_reduced)} °C·h</strong></div>
+      <div class="metric accent"><span>Max temperature reduction</span><strong>${formatNumber(headline.max_temperature_reduction_c)} °C</strong></div>
+      <div class="metric accent"><span>Hot discomfort avoided</span><strong>${formatInteger(headline.hot_degree_hours_reduced)} °C·h</strong></div>
     `;
     return;
   }
   if (summaryRun.adaptation_id === "roof_insulation") {
-    const weatherYear = payload.result.comparison.experiment.weather_year || "météo réelle";
+    const weatherYear = payload.result.comparison.experiment.weather_year || "real weather";
     els.resultSummary.innerHTML = `
-      <div class="metric accent"><span>Économie estimée sur une année météo réelle</span><strong>${formatNumber(energy.cost_saved_eur)} €</strong></div>
-      <div class="metric accent"><span>Besoin de chauffage réduit</span><strong>${formatNumber(beforeTotals.heating_thermal_kwh - afterTotals.heating_thermal_kwh)} kWh_th</strong></div>
-      <div class="metric"><span>Période</span><strong>Année météo réelle ${weatherYear}</strong></div>
+      <div class="metric accent"><span>Estimated savings over a real-weather year</span><strong>${formatNumber(energy.cost_saved_eur)} €</strong></div>
+      <div class="metric accent"><span>Heating demand reduced</span><strong>${formatNumber(beforeTotals.heating_thermal_kwh - afterTotals.heating_thermal_kwh)} kWh_th</strong></div>
+      <div class="metric"><span>Period</span><strong>Real-weather year ${weatherYear}</strong></div>
     `;
     return;
   }
   els.resultSummary.innerHTML = `
-    <div class="metric"><span>Économie électricité</span><strong>${formatNumber(energy.electricity_saved_kwh)} kWh</strong></div>
-    <div class="metric"><span>Économie estimée</span><strong>${formatNumber(energy.cost_saved_eur)} €</strong></div>
-    <div class="metric"><span>CO₂ évité</span><strong>${formatNumber(energy.co2_saved_kg)} kg</strong></div>
-    <div class="metric"><span>Réduction température max</span><strong>${formatNumber(headline.max_temperature_reduction_c)} °C</strong></div>
-    <div class="metric"><span>Inconfort chaud évité</span><strong>${formatNumber(headline.hot_degree_hours_reduced)} °C·h</strong></div>
-    <div class="metric"><span>Inconfort froid évité</span><strong>${formatNumber(headline.cold_degree_hours_reduced)} °C·h</strong></div>
+    <div class="metric"><span>Electricity saved</span><strong>${formatNumber(energy.electricity_saved_kwh)} kWh</strong></div>
+    <div class="metric"><span>Estimated savings</span><strong>${formatNumber(energy.cost_saved_eur)} €</strong></div>
+    <div class="metric"><span>CO₂ avoided</span><strong>${formatNumber(energy.co2_saved_kg)} kg</strong></div>
+    <div class="metric"><span>Max temperature reduction</span><strong>${formatNumber(headline.max_temperature_reduction_c)} °C</strong></div>
+    <div class="metric"><span>Hot discomfort avoided</span><strong>${formatNumber(headline.hot_degree_hours_reduced)} °C·h</strong></div>
+    <div class="metric"><span>Cold discomfort avoided</span><strong>${formatNumber(headline.cold_degree_hours_reduced)} °C·h</strong></div>
   `;
 }
 
@@ -1406,16 +1406,16 @@ function renderProjectSummary() {
   }
   const reports = usefulReportRuns();
   const latest = reports.length
-    ? `Dernière simulation utile : ${formatDate(reports[reports.length - 1].created_at)} ✓`
+    ? `Latest useful simulation: ${formatDate(reports[reports.length - 1].created_at)} ✓`
     : state.simulationRuns.length
-      ? "Dernière simulation : ancienne version de réponses"
-      : "Dernière simulation : aucune";
+      ? "Latest simulation: older answer version"
+      : "Latest simulation: none";
   const city = getField("city", "Bordeaux");
   const postalCode = getField("postal_code", "33000");
   els.projectSummary.hidden = false;
   els.projectSummary.innerHTML = `
-    <div class="projectSummaryTitle">📁 ${state.project.name} — ${state.project.customer_name || "Sans client"}</div>
-    <div class="projectSummaryMeta">${state.rooms.length} pièce${state.rooms.length > 1 ? "s" : ""} | ${postalCode} ${city}</div>
+    <div class="projectSummaryTitle">📁 ${state.project.name} — ${state.project.customer_name || "No client"}</div>
+    <div class="projectSummaryMeta">${state.rooms.length} room${state.rooms.length > 1 ? "s" : ""} | ${postalCode} ${city}</div>
     <div class="projectSummaryMeta">${latest}</div>
     <div class="projectSummaryReports">
       ${reports.length ? reports.map((run) => `
@@ -1426,8 +1426,8 @@ function renderProjectSummary() {
         </div>
       `).join("") : `
         <div class="projectSummaryActions">
-          <button type="button" disabled>Voir le rapport HTML</button>
-          <button type="button" disabled>Télécharger PDF</button>
+          <button type="button" disabled>View HTML report</button>
+          <button type="button" disabled>Download PDF</button>
         </div>
       `}
     </div>
@@ -1436,27 +1436,27 @@ function renderProjectSummary() {
 
 function renderSimulationState() {
   els.runSimulation.textContent = state.simulationStatus === "loading"
-    ? "⏳ Simulation en cours…"
+    ? "Simulation running..."
     : hasCurrentReports()
-      ? "Relancer simulation"
-    : "Lancer simulation";
+      ? "Run simulation again"
+    : "Run simulation";
   if (state.simulationStatus === "loading") {
     els.simulationState.className = "stateBox";
-    els.simulationState.textContent = "⏳ Simulation en cours…";
+    els.simulationState.textContent = "Simulation running...";
   } else if (state.simulationStatus === "success" && state.simulationRuns.length) {
     const reports = usefulReportRuns();
     const latestRun = reports[reports.length - 1] || state.simulationRuns[state.simulationRuns.length - 1];
     els.simulationState.className = "stateBox success";
     els.simulationState.textContent = hasCurrentReports()
-      ? `✓ Rapports disponibles pour ces réponses — relance possible`
-      : `✓ Simulation terminée le ${formatDate(latestRun.created_at)} — voir la synthèse`;
+      ? `✓ Reports available for these answers. You can run again if needed.`
+      : `✓ Simulation completed on ${formatDate(latestRun.created_at)}. See the summary.`;
   } else if (state.simulationStatus === "error") {
     els.simulationState.className = "stateBox error";
-    els.simulationState.innerHTML = `${state.lastSimulationError || "Erreur de simulation."} <strong>Corrigez les informations puis cliquez sur Réessayer.</strong>`;
-    els.runSimulation.textContent = "Réessayer";
+    els.simulationState.innerHTML = `${state.lastSimulationError || "Simulation error."} <strong>Correct the information, then click Try again.</strong>`;
+    els.runSimulation.textContent = "Try again";
   } else {
     els.simulationState.className = "stateBox";
-    els.simulationState.textContent = "Aucune simulation lancée — remplissez le questionnaire puis cliquez sur Lancer simulation";
+    els.simulationState.textContent = "No simulation run yet. Fill in the questionnaire, then click Run simulation.";
   }
 }
 
@@ -1475,7 +1475,7 @@ function applyDemo(demoId) {
   els.email.value = `demo.${profileId}.${suffix}@thermaltwin.local`;
   els.password.value = "password123";
   els.projectName.value = demoProjectName(demoId);
-  els.customerName.value = "Client démo";
+  els.customerName.value = "Demo client";
   loadQuestionnaire().then(() => {
     const answers = demoAnswers(demoId);
     state.pendingDemoAnswers = answers;
@@ -1490,17 +1490,17 @@ function applyDemo(demoId) {
     }));
     renderRooms();
     state.answersSaved = false;
-    setStatus(els.authStatus, "Démo préremplie.");
+    setStatus(els.authStatus, "Demo prefilled.");
     updateUiState();
   });
 }
 
 function demoProjectName(demoId) {
-  if (demoId === "heat_pump_seller") return "Maison démo PAC";
-  if (demoId === "solar_protection_seller") return "Maison démo protection solaire";
-  if (demoId === "window_seller") return "Maison démo fenêtres";
-  if (demoId === "roof_insulation_seller") return "Maison démo isolation toiture";
-  return "Maison démo peinture toiture";
+  if (demoId === "heat_pump_seller") return "Heat pump demo house";
+  if (demoId === "solar_protection_seller") return "Solar protection demo house";
+  if (demoId === "window_seller") return "Window demo house";
+  if (demoId === "roof_insulation_seller") return "Roof insulation demo house";
+  return "Reflective roof coating demo house";
 }
 
 function demoAnswers(demoId) {
@@ -1512,7 +1512,7 @@ function demoAnswers(demoId) {
     period_id: "2001_2012_good_insulation",
     rooms: [
       {
-        name: "Salon",
+        name: "Living room",
         type: "living",
         floor_area_m2: 24,
         height_m: 2.5,
@@ -1638,7 +1638,7 @@ els.roomTypeMenu.addEventListener("click", (event) => {
   try {
     syncRoomsFromDom();
   } catch (error) {
-    console.error("Impossible de synchroniser les pièces avant ajout.", error);
+    console.error("Unable to sync rooms before adding one.", error);
   }
   state.rooms.push(roomPreset(roomType));
   markUnsaved();

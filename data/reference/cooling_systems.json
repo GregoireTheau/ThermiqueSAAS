@@ -8,7 +8,7 @@
   "systems": [
     {
       "id": "air_conditioner_entry_level",
-      "name": "Climatisation air-air entree de gamme",
+      "name": "Entry-level air-to-air air conditioning",
       "type": "air_conditioner",
       "performance_ref": {
         "mode": "constant",
@@ -17,7 +17,7 @@
     },
         {
             "id": "air_conditioner_standard",
-            "name": "Clim split air-air standard",
+            "name": "Standard split air-to-air air conditioning",
             "type": "air_conditioner",
             "performance_ref": {
                 "mode": "constant",
@@ -26,7 +26,7 @@
     },
     {
       "id": "air_conditioner_high_efficiency",
-      "name": "Climatisation air-air performante",
+      "name": "High-efficiency air-to-air air conditioning",
       "type": "air_conditioner",
       "performance_ref": {
         "mode": "constant",
@@ -35,7 +35,7 @@
     },
     {
       "id": "reversible_heat_pump_standard",
-      "name": "PAC reversible standard",
+      "name": "Standard reversible heat pump",
       "type": "reversible_heat_pump",
       "performance_ref": {
         "mode": "constant",

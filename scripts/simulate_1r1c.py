@@ -31,17 +31,17 @@ def print_simulation_summary(
     results: dict[str, Any],
 ) -> None:
     """Print a compact simulation summary."""
-    print(f"Logement: {dwelling['dwelling_id']}")
+    print(f"Dwelling: {dwelling['dwelling_id']}")
     print(f"Scenario: {scenario['scenario_id']}")
-    print(f"Heures simulees: {len(results['hourly'])}")
+    print(f"Simulated hours: {len(results['hourly'])}")
     print()
-    print("Temperatures finales")
+    print("Final temperatures")
     last_hour = results["hourly"][-1]
     rooms = get_rooms_by_id(dwelling)
     for room_id, room_result in last_hour["rooms"].items():
         print(f"- {rooms[room_id]['name']}: {room_result['temperature_c']:.1f} C")
     print()
-    print("Temperatures max")
+    print("Max temperatures")
     for room_id, room in rooms.items():
         max_temperature_c = max(
             hour["rooms"][room_id]["temperature_c"]
@@ -49,15 +49,15 @@ def print_simulation_summary(
         )
         print(f"- {room['name']}: {max_temperature_c:.1f} C")
     print()
-    print("Bilan energie")
+    print("Energy balance")
     totals = results["totals"]
-    print(f"- Chauffage thermique: {totals['heating_thermal_kwh']:.2f} kWh")
-    print(f"- Chauffage electrique: {totals['heating_electric_kwh']:.2f} kWh")
-    print(f"- Clim thermique: {totals['cooling_thermal_kwh']:.2f} kWh")
-    print(f"- Clim electrique: {totals['cooling_electric_kwh']:.2f} kWh")
-    print(f"- Electricite totale: {totals['electricity_kwh']:.2f} kWh")
-    print(f"- Cout electricite: {totals['electricity_cost_eur']:.2f} EUR")
-    print(f"- CO2 electricite: {totals['electricity_co2_kg']:.2f} kg")
+    print(f"- Thermal heating: {totals['heating_thermal_kwh']:.2f} kWh")
+    print(f"- Electric heating: {totals['heating_electric_kwh']:.2f} kWh")
+    print(f"- Thermal cooling: {totals['cooling_thermal_kwh']:.2f} kWh")
+    print(f"- Electric cooling: {totals['cooling_electric_kwh']:.2f} kWh")
+    print(f"- Total electricity: {totals['electricity_kwh']:.2f} kWh")
+    print(f"- Electricity cost: {totals['electricity_cost_eur']:.2f} EUR")
+    print(f"- Electricity CO2: {totals['electricity_co2_kg']:.2f} kg")
 
 
 def write_results_json(

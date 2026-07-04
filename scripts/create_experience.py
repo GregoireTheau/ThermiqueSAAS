@@ -25,14 +25,14 @@ from thermal_model import (  # noqa: E402
 EXPERIENCE_TYPES = [
     {
         "id": "summer_comfort",
-        "label": "Confort ete / canicule",
+        "label": "Summer comfort / heatwave",
         "season": "summer",
         "initial_temperature_c": 26.0,
         "setpoints": {"heating_c": 18.0, "cooling_c": 26.0},
     },
     {
         "id": "winter_heating",
-        "label": "Chauffage hiver / economie d'energie",
+        "label": "Winter heating / energy savings",
         "season": "winter",
         "initial_temperature_c": 19.0,
         "setpoints": {"heating_c": 19.0, "cooling_c": 28.0},
@@ -42,17 +42,17 @@ EXPERIENCE_TYPES = [
 INTERVENTIONS = [
     {
         "id": "reflective_roof",
-        "label": "Toiture réfléchissante",
+        "label": "Reflective roof",
         "season": "summer",
     },
     {
         "id": "solar_shutter",
-        "label": "Volet / protection solaire performante",
+        "label": "High-performance shutter / solar protection",
         "season": "summer",
     },
     {
         "id": "heat_pump",
-        "label": "Remplacement chauffage electrique par PAC",
+        "label": "Replace electric heating with heat pump",
         "season": "winter",
     },
 ]
@@ -103,13 +103,13 @@ def choose_one(title: str, options: list[dict[str, Any]]) -> dict[str, Any]:
             index = int(raw_value)
             if 1 <= index <= len(options):
                 return options[index - 1]
-        print(f"Choix invalide. Entrez un nombre entre 1 et {len(options)}.")
+        print(f"Invalid choice. Enter a number between 1 and {len(options)}.")
 
 
 def choose_duration_days() -> int:
-    print("Duree meteo")
-    print("1. 3 jours")
-    print("2. 7 jours")
+    print("Weather duration")
+    print("1. 3 days")
+    print("2. 7 days")
 
     while True:
         raw_value = input("> ").strip()
@@ -117,11 +117,11 @@ def choose_duration_days() -> int:
             return 3
         if raw_value == "2":
             return 7
-        print("Choix invalide. Entrez 1 ou 2.")
+        print("Invalid choice. Enter 1 or 2.")
 
 
 def choose_yes_no(label: str, default: bool) -> bool:
-    suffix = "O/n" if default else "o/N"
+    suffix = "Y/n" if default else "y/N"
     raw_value = input(f"{label} ({suffix}) > ").strip().lower()
     if not raw_value:
         return default
@@ -321,17 +321,17 @@ def print_comparison_summary(comparison: dict[str, Any]) -> None:
     summary = comparison["summary"]
     experiment = comparison["experiment"]
     print()
-    print("Resultat comparaison")
+    print("Comparison result")
     print(
         "- Experience: "
-        f"{experiment['duration_days']:.1f} jours "
+        f"{experiment['duration_days']:.1f} days "
         f"({experiment['duration_hours']:.0f} h), "
-        f"meteo {experiment['weather_source']}"
+        f"weather {experiment['weather_source']}"
     )
-    print("- Portee: resultats simules sur cette periode, sans projection annuelle.")
-    print(f"- Confort: {summary['comfort_gain']['label']}")
-    print(f"- Energie: {summary['energy_savings']['label']}")
-    print(f"- Cause principale: {summary['main_gain_driver']['label']}")
+    print("- Scope: simulated results over this period, without annual projection.")
+    print(f"- Comfort: {summary['comfort_gain']['label']}")
+    print(f"- Energy: {summary['energy_savings']['label']}")
+    print(f"- Main cause: {summary['main_gain_driver']['label']}")
 
 
 def main() -> None:
@@ -340,9 +340,9 @@ def main() -> None:
     dwelling = load_dwelling(args.dwelling_path, validate=False)
     dwelling = resolve_dwelling_references(dwelling, catalog)
 
-    print("Creation d'une experience ThermalTwin")
-    experience_type = choose_one("Type d'experience", EXPERIENCE_TYPES)
-    room = choose_one("Piece concernee", build_room_options(dwelling))
+    print("Create a ThermalTwin experience")
+    experience_type = choose_one("Experience type", EXPERIENCE_TYPES)
+    room = choose_one("Room concerned", build_room_options(dwelling))
     interventions = [
         intervention
         for intervention in INTERVENTIONS
@@ -350,8 +350,8 @@ def main() -> None:
     ]
     intervention = choose_one("Intervention", interventions)
     duration_days = choose_duration_days()
-    should_export = choose_yes_no("Exporter les JSON before/after", default=True)
-    should_compare = choose_yes_no("Lancer directement la comparaison", default=True)
+    should_export = choose_yes_no("Export before/after JSON files", default=True)
+    should_compare = choose_yes_no("Run the comparison directly", default=True)
 
     experiment_id = (
         f"{experience_type['id']}_{room['id']}_{intervention['id']}_{duration_days}d"
@@ -384,8 +384,8 @@ def main() -> None:
         write_json(before_path, before)
         write_json(after_path, after)
         print()
-        print(f"Before exporte: {before_path}")
-        print(f"After exporte: {after_path}")
+        print(f"Before exported: {before_path}")
+        print(f"After exported: {after_path}")
 
     if should_compare:
         comparison = compare_scenarios(
@@ -396,7 +396,7 @@ def main() -> None:
             args.air_heat_capacity_j_kgk,
         )
         write_json(comparison_path, comparison)
-        print(f"Comparaison exportee: {comparison_path}")
+        print(f"Comparison exported: {comparison_path}")
         print_comparison_summary(comparison)
 
 

@@ -4,11 +4,11 @@
   "description": "French RT2012/RE2020 climate zone identifiers with department-level mapping for all metropolitan French departments.",
   "sources": [
     {
-      "name": "Legifrance - Arrete du 26 octobre 2010, annexe I zones climatiques",
+      "name": "Legifrance - Order of October 26, 2010, appendix I climate zones",
       "url": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000022959397"
     },
     {
-      "name": "Ministere de la Transition ecologique - RT2012",
+      "name": "Ministry for the Ecological Transition - RT2012",
       "url": "https://www.ecologie.gouv.fr/politiques-publiques/reglementation-thermique-rt2012"
     }
   ],
@@ -18,56 +18,56 @@
       "rt_label": "H1a",
       "winter_family": "H1",
       "summer_variant": "a",
-      "description": "Zone froide, variante a"
+      "description": "Cold zone, variant a"
     },
     {
       "id": "FR_H1b",
       "rt_label": "H1b",
       "winter_family": "H1",
       "summer_variant": "b",
-      "description": "Zone froide, variante b"
+      "description": "Cold zone, variant b"
     },
     {
       "id": "FR_H1c",
       "rt_label": "H1c",
       "winter_family": "H1",
       "summer_variant": "c",
-      "description": "Zone froide, variante c"
+      "description": "Cold zone, variant c"
     },
     {
       "id": "FR_H2a",
       "rt_label": "H2a",
       "winter_family": "H2",
       "summer_variant": "a",
-      "description": "Zone temperee, variante a"
+      "description": "Temperate zone, variant a"
     },
     {
       "id": "FR_H2b",
       "rt_label": "H2b",
       "winter_family": "H2",
       "summer_variant": "b",
-      "description": "Zone temperee, variante b"
+      "description": "Temperate zone, variant b"
     },
     {
       "id": "FR_H2c",
       "rt_label": "H2c",
       "winter_family": "H2",
       "summer_variant": "c",
-      "description": "Zone temperee, variante c"
+      "description": "Temperate zone, variant c"
     },
     {
       "id": "FR_H2d",
       "rt_label": "H2d",
       "winter_family": "H2",
       "summer_variant": "d",
-      "description": "Zone temperee, variante d"
+      "description": "Temperate zone, variant d"
     },
     {
       "id": "FR_H3",
       "rt_label": "H3",
       "winter_family": "H3",
       "summer_variant": null,
-      "description": "Zone chaude mediterraneenne"
+      "description": "Hot Mediterranean zone"
     }
   ],
   "department_zone_map": {
