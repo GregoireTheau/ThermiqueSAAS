@@ -114,7 +114,7 @@ def main() -> None:
     parser.add_argument(
         "--base-url",
         required=True,
-        help="Public deployment URL, e.g. https://thermal-saas-beta.onrender.com",
+        help="Public deployment URL, e.g. https://your-thermaltwin-deployment.example.com",
     )
     parser.add_argument(
         "--email",

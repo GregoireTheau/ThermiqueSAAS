@@ -20,6 +20,18 @@ outputs/
 data/weather/openmeteo/
 *.log
 .env
+.env.local
+.env.*.local
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+*.sqlite-shm
+*.sqlite-wal
+*.pem
+*.key
+*.parquet
 
 # OS / editor
 .DS_Store

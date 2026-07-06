@@ -10,7 +10,7 @@ import requests
 
 
 DEFAULT_PROFILE = "roof_insulation_seller"
-DEFAULT_URL = "https://thermaltwin.up.railway.app"
+DEFAULT_URL = "https://your-thermaltwin-deployment.example.com"
 
 
 def parse_args() -> argparse.Namespace:
