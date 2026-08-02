@@ -1,10 +1,15 @@
+import json
+
 import pandas as pd
 
 from thermal_model.weather import (
+    _parse_nsrdb_csv,
     build_thermal_weather,
     city_coordinates,
     combine_weather_years,
+    ensure_us_thermal_weather,
     resolve_weather_city,
+    us_weather_ref,
 )
 
 
@@ -114,3 +119,128 @@ def test_combine_weather_years_mean_averages_same_month_day_hour():
     assert combined["temperature_2m"].tolist() == [3.0, 5.0]
     assert combined["datetime"].dt.month.tolist() == [1, 1]
     assert combined["datetime"].dt.hour.tolist() == [0, 1]
+
+
+def test_us_weather_ref_is_keyed_by_rounded_coordinates_mode_and_reference(tmp_path):
+    location = {
+        "latitude": 39.7392,
+        "longitude": -104.9903,
+        "timezone": "America/Denver",
+    }
+
+    historical = us_weather_ref(
+        location,
+        "historical",
+        year=2023,
+        output_dir=tmp_path,
+    )
+    typical = us_weather_ref(
+        location,
+        "typical",
+        tmy_name="tmy-2024",
+        output_dir=tmp_path,
+    )
+
+    assert historical.endswith(
+        "39.7_-105.0_america-denver_historical_2023.weather.json",
+    )
+    assert typical.endswith(
+        "39.7_-105.0_america-denver_typical_tmy-2024.weather.json",
+    )
+
+
+def test_neighboring_zip_locations_share_one_weather_cell(tmp_path):
+    atlanta = {
+        "latitude": 33.7490,
+        "longitude": -84.3880,
+        "timezone": "America/New_York",
+    }
+    neighboring_zip = {
+        "latitude": 33.7420,
+        "longitude": -84.4210,
+        "timezone": "America/New_York",
+    }
+
+    atlanta_ref = us_weather_ref(
+        atlanta,
+        "historical",
+        year=2023,
+        output_dir=tmp_path,
+    )
+    neighbor_ref = us_weather_ref(
+        neighboring_zip,
+        "historical",
+        year=2023,
+        output_dir=tmp_path,
+    )
+
+    assert atlanta_ref == neighbor_ref
+    assert "33.7_-84.4_america-new-york" in atlanta_ref
+
+    other_timezone_ref = us_weather_ref(
+        neighboring_zip | {"timezone": "America/Chicago"},
+        "historical",
+        year=2023,
+        output_dir=tmp_path,
+    )
+    assert other_timezone_ref != atlanta_ref
+
+
+def test_weather_download_uses_shared_cell_coordinates(monkeypatch, tmp_path):
+    requested = {}
+
+    def fake_fetch(latitude, longitude, year, **kwargs):
+        requested.update(
+            latitude=latitude,
+            longitude=longitude,
+            year=year,
+            timezone=kwargs["timezone_name"],
+        )
+        return _weather_frame(2023, [10.0, 11.0])
+
+    monkeypatch.setattr("thermal_model.weather.fetch_open_meteo_coordinates", fake_fetch)
+    location = {
+        "postal_code": "30303",
+        "city": "Atlanta",
+        "latitude": 33.7490,
+        "longitude": -84.3880,
+        "timezone": "America/New_York",
+    }
+
+    weather_path = ensure_us_thermal_weather(
+        location,
+        "historical",
+        year=2023,
+        output_dir=tmp_path,
+    )
+    payload = json.loads(weather_path.read_text(encoding="utf-8"))
+
+    assert requested == {
+        "latitude": 33.7,
+        "longitude": -84.4,
+        "year": 2023,
+        "timezone": "America/New_York",
+    }
+    assert payload["metadata"]["latitude"] == 33.7
+    assert payload["metadata"]["longitude"] == -84.4
+    assert payload["metadata"]["station"] == "Open-Meteo grid 33.7, -84.4"
+
+
+def test_nsrdb_csv_parser_normalizes_tmy_calendar_and_weather_columns():
+    raw_csv = "\n".join(
+        [
+            "Source,Location ID,Latitude,Longitude,Version",
+            "NSRDB,123,39.74,-104.99,4.0.0",
+            "Year,Month,Day,Hour,Minute,Temperature,GHI,DHI,DNI",
+            "2011,1,1,0,0,-2.0,0,0,0",
+            "2018,1,1,1,0,-1.0,100,40,80",
+        ],
+    )
+    location = {"city": "Denver", "latitude": 39.7392, "longitude": -104.9903}
+
+    dataframe = _parse_nsrdb_csv(raw_csv, location)
+
+    assert dataframe["datetime"].dt.year.tolist() == [2001, 2001]
+    assert dataframe["temperature_2m"].tolist() == [-2.0, -1.0]
+    assert dataframe["shortwave_radiation"].tolist() == [0, 100]
+    assert dataframe["direct_radiation"].tolist() == [0, 60]

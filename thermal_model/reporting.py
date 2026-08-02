@@ -132,7 +132,7 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
             "comparison_schema_version": comparison["comparison_schema_version"],
             "dwelling_id": comparison["dwelling_id"],
             "dwelling_name": comparison.get("dwelling_name", comparison["dwelling_id"]),
-            "location": comparison.get("location", {}),
+            "location": _report_location(comparison.get("location", {})),
             "before_scenario_id": comparison["before_scenario_id"],
             "after_scenario_id": comparison["after_scenario_id"],
         },
@@ -152,6 +152,7 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
             "weather_city": experiment.get("weather_city", ""),
             "weather_match_mode": experiment.get("weather_match_mode", ""),
             "weather_year": experiment.get("weather_year"),
+            "weather_reference": experiment.get("weather_reference", ""),
             "reason": experiment.get("reason", ""),
             "context_text": context_text,
             "purpose_text": purpose_text,
@@ -162,6 +163,7 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
             "duration_days": round(experiment["duration_days"], 2),
             "timestep_h": experiment["timestep_h"],
             "weather_source": experiment["weather_source"],
+            "weather_trace": experiment.get("weather_trace", {}),
             "weather_summary": {
                 "outdoor_temperature_min_c": round(
                     experiment["weather_summary"]["outdoor_temperature_min_c"],
@@ -276,6 +278,10 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
         "rooms": rooms,
         "methodology": {
             "model": "Hourly 1R1C thermal simulation, room by room",
+            "engine_version": experiment.get("weather_trace", {}).get(
+                "engine_version",
+                "1r1c-mvp-0.1",
+            ),
             "reported_values": (
                 "Calculated from before/after simulations; no measured performance "
                 "is inferred."
@@ -772,6 +778,14 @@ def render_report_html(
 """
 
 
+def _report_location(location: dict[str, Any]) -> dict[str, Any]:
+    rounded = dict(location)
+    for key in ("latitude", "longitude"):
+        if rounded.get(key) is not None:
+            rounded[key] = round(float(rounded[key]), 2)
+    return rounded
+
+
 def _normalize_branding(branding: dict[str, Any] | None) -> dict[str, Any] | None:
     if not branding:
         return None
@@ -835,7 +849,9 @@ def _render_report_header(
     )
     location = source.get("location", {})
     location_text = _join_non_empty(
+        location.get("address"),
         experiment.get("requested_city") or location.get("city") or experiment.get("weather_city"),
+        location.get("state"),
         location.get("postal_code"),
     )
     project_name = source.get("dwelling_name") or source["dwelling_id"]
@@ -1709,8 +1725,10 @@ def _scenario_period_label(experiment: dict[str, Any]) -> str:
         return "during a heatwave episode"
     if weather_variant == "winter_cold" or season == "winter":
         return "during a cold winter episode"
-    if weather_variant == "openmeteo_annual" or season == "annual":
-        return "over a full year of real weather"
+    if weather_variant == "nsrdb_tmy":
+        return "over a full typical meteorological year"
+    if weather_variant in {"openmeteo_annual", "openmeteo_historical"} or season == "annual":
+        return "over a full historical weather year"
     return "over the simulated period"
 
 
@@ -1956,6 +1974,7 @@ def _render_context_params(
     temperature_profiles: dict[str, Any],
 ) -> str:
     weather = experiment["weather_summary"]
+    trace = experiment.get("weather_trace", {})
     thresholds = temperature_profiles["thresholds"]
     rows = [
         ("Duration", _format_duration(experiment)),
@@ -1964,6 +1983,19 @@ def _render_context_params(
             (
                 f"{_format_temperature(weather['outdoor_temperature_min_c'])} → "
                 f"{_format_temperature(weather['outdoor_temperature_max_c'])}"
+            ),
+        ),
+        ("Weather basis", escape(_weather_basis_label(trace, experiment))),
+        ("Weather source", escape(_weather_source_label(trace, experiment))),
+        ("Weather grid cell", escape(_weather_location_label(trace))),
+        ("Timezone", escape(str(trace.get("timezone", "Not recorded")))),
+        ("Weather model", escape(str(trace.get("model", "Not recorded")))),
+        ("Weather station/grid", escape(str(trace.get("station", "Not recorded")))),
+        (
+            "Reproducibility",
+            escape(
+                f"Engine {trace.get('engine_version', '1r1c-mvp-0.1')} · "
+                f"weather {str(trace.get('hourly_sha256', 'not recorded'))[:16]}"
             ),
         ),
         (
@@ -1984,6 +2016,31 @@ def _render_context_params(
         for label, value in rows
     )
     return f"<table>{table_rows}</table>"
+
+
+def _weather_basis_label(trace: dict[str, Any], experiment: dict[str, Any]) -> str:
+    if trace.get("weather_type") == "typical":
+        return f"Typical meteorological year ({trace.get('weather_reference', 'TMY')})"
+    year = trace.get("year") or experiment.get("weather_year")
+    if trace.get("weather_type") == "historical" or year:
+        return f"Historical weather year {year}"
+    return "Synthetic weather scenario"
+
+
+def _weather_source_label(trace: dict[str, Any], experiment: dict[str, Any]) -> str:
+    return _join_non_empty(
+        trace.get("provider"),
+        trace.get("dataset"),
+        experiment.get("weather_source"),
+    )
+
+
+def _weather_location_label(trace: dict[str, Any]) -> str:
+    latitude = trace.get("latitude")
+    longitude = trace.get("longitude")
+    if latitude is None or longitude is None:
+        return "Not recorded"
+    return f"{latitude:.1f}, {longitude:.1f} (shared 0.1° cell)"
 
 
 def _build_presentation_notes(
@@ -2019,7 +2076,7 @@ def _build_presentation_notes(
         elif note_key == "roof_insulation_annual_scope":
             context_notes.append(
                 "This annual report estimates demand before/after roof insulation "
-                "with the same real weather and the same setpoints. It does not replace "
+                "with the same weather dataset and the same setpoints. It does not replace "
                 "an EPC, an energy audit, or a regulatory study.",
             )
 

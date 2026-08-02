@@ -4,8 +4,7 @@ from thermal_saas.heat_pump_flow import get_heat_pump_questionnaire, run_heat_pu
 def _answers():
     return {
         "project_name": "Maison PAC test",
-        "city": "Bordeaux",
-        "postal_code": "33000",
+        "postal_code": "80202",
         "dwelling_type": "house",
         "position_id": "single_storey_house",
         "period_id": "2001_2012_good_insulation",
@@ -60,8 +59,6 @@ def test_heat_pump_flow_runs_winter_experience_and_returns_report_html():
 
     annual_run = result["simulation_runs"][1]
     assert annual_run["role"] == "annual"
-    assert annual_run["before_scenario"]["experiment"]["weather_year"] == 2023
-    assert annual_run["before_scenario"]["weather"]["weather_ref"] == (
-        "data/weather/openmeteo/thermal/bordeaux_2023.weather.json"
-    )
+    assert annual_run["before_scenario"]["experiment"]["weather_reference"] == "tmy-2024"
+    assert annual_run["before_scenario"]["weather"]["metadata"]["weather_type"] == "typical"
     assert "<!doctype html>" in annual_run["report_html"]

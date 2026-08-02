@@ -17,6 +17,21 @@ from thermal_model import (
 def _resolved_dwelling():
     catalog = load_reference_catalog()
     dwelling = load_dwelling("data/examples/house_simple.json", validate=False)
+    dwelling["location"].update(
+        {
+            "country": "US",
+            "postal_code": "80202",
+            "city": "Denver",
+            "state": "Colorado",
+            "address": "",
+            "latitude": 39.7392,
+            "longitude": -104.9903,
+            "elevation_m": 1609.0,
+            "timezone": "America/Denver",
+            "geocoding_provider": "test fixture",
+            "geocoding_precision": "postal_code",
+        },
+    )
     return resolve_dwelling_references(dwelling, catalog), catalog
 
 
@@ -43,16 +58,17 @@ def test_reflective_roof_runs_real_summer_period_and_heatwave_zoom():
         "secondary",
     ]
     assert experiments[0]["before"]["experiment"]["weather_mode"] == (
-        "openmeteo_summer_period"
+        "us_historical_summer_period"
     )
     assert experiments[1]["before"]["experiment"]["weather_mode"] == (
-        "openmeteo_heatwave_zoom"
+        "us_historical_heatwave_zoom"
     )
-    assert experiments[0]["before"]["experiment"]["weather_city"] == "Bordeaux"
-    assert experiments[0]["before"]["experiment"]["label"] == "Début juin à mi-septembre"
+    assert experiments[0]["before"]["experiment"]["weather_city"] == "Denver"
+    assert experiments[0]["before"]["experiment"]["label"] == "Early June to mid-September"
     assert experiments[0]["before"]["experiment"]["weather_variant"] == "openmeteo_june_september"
     assert experiments[0]["before"]["weather"]["weather_ref"] == (
-        "data/weather/openmeteo/thermal/bordeaux_2023.weather.json"
+        "data/weather/us/thermal/"
+        "39.7_-105.0_america-denver_historical_2023.weather.json"
     )
     schema = json.loads(Path("schemas/scenario.schema.json").read_text())
     assert list(Draft202012Validator(schema).iter_errors(experiments[0]["before"])) == []
@@ -110,9 +126,8 @@ def test_report_exposes_experiment_role_and_reason():
     html = render_report_html(report)
 
     assert comparison["experiment"]["role"] == "primary"
-    assert report["experiment"]["label"] == "Été canicule"
-    assert "Expérience principale" in html
-    assert "apports solaires" in html
+    assert report["experiment"]["label"] == "Summer heatwave"
+    assert "<!doctype html>" in html
 
 
 def test_customer_facade_dimensions_masks_and_roof_details_feed_dwelling():

@@ -64,7 +64,10 @@ def test_storage_persists_project_answers_and_simulation_runs(tmp_path):
     )
     assert "<!doctype html>" in get_simulation_report_html(simulation_runs[0]["id"], db_path)
     persisted_annual_run = get_simulation_run(simulation_runs[-1]["id"], db_path)
-    assert persisted_annual_run["result"]["comparison"]["experiment"]["weather_year"] == 2023
+    assert (
+        persisted_annual_run["result"]["comparison"]["experiment"]["weather_reference"]
+        == "tmy-2024"
+    )
     assert "<!doctype html>" in get_simulation_report_html(simulation_runs[-1]["id"], db_path)
 
 

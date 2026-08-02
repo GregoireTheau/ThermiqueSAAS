@@ -9,7 +9,8 @@ The product is intentionally positioned as a sales-support tool. It is not an EP
 - Creates beta SaaS accounts with authentication, organizations, projects, saved answers, simulations, and report history.
 - Guides the user through a roof-insulation questionnaire: home type, heating system, heating setpoint, existing wall and roof insulation, roof/attic type, roof color, ventilation, airtightness, and rooms under the roof.
 - Runs before/after simulations for roof insulation, with the annual real-weather report as the primary commercial output.
-- Uses 2023 Open-Meteo weather data through representative French weather cities, including mainland France and Corsica department mapping.
+- Resolves US ZIP codes or optional street addresses to coordinates and an IANA timezone, without a default fallback location.
+- Uses a pinned NSRDB typical meteorological year for the primary annual estimate, or an explicitly selected Open-Meteo historical year.
 - Estimates annual heating demand reduction, final heating energy impact, cost savings, and supporting comfort indicators.
 - Generates HTML reports and server-side PDF exports.
 - Keeps multiple business profiles in the codebase, while the current visible product focus is roof insulation.
@@ -182,7 +183,16 @@ THERMAL_SAAS_CORS_ORIGINS
 THERMAL_SAAS_ALLOWED_HOSTS
 THERMAL_SAAS_ADMIN_TOKEN
 THERMAL_PDF_BROWSER_PATH
+THERMAL_WEATHER_DIR
+THERMAL_LOCATION_CACHE_DIR
+THERMAL_NSRDB_API_KEY
+THERMAL_NSRDB_EMAIL
 ```
+
+Set `THERMAL_WEATHER_DIR=/app/storage/weather` and
+`THERMAL_LOCATION_CACHE_DIR=/app/storage/location-cache` on Railway so downloaded
+weather and geocoding results survive deployments. NSRDB typical weather also
+requires a National Laboratory of the Rockies developer API key and contact email.
 
 For object-storage backups:
 
@@ -210,8 +220,9 @@ The current database choice is deliberate: SQLite is simple enough for a closed 
 ## Current Limitations
 
 - The model is comparative and simplified; it is not a regulatory calculation.
-- Weather is mapped through representative weather cities, not exact local weather stations for every municipality.
-- French overseas territories are not currently covered by the weather mapping.
+- Weather is resolved from US ZIP/address coordinates and shared by 0.1° geographic cell
+  (and timezone), while the dwelling keeps its actual resolved coordinates.
+- Typical weather depends on the configured NSRDB API credentials; historical weather uses Open-Meteo.
 - Some retrofit assumptions are fixed or profile-driven rather than fully configurable.
 - The annual roof-insulation report is the main product output; other profiles remain available in code but are not the current commercial focus.
 

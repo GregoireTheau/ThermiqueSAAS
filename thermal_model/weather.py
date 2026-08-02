@@ -4,9 +4,18 @@ from __future__ import annotations
 
 import json
 import math
+import csv
+import io
+import os
+from datetime import datetime, timezone
+from decimal import Decimal, ROUND_HALF_UP
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 import unicodedata
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import urlopen
 
 
 FRENCH_KEY_CITIES: dict[str, tuple[float, float]] = {
@@ -42,6 +51,16 @@ FRENCH_KEY_CITIES: dict[str, tuple[float, float]] = {
 }
 
 OPEN_METEO_ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
+NLR_NSRDB_TMY_URL = (
+    "https://developer.nlr.gov/api/nsrdb/v2/solar/"
+    "nsrdb-GOES-tmy-v4-0-0-download.csv"
+)
+NLR_NSRDB_POLAR_TMY_URL = (
+    "https://developer.nlr.gov/api/nsrdb/v2/solar/"
+    "nsrdb-polar-tmy-v4-0-0-download.csv"
+)
+DEFAULT_NSRDB_TMY_NAME = "tmy-2024"
+US_WEATHER_GRID_DEGREES = Decimal("0.1")
 
 OPEN_METEO_HOURLY_VARIABLES = [
     "temperature_2m",
@@ -55,6 +74,9 @@ OPEN_METEO_HOURLY_VARIABLES = [
     "diffuse_radiation",
     "direct_normal_irradiance",
 ]
+
+WEATHER_DATA_SCHEMA_VERSION = "0.2"
+THERMAL_ENGINE_VERSION = "1r1c-mvp-0.1"
 
 DEPARTMENT_WEATHER_CITY = {
     "01": "Lyon",
@@ -262,6 +284,181 @@ def ensure_openmeteo_thermal_weather(
     return weather_path
 
 
+def us_weather_ref(
+    location: dict[str, Any],
+    weather_type: str,
+    *,
+    year: int | None = None,
+    tmy_name: str = DEFAULT_NSRDB_TMY_NAME,
+    output_dir: str | Path = "data/weather/us",
+) -> str:
+    """Return the immutable weather path for a canonical US weather cell."""
+    latitude, longitude = _weather_grid_coordinates(location)
+    timezone_slug = _timezone_slug(location.get("timezone"))
+    suffix = str(year) if weather_type == "historical" else tmy_name
+    filename = (
+        f"{latitude:.1f}_{longitude:.1f}_{timezone_slug}_"
+        f"{weather_type}_{suffix}.weather.json"
+    )
+    return str(Path(output_dir) / "thermal" / filename)
+
+
+def ensure_us_thermal_weather(
+    location: dict[str, Any],
+    weather_type: str,
+    *,
+    year: int | None = None,
+    tmy_name: str = DEFAULT_NSRDB_TMY_NAME,
+    output_dir: str | Path = "data/weather/us",
+    openmeteo_model: str = "era5_seamless",
+    cache_dir: str | Path = ".cache/openmeteo",
+) -> Path:
+    """Download and cache historical Open-Meteo or NSRDB TMY weather."""
+    if weather_type not in {"historical", "typical"}:
+        raise ValueError("weather_type must be 'historical' or 'typical'")
+    if weather_type == "historical" and year is None:
+        raise ValueError("year is required for historical weather")
+
+    weather_path = Path(
+        us_weather_ref(
+            location,
+            weather_type,
+            year=year,
+            tmy_name=tmy_name,
+            output_dir=output_dir,
+        ),
+    )
+    if weather_path.exists():
+        return weather_path
+
+    grid_latitude, grid_longitude = _weather_grid_coordinates(location)
+    weather_location = {
+        **location,
+        "latitude": grid_latitude,
+        "longitude": grid_longitude,
+    }
+
+    if weather_type == "historical":
+        dataframe = fetch_open_meteo_coordinates(
+            grid_latitude,
+            grid_longitude,
+            int(year),
+            model=openmeteo_model,
+            timezone_name=str(location["timezone"]),
+            cache_dir=cache_dir,
+        )
+        raw_path = Path(output_dir) / "raw" / weather_path.name.replace(
+            ".weather.json",
+            ".parquet",
+        )
+        write_parquet(dataframe, raw_path)
+        metadata = _weather_metadata(
+            weather_location,
+            weather_type="historical",
+            provider="Open-Meteo",
+            dataset="Historical weather archive",
+            model=openmeteo_model,
+            year=int(year),
+            station=f"Open-Meteo grid {grid_latitude:.1f}, {grid_longitude:.1f}",
+        )
+        source = f"openmeteo_{openmeteo_model}_{year}"
+    else:
+        dataframe, nsrdb_metadata, raw_csv = fetch_nsrdb_tmy(
+            weather_location,
+            tmy_name=tmy_name,
+        )
+        raw_path = Path(output_dir) / "raw" / weather_path.name.replace(
+            ".weather.json",
+            ".csv",
+        )
+        raw_path.parent.mkdir(parents=True, exist_ok=True)
+        raw_path.write_text(raw_csv, encoding="utf-8")
+        metadata = _weather_metadata(
+            weather_location,
+            weather_type="typical",
+            provider="NLR NSRDB",
+            dataset="GOES Typical Meteorological Year PSM v4",
+            model=str(nsrdb_metadata.get("Version", "PSM v4")),
+            year=None,
+            station=str(
+                nsrdb_metadata.get("Location ID")
+                or nsrdb_metadata.get("Site ID")
+                or f"NSRDB grid {grid_latitude:.1f}, {grid_longitude:.1f}"
+            ),
+            weather_reference=tmy_name,
+            source_latitude=_metadata_float(nsrdb_metadata, "Latitude"),
+            source_longitude=_metadata_float(nsrdb_metadata, "Longitude"),
+        )
+        source = f"nsrdb_goes_tmy_v4_{tmy_name}"
+
+    annual_dataframe = combine_weather_years([dataframe], "latest")
+    weather = build_thermal_weather(
+        annual_dataframe,
+        source=source,
+        metadata=metadata,
+    )
+    write_thermal_weather_json(weather, weather_path)
+    return weather_path
+
+
+def fetch_open_meteo_coordinates(
+    latitude: float,
+    longitude: float,
+    year: int,
+    *,
+    model: str = "era5_seamless",
+    timezone_name: str,
+    cache_dir: str | Path = ".cache/openmeteo",
+) -> Any:
+    """Fetch one historical year for exact coordinates."""
+    return _fetch_open_meteo(
+        latitude,
+        longitude,
+        year,
+        model=model,
+        timezone_name=timezone_name,
+        cache_dir=cache_dir,
+        location_label=f"{latitude:.4f},{longitude:.4f}",
+    )
+
+
+def fetch_nsrdb_tmy(
+    location: dict[str, Any],
+    *,
+    tmy_name: str = DEFAULT_NSRDB_TMY_NAME,
+) -> tuple[Any, dict[str, str], str]:
+    """Download one pinned NSRDB TMY CSV and convert it to the weather frame shape."""
+    api_key = os.environ.get("THERMAL_NSRDB_API_KEY", "").strip()
+    email = os.environ.get("THERMAL_NSRDB_EMAIL", "").strip()
+    if not api_key or not email:
+        raise RuntimeError(
+            "Typical weather requires THERMAL_NSRDB_API_KEY and THERMAL_NSRDB_EMAIL.",
+        )
+    latitude = float(location["latitude"])
+    longitude = float(location["longitude"])
+    endpoint = NLR_NSRDB_POLAR_TMY_URL if latitude >= 60.0 else NLR_NSRDB_TMY_URL
+    params = {
+        "api_key": api_key,
+        "wkt": f"POINT({longitude} {latitude})",
+        "attributes": "air_temperature,ghi,dhi,dni",
+        "names": tmy_name,
+        "utc": "false",
+        "leap_day": "false",
+        "interval": 60,
+        "full_name": os.environ.get("THERMAL_NSRDB_FULL_NAME", "ThermalTwin"),
+        "email": email,
+        "affiliation": os.environ.get("THERMAL_NSRDB_AFFILIATION", "ThermalTwin"),
+        "mailing_list": "false",
+        "reason": "Building thermal simulation",
+    }
+    try:
+        with urlopen(f"{endpoint}?{urlencode(params)}", timeout=60) as response:  # noqa: S310
+            raw_csv = response.read().decode("utf-8-sig")
+    except (HTTPError, URLError, TimeoutError) as exc:
+        raise RuntimeError("NSRDB typical weather is temporarily unavailable.") from exc
+    return _parse_nsrdb_csv(raw_csv, location), _parse_nsrdb_metadata(raw_csv), raw_csv
+
+
 def fetch_open_meteo_year(
     city: str,
     year: int,
@@ -271,8 +468,29 @@ def fetch_open_meteo_year(
     cache_dir: str | Path = ".cache/openmeteo",
 ) -> Any:
     """Fetch one city/year from Open-Meteo and return a pandas DataFrame."""
-    pd, openmeteo_requests, requests_cache, retry = _weather_dependencies()
     latitude, longitude = city_coordinates(city)
+    return _fetch_open_meteo(
+        latitude,
+        longitude,
+        year,
+        model=model,
+        timezone_name=timezone,
+        cache_dir=cache_dir,
+        location_label=city,
+    )
+
+
+def _fetch_open_meteo(
+    latitude: float,
+    longitude: float,
+    year: int,
+    *,
+    model: str,
+    timezone_name: str,
+    cache_dir: str | Path,
+    location_label: str,
+) -> Any:
+    pd, openmeteo_requests, requests_cache, retry = _weather_dependencies()
     cache_session = requests_cache.CachedSession(str(cache_dir), expire_after=-1)
     retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
     client = openmeteo_requests.Client(session=retry_session)
@@ -282,7 +500,7 @@ def fetch_open_meteo_year(
         "start_date": f"{year}-01-01",
         "end_date": f"{year}-12-31",
         "hourly": OPEN_METEO_HOURLY_VARIABLES,
-        "timezone": timezone,
+        "timezone": timezone_name,
         "models": model,
     }
 
@@ -294,12 +512,12 @@ def fetch_open_meteo_year(
         end=pd.to_datetime(hourly.TimeEnd(), unit="s", utc=True),
         freq=pd.Timedelta(seconds=hourly.Interval()),
         inclusive="left",
-    ).tz_convert(timezone)
+    ).tz_convert(timezone_name)
 
     data = {"datetime": datetimes}
     for index, variable in enumerate(OPEN_METEO_HOURLY_VARIABLES):
         data[variable] = hourly.Variables(index).ValuesAsNumpy()
-    data["city"] = city
+    data["city"] = location_label
     data["latitude"] = latitude
     data["longitude"] = longitude
     data["source_model"] = model
@@ -366,6 +584,7 @@ def build_thermal_weather(
     *,
     source: str,
     solar_mode: str = "mvp_orientation",
+    metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Convert an Open-Meteo DataFrame to the scenario weather object."""
     if solar_mode != "mvp_orientation":
@@ -381,10 +600,19 @@ def build_thermal_weather(
                 "solar_irradiance_w_m2": _orientation_irradiance(row),
             }
         )
-    return {
+    weather = {
+        "schema_version": WEATHER_DATA_SCHEMA_VERSION,
         "source": source,
         "hourly": hourly,
     }
+    if metadata:
+        weather["metadata"] = {
+            **metadata,
+            "hourly_sha256": sha256(
+                json.dumps(hourly, separators=(",", ":"), sort_keys=True).encode(),
+            ).hexdigest(),
+        }
+    return weather
 
 
 def write_thermal_weather_json(weather: dict[str, Any], output_path: str | Path) -> Path:
@@ -445,6 +673,114 @@ def _department_code(postal_code: str) -> str:
         return cleaned[:2]
     digits = "".join(character for character in cleaned if character.isdigit())
     return digits[:2]
+
+
+def _parse_nsrdb_metadata(raw_csv: str) -> dict[str, str]:
+    rows = list(csv.reader(io.StringIO(raw_csv)))
+    if len(rows) < 3:
+        raise RuntimeError("NSRDB returned an incomplete CSV file.")
+    return dict(zip(rows[0], rows[1]))
+
+
+def _parse_nsrdb_csv(raw_csv: str, location: dict[str, Any]) -> Any:
+    pd, *_ = _weather_dependencies(require_openmeteo=False)
+    metadata = _parse_nsrdb_metadata(raw_csv)
+    dataframe = pd.read_csv(io.StringIO(raw_csv), skiprows=2)
+    required = {"Year", "Month", "Day", "Hour", "Minute", "GHI", "DHI"}
+    missing = sorted(required - set(dataframe.columns))
+    if missing:
+        raise RuntimeError(f"NSRDB CSV is missing columns: {', '.join(missing)}")
+    temperature_column = next(
+        (column for column in ("Temperature", "Air Temperature") if column in dataframe),
+        None,
+    )
+    if not temperature_column:
+        raise RuntimeError("NSRDB CSV is missing air temperature.")
+    dataframe["datetime"] = pd.to_datetime(
+        {
+            "year": [2001] * len(dataframe),
+            "month": dataframe["Month"],
+            "day": dataframe["Day"],
+            "hour": dataframe["Hour"],
+            "minute": dataframe["Minute"],
+        },
+        errors="raise",
+    )
+    dataframe["temperature_2m"] = dataframe[temperature_column]
+    dataframe["shortwave_radiation"] = dataframe["GHI"]
+    dataframe["diffuse_radiation"] = dataframe["DHI"]
+    dataframe["direct_radiation"] = (
+        dataframe["GHI"] - dataframe["DHI"]
+    ).clip(lower=0.0)
+    dataframe["direct_normal_irradiance"] = dataframe.get("DNI", 0.0)
+    dataframe["city"] = location.get("city", "")
+    dataframe["latitude"] = _metadata_float(metadata, "Latitude") or location["latitude"]
+    dataframe["longitude"] = _metadata_float(metadata, "Longitude") or location["longitude"]
+    dataframe["source_model"] = metadata.get("Version", "PSM v4")
+    return dataframe
+
+
+def _weather_metadata(
+    location: dict[str, Any],
+    *,
+    weather_type: str,
+    provider: str,
+    dataset: str,
+    model: str,
+    year: int | None,
+    station: str,
+    weather_reference: str | None = None,
+    source_latitude: float | None = None,
+    source_longitude: float | None = None,
+) -> dict[str, Any]:
+    latitude, longitude = _weather_grid_coordinates(location)
+    return {
+        "weather_type": weather_type,
+        "provider": provider,
+        "dataset": dataset,
+        "model": model,
+        "year": year,
+        "weather_reference": weather_reference or str(year),
+        "latitude": latitude,
+        "longitude": longitude,
+        "source_latitude": round(source_latitude, 4) if source_latitude is not None else latitude,
+        "source_longitude": round(source_longitude, 4) if source_longitude is not None else longitude,
+        "timezone": location["timezone"],
+        "station": station,
+        "engine_version": THERMAL_ENGINE_VERSION,
+        "created_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+    }
+
+
+def _weather_grid_coordinates(location: dict[str, Any]) -> tuple[float, float]:
+    return (
+        float(
+            Decimal(str(location["latitude"])).quantize(
+                US_WEATHER_GRID_DEGREES,
+                rounding=ROUND_HALF_UP,
+            ),
+        ),
+        float(
+            Decimal(str(location["longitude"])).quantize(
+                US_WEATHER_GRID_DEGREES,
+                rounding=ROUND_HALF_UP,
+            ),
+        ),
+    )
+
+
+def _timezone_slug(value: Any) -> str:
+    timezone_name = str(value or "timezone-unknown").strip().lower()
+    normalized = timezone_name.replace("/", "-").replace("_", "-")
+    return "-".join(part for part in normalized.split() if part)
+
+
+def _metadata_float(metadata: dict[str, str], key: str) -> float | None:
+    value = metadata.get(key)
+    try:
+        return float(value) if value not in (None, "") else None
+    except ValueError:
+        return None
 
 
 def _weather_dependencies(require_openmeteo: bool = True) -> tuple[Any, Any, Any, Any]:

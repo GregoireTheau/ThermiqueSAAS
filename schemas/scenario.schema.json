@@ -132,7 +132,11 @@
             "synthetic",
             "openmeteo_annual",
             "openmeteo_summer_period",
-            "openmeteo_heatwave_zoom"
+            "openmeteo_heatwave_zoom",
+            "us_historical",
+            "us_typical",
+            "us_historical_summer_period",
+            "us_historical_heatwave_zoom"
           ]
         },
         "requested_city": {
@@ -147,6 +151,9 @@
         "weather_year": {
           "type": "integer",
           "minimum": 1940
+        },
+        "weather_reference": {
+          "type": "string"
         },
         "reason": {
           "type": "string"
@@ -560,6 +567,12 @@
         "weather_ref": {
           "type": "string",
           "minLength": 1
+        },
+        "metadata": {
+          "type": "object"
+        },
+        "_request": {
+          "type": "object"
         },
         "hourly": {
           "type": "array",

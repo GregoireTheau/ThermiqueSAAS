@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import date
+import os
 from pathlib import Path
 from typing import Any
 
 from scripts import create_customer_experience as customer_experience
 from thermal_model import (
+    DEFAULT_NSRDB_TMY_NAME,
     build_report_model,
     build_thermal_weather,
     city_slug,
@@ -15,12 +18,15 @@ from thermal_model import (
     combine_weather_years,
     compare_scenarios,
     ensure_openmeteo_thermal_weather,
+    ensure_us_thermal_weather,
     load_reference_catalog,
     read_parquet,
     render_report_html,
     resolve_dwelling_references,
     resolve_scenario_weather_reference,
+    resolve_us_location,
     thermal_weather_ref,
+    us_weather_ref,
     validate_dwelling,
     validate_scenario,
     write_thermal_weather_json,
@@ -146,7 +152,6 @@ def build_customer(
         answers,
         [
             "project_name",
-            "city",
             "postal_code",
             "dwelling_type",
             "position_id",
@@ -172,12 +177,30 @@ def build_customer(
     customer_experience.ensure_unique_room_ids(rooms)
 
     postal_code = str(answers["postal_code"])
-    climate_zone_id = answers.get("climate_zone_id") or customer_experience.infer_climate_zone(
-        catalog,
-        postal_code,
+    try:
+        location = resolve_us_location(
+            postal_code,
+            answers.get("address"),
+            cache_dir=os.environ.get("THERMAL_LOCATION_CACHE_DIR", ".cache/locations"),
+        )
+    except ValueError as exc:
+        raise BusinessFlowError(str(exc)) from exc
+    climate_zone_id = answers.get("climate_zone_id") or "FR_H2b"
+    annual_weather_type = str(answers.get("annual_weather_type", "typical"))
+    if annual_weather_type not in {"typical", "historical"}:
+        raise BusinessFlowError("annual_weather_type must be 'typical' or 'historical'.")
+    annual_weather_year = int(answers.get("annual_weather_year", 2023))
+    needs_historical_year = (
+        annual_weather_type == "historical"
+        or profile["id"] == "reflective_roof_seller"
     )
-    if not climate_zone_id:
-        raise BusinessFlowError("climate_zone_id is required when postal_code cannot be mapped.")
+    if (
+        needs_historical_year
+        and (annual_weather_year < 1940 or annual_weather_year >= date.today().year)
+    ):
+        raise BusinessFlowError(
+            "Historical weather year must be a complete year from 1940 onward.",
+        )
 
     heating_setpoint_c = float(answers.get("heating_setpoint_c", 19.0))
     cooling_setpoint_day_c = float(
@@ -203,8 +226,10 @@ def build_customer(
             customer_experience.ADJACENCY_LEVELS,
             answers.get("adjacency_id", "detached"),
         ),
-        "city": answers["city"],
+        "city": location["city"],
         "postal_code": postal_code,
+        "address": str(answers.get("address") or "").strip(),
+        "location": location,
         "climate_zone_id": climate_zone_id,
         "period_id": answers["period_id"],
         "wall_insulation": _option_by_id(
@@ -239,14 +264,46 @@ def build_customer(
             answers.get("include_annual_experiment"),
             bool(profile.get("include_annual_experiment", True)),
         ),
-        "annual_weather_year": int(answers.get("annual_weather_year", 2023)),
-        "annual_weather_dir": answers.get("annual_weather_dir", "data/weather/openmeteo"),
+        "annual_weather_type": annual_weather_type,
+        "annual_weather_year": annual_weather_year,
+        "annual_tmy_name": str(answers.get("annual_tmy_name", DEFAULT_NSRDB_TMY_NAME)),
+        "annual_weather_dir": answers.get(
+            "annual_weather_dir",
+            os.environ.get("THERMAL_WEATHER_DIR", "data/weather/us"),
+        ),
     }
 
 
 def prepare_experiment_weather(experiment: dict[str, Any]) -> None:
     """Ensure Open-Meteo weather exists locally and resolve/filter weather_ref scenarios."""
     weather_mode = experiment["before"].get("experiment", {}).get("weather_mode", "")
+    if weather_mode.startswith("us_"):
+        request = experiment["before"]["weather"].pop("_request")
+        for scenario_key in ("before", "after"):
+            experiment[scenario_key]["weather"].pop("_request", None)
+        try:
+            ensure_us_thermal_weather(
+                request["location"],
+                request["weather_type"],
+                year=request.get("year"),
+                tmy_name=request["tmy_name"],
+                output_dir=request["weather_dir"],
+            )
+        except Exception as exc:
+            reference = request.get("year") or request["tmy_name"]
+            raise BusinessFlowError(
+                f"{request['weather_type'].title()} weather {reference} is unavailable "
+                f"for ZIP code {request['location']['postal_code']}.",
+            ) from exc
+        for scenario_key in ("before", "after"):
+            resolve_scenario_weather_reference(experiment[scenario_key], Path.cwd())
+        if weather_mode == "us_historical_summer_period":
+            for scenario_key in ("before", "after"):
+                _filter_openmeteo_summer_period(experiment[scenario_key])
+        elif weather_mode == "us_historical_heatwave_zoom":
+            for scenario_key in ("before", "after"):
+                _filter_openmeteo_heatwave_zoom(experiment[scenario_key])
+        return
     if not weather_mode.startswith("openmeteo_"):
         return
 

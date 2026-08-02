@@ -13,8 +13,10 @@
         "label": "Project",
         "questions": [
           {"id": "project_name", "type": "text", "label": "Project name", "required": true},
-          {"id": "city", "type": "text", "label": "City", "required": true},
-          {"id": "postal_code", "type": "text", "label": "Postal code", "required": true}
+          {"id": "postal_code", "type": "text", "label": "ZIP code", "required": true},
+          {"id": "address", "type": "text", "label": "Street address (optional)", "required": false},
+          {"id": "annual_weather_type", "type": "select", "label": "Annual weather basis", "required": true, "options": [{"id": "typical", "label": "Typical meteorological year (recommended)"}, {"id": "historical", "label": "Historical weather year"}]},
+          {"id": "annual_weather_year", "type": "number", "label": "Historical weather year", "required": false, "default": 2023}
         ]
       },
       {

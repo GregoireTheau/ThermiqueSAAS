@@ -45,7 +45,7 @@ def test_frontend_app_is_served(tmp_path, monkeypatch):
 
     assert response.status_code == 200
     assert "ThermalTwin" in response.text
-    assert "/static/app.js?v=20260527-beta-login" in response.text
+    assert "/static/app.js?v=20260802-us-weather" in response.text
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
 
@@ -417,7 +417,10 @@ def test_persistent_project_api_runs_and_exposes_report(tmp_path, monkeypatch):
     assert "content-disposition" in (
         pdf_report_response.headers["access-control-expose-headers"].lower()
     )
-    assert annual_run_response.json()["result"]["comparison"]["experiment"]["weather_year"] == 2023
+    assert (
+        annual_run_response.json()["result"]["comparison"]["experiment"]["weather_reference"]
+        == "tmy-2024"
+    )
 
 
 def test_project_api_requires_authentication(tmp_path, monkeypatch):

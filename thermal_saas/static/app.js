@@ -413,6 +413,7 @@ function renderQuestionnaire() {
   applyDefaults();
   syncPositionOptions();
   updateCoolingVisibility();
+  updateWeatherVisibility();
 }
 
 function questionnaireIntroLabel() {
@@ -426,7 +427,11 @@ function questionnaireIntroLabel() {
 }
 
 function renderQuestion(question) {
-  const conditionalClass = question.id.startsWith("cooling_setpoint_") ? " conditionalCooling" : "";
+  const conditionalClass = question.id.startsWith("cooling_setpoint_")
+    ? " conditionalCooling"
+    : question.id === "annual_weather_year"
+      ? " conditionalHistoricalWeather"
+      : "";
   if (question.type === "select") {
     const options = (question.options || [])
       .map((option) => `<option value="${option.id}">${option.label}</option>`)
@@ -469,6 +474,14 @@ function updateCoolingVisibility() {
   renderRooms();
 }
 
+function updateWeatherVisibility() {
+  const selector = els.questionnaireForm.elements.namedItem("annual_weather_type");
+  const historical = !selector || selector.value === "historical";
+  document.querySelectorAll(".conditionalHistoricalWeather").forEach((element) => {
+    element.hidden = !historical;
+  });
+}
+
 const positionOptions = {
   house: [
     ["single_storey_house", "Single-storey house"],
@@ -506,8 +519,10 @@ function allowedPositionOptions(dwellingType) {
 
 function applyDefaults() {
   setField("project_name", els.projectName.value);
-  setField("city", "Bordeaux");
-  setField("postal_code", "33000");
+  setField("postal_code", "80202");
+  setField("address", "");
+  setField("annual_weather_type", "typical");
+  setField("annual_weather_year", 2023);
   setField("dwelling_type", "house");
   setField("position_id", "single_storey_house");
   setField("period_id", "2001_2012_good_insulation");
@@ -866,7 +881,7 @@ function collectAnswers() {
       area_m2: link.area_m2,
     })),
   };
-  for (const key of ["heating_setpoint_c", "cooling_setpoint_c", "cooling_setpoint_day_c", "cooling_setpoint_night_c"]) {
+  for (const key of ["heating_setpoint_c", "cooling_setpoint_c", "cooling_setpoint_day_c", "cooling_setpoint_night_c", "annual_weather_year"]) {
     if (answers[key] !== undefined && answers[key] !== "") answers[key] = Number(answers[key]);
   }
   if (answers.heating_energy_price_eur_kwh !== undefined && answers.heating_energy_price_eur_kwh !== "") {
@@ -1410,12 +1425,11 @@ function renderProjectSummary() {
     : state.simulationRuns.length
       ? "Latest simulation: older answer version"
       : "Latest simulation: none";
-  const city = getField("city", "Bordeaux");
-  const postalCode = getField("postal_code", "33000");
+  const postalCode = getField("postal_code", "80202");
   els.projectSummary.hidden = false;
   els.projectSummary.innerHTML = `
     <div class="projectSummaryTitle">📁 ${state.project.name} — ${state.project.customer_name || "No client"}</div>
-    <div class="projectSummaryMeta">${state.rooms.length} room${state.rooms.length > 1 ? "s" : ""} | ${postalCode} ${city}</div>
+    <div class="projectSummaryMeta">${state.rooms.length} room${state.rooms.length > 1 ? "s" : ""} | ZIP ${postalCode}</div>
     <div class="projectSummaryMeta">${latest}</div>
     <div class="projectSummaryReports">
       ${reports.length ? reports.map((run) => `
@@ -1505,8 +1519,10 @@ function demoProjectName(demoId) {
 
 function demoAnswers(demoId) {
   const common = {
-    city: "Bordeaux",
-    postal_code: "33000",
+    postal_code: "80202",
+    address: "",
+    annual_weather_type: "historical",
+    annual_weather_year: 2023,
     dwelling_type: "house",
     position_id: "single_storey_house",
     period_id: "2001_2012_good_insulation",
@@ -1596,6 +1612,7 @@ els.questionnaireForm.addEventListener("input", markUnsaved);
 els.questionnaireForm.addEventListener("change", (event) => {
   if (event.target.name === "dwelling_type") syncPositionOptions();
   if (event.target.name === "has_cooling") updateCoolingVisibility();
+  if (event.target.name === "annual_weather_type") updateWeatherVisibility();
   if (event.target.name === "heating_ref") {
     const defaultPrice = defaultHeatingEnergyPrices[event.target.value];
     if (defaultPrice !== undefined) setField("heating_energy_price_eur_kwh", defaultPrice);

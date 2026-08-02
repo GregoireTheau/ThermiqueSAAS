@@ -13,8 +13,7 @@ from scripts import create_customer_experience as customer_experience
 def _base_answers():
     return {
         "project_name": "Maison multi profil",
-        "city": "Bordeaux",
-        "postal_code": "33000",
+        "postal_code": "80202",
         "dwelling_type": "house",
         "position_id": "single_storey_house",
         "period_id": "2001_2012_good_insulation",
@@ -91,6 +90,17 @@ def test_roof_profiles_ask_roof_configuration_above_dwelling():
     ] == roof_insulation_expected_options
 
 
+def test_roof_profile_uses_us_location_and_explicit_annual_weather_basis():
+    questionnaire = get_profile_questionnaire("roof_insulation_seller")
+    question_ids = _question_ids(questionnaire)
+
+    assert "postal_code" in question_ids
+    assert "address" in question_ids
+    assert "annual_weather_type" in question_ids
+    assert "annual_weather_year" in question_ids
+    assert "city" not in question_ids
+
+
 def test_roof_insulation_profile_asks_heating_energy_price():
     question = _question_by_id(
         get_profile_questionnaire("roof_insulation_seller"),
@@ -117,6 +127,26 @@ def test_solar_protection_profile_runs_only_summer_protection_experience():
     retrofit = result["simulation_runs"][0]["after_scenario"]["retrofit"]
     assert retrofit["shutter_overrides"]
     _assert_annual_run(result["simulation_runs"][-1])
+
+
+def test_historical_weather_choice_is_dated_and_traced_in_report():
+    answers = {
+        **_base_answers(),
+        "annual_weather_type": "historical",
+        "annual_weather_year": 2022,
+    }
+
+    annual = run_profile_experience("roof_insulation_seller", answers)[
+        "simulation_runs"
+    ][-1]
+
+    assert annual["before_scenario"]["experiment"]["weather_mode"] == "us_historical"
+    assert annual["before_scenario"]["experiment"]["weather_year"] == 2022
+    assert annual["report"]["experiment"]["weather_trace"]["timezone"] == "America/Denver"
+    assert annual["report"]["methodology"]["engine_version"] == "1r1c-mvp-0.1"
+    assert "Historical weather year 2022" in annual["report_html"]
+    assert "39.7, -105.0 (shared 0.1° cell)" in annual["report_html"]
+    assert "test-weather-sha" in annual["report_html"]
 
 
 def test_has_cooling_answer_builds_cooling_system_only_when_enabled():
@@ -421,10 +451,9 @@ def _question_by_id(questionnaire, question_id):
 def _assert_annual_run(run):
     assert run["season"] == "annual"
     assert run["role"] == "annual"
-    assert run["before_scenario"]["experiment"]["weather_year"] == 2023
-    assert run["before_scenario"]["experiment"]["weather_city"] == "Bordeaux"
-    assert run["before_scenario"]["weather"]["weather_ref"] == (
-        "data/weather/openmeteo/thermal/bordeaux_2023.weather.json"
-    )
+    assert run["before_scenario"]["experiment"]["weather_mode"] == "us_typical"
+    assert run["before_scenario"]["experiment"]["weather_reference"] == "tmy-2024"
+    assert run["before_scenario"]["experiment"]["weather_city"] == "Denver"
+    assert run["before_scenario"]["weather"]["metadata"]["weather_type"] == "typical"
     assert len(run["before_scenario"]["weather"]["hourly"]) == 8760
     assert "<!doctype html>" in run["report_html"]

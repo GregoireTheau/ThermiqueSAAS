@@ -7,9 +7,17 @@
     "created_by": "manual_fixture"
   },
   "location": {
-    "country": "FR",
-    "postal_code": "69003",
-    "city": "Lyon",
+    "country": "US",
+    "postal_code": "80202",
+    "city": "Denver",
+    "state": "Colorado",
+    "address": "",
+    "latitude": 39.7392,
+    "longitude": -104.9903,
+    "elevation_m": 1609.0,
+    "timezone": "America/Denver",
+    "geocoding_provider": "example fixture",
+    "geocoding_precision": "postal_code",
     "climate_zone_id": "FR_H2c",
     "ground_albedo": 0.2
   },

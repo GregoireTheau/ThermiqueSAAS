@@ -124,6 +124,34 @@
         "city": {
           "$ref": "#/$defs/non_empty_string"
         },
+        "state": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "elevation_m": {
+          "type": ["number", "null"]
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "geocoding_provider": {
+          "type": "string"
+        },
+        "geocoding_precision": {
+          "type": "string"
+        },
         "climate_zone_id": {
           "$ref": "#/$defs/id"
         },

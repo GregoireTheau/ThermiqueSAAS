@@ -8,6 +8,7 @@ from typing import Any
 from .dwelling_loader import get_rooms_by_id
 from .scenario_loader import validate_scenario_against_dwelling
 from .simulation import apply_scenario_overrides, simulate_1r1c
+from .weather import THERMAL_ENGINE_VERSION
 
 
 def compare_scenarios(
@@ -188,6 +189,13 @@ def _build_experiment_context(
         for hour in before_weather
     ]
     experiment = before_scenario.get("experiment", {})
+    weather_trace = {
+        **(
+            before_scenario["weather"].get("metadata")
+            or _fallback_weather_trace(before_scenario, before_dwelling)
+        ),
+        "engine_version": THERMAL_ENGINE_VERSION,
+    }
     return {
         "adaptation_id": experiment.get("adaptation_id", "unknown"),
         "business_profile_id": experiment.get("business_profile_id", ""),
@@ -202,6 +210,7 @@ def _build_experiment_context(
         "weather_city": experiment.get("weather_city", ""),
         "weather_match_mode": experiment.get("weather_match_mode", ""),
         "weather_year": experiment.get("weather_year"),
+        "weather_reference": experiment.get("weather_reference", ""),
         "reason": experiment.get("reason", ""),
         "before_description": before_scenario.get("description", ""),
         "after_description": after_scenario.get("description", ""),
@@ -209,6 +218,7 @@ def _build_experiment_context(
         "duration_days": duration_hours / 24.0,
         "timestep_h": before_scenario["timestep_h"],
         "weather_source": before_scenario["weather"].get("source", "unknown"),
+        "weather_trace": weather_trace,
         "weather_summary": {
             "outdoor_temperature_min_c": min(outdoor_temperatures),
             "outdoor_temperature_max_c": max(outdoor_temperatures),
@@ -217,6 +227,29 @@ def _build_experiment_context(
         "has_cooling": bool(before_dwelling and before_dwelling["systems"]["cooling"]),
         "initial_temperature_mode": "scenario_initial_temperatures",
         "intervention": _summarize_retrofit(after_scenario.get("retrofit", {})),
+    }
+
+
+def _fallback_weather_trace(
+    scenario: dict[str, Any],
+    dwelling: dict[str, Any] | None,
+) -> dict[str, Any]:
+    location = (dwelling or {}).get("location", {})
+    latitude = location.get("latitude")
+    longitude = location.get("longitude")
+    return {
+        "weather_type": "synthetic",
+        "provider": "ThermalTwin",
+        "dataset": scenario["weather"].get("source", "Synthetic weather profile"),
+        "model": "Synthetic reference profile",
+        "year": None,
+        "weather_reference": scenario.get("experiment", {}).get("weather_variant", ""),
+        "latitude": round(float(latitude), 2) if latitude is not None else None,
+        "longitude": round(float(longitude), 2) if longitude is not None else None,
+        "timezone": location.get("timezone", "Not recorded"),
+        "station": "Not applicable — synthetic scenario",
+        "engine_version": THERMAL_ENGINE_VERSION,
+        "hourly_sha256": "not recorded",
     }
 
 

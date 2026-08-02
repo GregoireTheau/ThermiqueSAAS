@@ -56,6 +56,8 @@ def resolve_scenario_weather_reference(
         "source",
         referenced_weather.get("source", str(weather_ref)),
     )
+    if "metadata" in referenced_weather:
+        weather["metadata"] = referenced_weather["metadata"]
     return scenario
 
 

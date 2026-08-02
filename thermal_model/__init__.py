@@ -12,6 +12,7 @@ from .dwelling_loader import (
 )
 from .dwelling_resolver import resolve_dwelling_references
 from .physical_validation import collect_model_warnings
+from .location import LocationResolutionError, resolve_us_location
 from .reference_loader import (
     ReferenceDataError,
     get_climate_zone_for_department,
@@ -38,16 +39,22 @@ from .scenario_loader import (
 from .simulation import apply_scenario_overrides, simulate_1r1c
 from .static_losses import compute_dwelling_static_losses, compute_room_static_losses
 from .weather import (
+    DEFAULT_NSRDB_TMY_NAME,
     FRENCH_KEY_CITIES,
+    THERMAL_ENGINE_VERSION,
     build_thermal_weather,
     city_coordinates,
     city_slug,
     combine_weather_years,
     ensure_openmeteo_thermal_weather,
+    ensure_us_thermal_weather,
+    fetch_nsrdb_tmy,
+    fetch_open_meteo_coordinates,
     fetch_open_meteo_year,
     read_parquet,
     resolve_weather_city,
     thermal_weather_ref,
+    us_weather_ref,
     write_parquet,
     write_thermal_weather_json,
 )
@@ -60,14 +67,20 @@ __all__ = [
     "compute_dwelling_static_losses",
     "compute_room_static_losses",
     "DwellingValidationError",
+    "DEFAULT_NSRDB_TMY_NAME",
     "FRENCH_KEY_CITIES",
+    "LocationResolutionError",
     "ReferenceDataError",
     "ScenarioValidationError",
+    "THERMAL_ENGINE_VERSION",
     "build_thermal_weather",
     "city_coordinates",
     "city_slug",
     "combine_weather_years",
     "ensure_openmeteo_thermal_weather",
+    "ensure_us_thermal_weather",
+    "fetch_nsrdb_tmy",
+    "fetch_open_meteo_coordinates",
     "fetch_open_meteo_year",
     "get_climate_zone_for_department",
     "get_climate_zone_reference",
@@ -90,10 +103,12 @@ __all__ = [
     "read_parquet",
     "resolve_dwelling_references",
     "resolve_scenario_weather_reference",
+    "resolve_us_location",
     "resolve_weather_city",
     "render_report_html",
     "simulate_1r1c",
     "thermal_weather_ref",
+    "us_weather_ref",
     "validate_scenario",
     "validate_scenario_against_dwelling",
     "validate_dwelling",

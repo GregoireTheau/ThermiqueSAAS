@@ -27,6 +27,7 @@ from thermal_model import (  # noqa: E402
     resolve_dwelling_references,
     resolve_weather_city,
     thermal_weather_ref,
+    us_weather_ref,
     validate_dwelling,
     validate_scenario,
 )
@@ -272,7 +273,7 @@ EXPERIMENT_SPECS = {
         "season": "summer",
         "weather_variant": "openmeteo_june_september",
         "simulation_type": "seasonal",
-        "weather_mode": "openmeteo_summer_period",
+        "weather_mode": "us_historical_summer_period",
         "duration_days": 107,
         "role": "primary",
         "label": "Early June to mid-September",
@@ -283,22 +284,33 @@ EXPERIMENT_SPECS = {
         "season": "summer",
         "weather_variant": "openmeteo_warmest_5_days",
         "simulation_type": "stress",
-        "weather_mode": "openmeteo_heatwave_zoom",
+        "weather_mode": "us_historical_heatwave_zoom",
         "duration_days": 5,
         "role": "secondary",
         "label": "Real heatwave zoom",
         "reason": "Zoom on the 5 hottest consecutive days between early June and mid-September.",
     },
-    "annual_openmeteo": {
+    "annual_us_typical": {
         "id": "annual",
         "season": "annual",
-        "weather_variant": "openmeteo_annual",
+        "weather_variant": "nsrdb_tmy",
         "simulation_type": "annual",
-        "weather_mode": "openmeteo_annual",
+        "weather_mode": "us_typical",
         "duration_days": 365,
         "role": "annual",
-        "label": "Full year",
-        "reason": "Annual experiment to estimate demand and savings on representative weather.",
+        "label": "Typical weather year",
+        "reason": "Primary annual estimate using a pinned US typical meteorological year.",
+    },
+    "annual_us_historical": {
+        "id": "annual",
+        "season": "annual",
+        "weather_variant": "openmeteo_historical",
+        "simulation_type": "annual",
+        "weather_mode": "us_historical",
+        "duration_days": 365,
+        "role": "annual",
+        "label": "Historical weather year",
+        "reason": "Contextual annual comparison using one explicitly selected historical year.",
     },
 }
 
@@ -817,9 +829,14 @@ def build_dwelling(customer: dict[str, Any], catalog: dict[str, Any]) -> dict[st
             "created_by": "create_customer_experience.py",
         },
         "location": {
-            "country": "FR",
-            "postal_code": customer["postal_code"],
-            "city": customer["city"],
+            **customer.get(
+                "location",
+                {
+                    "country": customer.get("country", "US"),
+                    "postal_code": customer["postal_code"],
+                    "city": customer["city"],
+                },
+            ),
             "climate_zone_id": customer["climate_zone_id"],
             "ground_albedo": 0.2,
         },
@@ -1276,6 +1293,7 @@ def build_experiments(
         dwelling,
         room_ids,
         customer.get("include_annual_experiment", True),
+        customer.get("annual_weather_type", "typical"),
     ):
         base_id = f"{dwelling['dwelling_id']}_{change['id']}_{experiment_spec['id']}"
         before = build_scenario(
@@ -1289,7 +1307,8 @@ def build_experiments(
             customer.get("setpoints"),
             customer.get("shutter_usage"),
             customer.get("annual_weather_year", 2023),
-            customer.get("annual_weather_dir", "data/weather/openmeteo"),
+            customer.get("annual_tmy_name", "tmy-2024"),
+            customer.get("annual_weather_dir", "data/weather/us"),
             customer.get("energy_prices"),
         )
         after = build_scenario(
@@ -1303,7 +1322,8 @@ def build_experiments(
             customer.get("setpoints"),
             customer.get("shutter_usage"),
             customer.get("annual_weather_year", 2023),
-            customer.get("annual_weather_dir", "data/weather/openmeteo"),
+            customer.get("annual_tmy_name", "tmy-2024"),
+            customer.get("annual_weather_dir", "data/weather/us"),
             customer.get("energy_prices"),
         )
         experiments.append(
@@ -1323,6 +1343,7 @@ def selected_experiment_specs(
     dwelling: dict[str, Any],
     room_ids: list[str],
     include_annual_experiment: bool = True,
+    annual_weather_type: str = "typical",
 ) -> list[dict[str, Any]]:
     specs = []
     for experiment_id in change["experiments"]:
@@ -1334,7 +1355,12 @@ def selected_experiment_specs(
             continue
         specs.append(spec)
     if include_annual_experiment and change["id"] != "reflective_roof":
-        specs.append(EXPERIMENT_SPECS["annual_openmeteo"])
+        annual_spec_id = (
+            "annual_us_historical"
+            if annual_weather_type == "historical"
+            else "annual_us_typical"
+        )
+        specs.append(EXPERIMENT_SPECS[annual_spec_id])
     return specs
 
 
@@ -1380,18 +1406,13 @@ def build_scenario(
     setpoints: dict[str, float] | None = None,
     shutter_usage: dict[str, Any] | None = None,
     annual_weather_year: int = 2023,
-    annual_weather_dir: str | Path = "data/weather/openmeteo",
+    annual_tmy_name: str = "tmy-2024",
+    annual_weather_dir: str | Path = "data/weather/us",
     energy_prices: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     season = experiment_spec["season"]
     scenario_setpoints = setpoints or default_setpoints_for_experiment(experiment_spec)
     weather_city = {}
-    if experiment_spec["weather_mode"].startswith("openmeteo_"):
-        weather_city = resolve_weather_city(
-            dwelling["location"].get("city"),
-            dwelling["location"].get("postal_code"),
-            dwelling["location"].get("climate_zone_id"),
-        )
     scenario = {
         "schema_version": "0.1",
         "scenario_id": f"{base_id}_{'after' if apply_change else 'before'}",
@@ -1421,20 +1442,26 @@ def build_scenario(
             catalog,
             weather_city,
             annual_weather_year,
+            annual_tmy_name,
             annual_weather_dir,
         ),
         "energy_prices": energy_prices or {"electricity_eur_kwh": 0.25},
         "co2_factors": {"electricity_kg_kwh": 0.06},
     }
-    if weather_city:
+    if experiment_spec["weather_mode"].startswith("us_"):
+        weather_type = "typical" if experiment_spec["weather_mode"] == "us_typical" else "historical"
         scenario["experiment"].update(
             {
-                "requested_city": weather_city["requested_city"],
-                "weather_city": weather_city["weather_city"],
-                "weather_match_mode": weather_city["match_mode"],
-                "weather_year": annual_weather_year,
+                "requested_city": dwelling["location"].get("city", ""),
+                "weather_city": dwelling["location"].get("city", ""),
+                "weather_match_mode": dwelling["location"].get("geocoding_precision", ""),
+                "weather_reference": (
+                    annual_tmy_name if weather_type == "typical" else str(annual_weather_year)
+                ),
             },
         )
+        if weather_type == "historical":
+            scenario["experiment"]["weather_year"] = annual_weather_year
     if season in {"summer", "annual"}:
         scenario["controls"] = {
             "shutters": build_summer_shutter_controls(
@@ -1483,8 +1510,37 @@ def build_scenario_weather(
     catalog: dict[str, Any],
     weather_city: dict[str, str],
     annual_weather_year: int,
+    annual_tmy_name: str,
     annual_weather_dir: str | Path,
 ) -> dict[str, Any]:
+    if experiment_spec["weather_mode"].startswith("us_"):
+        weather_type = (
+            "typical"
+            if experiment_spec["weather_mode"] == "us_typical"
+            else "historical"
+        )
+        location = dwelling["location"]
+        return {
+            "source": (
+                f"nsrdb_goes_tmy_v4_{annual_tmy_name}"
+                if weather_type == "typical"
+                else f"openmeteo_era5_seamless_{annual_weather_year}"
+            ),
+            "weather_ref": us_weather_ref(
+                location,
+                weather_type,
+                year=annual_weather_year,
+                tmy_name=annual_tmy_name,
+                output_dir=annual_weather_dir,
+            ),
+            "_request": {
+                "location": location,
+                "weather_type": weather_type,
+                "year": annual_weather_year if weather_type == "historical" else None,
+                "tmy_name": annual_tmy_name,
+                "weather_dir": str(annual_weather_dir),
+            },
+        }
     if experiment_spec["weather_mode"].startswith("openmeteo_"):
         city = weather_city["weather_city"]
         return {
