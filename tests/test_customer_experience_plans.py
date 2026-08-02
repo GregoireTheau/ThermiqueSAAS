@@ -137,7 +137,7 @@ def test_customer_facade_dimensions_masks_and_roof_details_feed_dwelling():
         "postal_code": "80202",
         "city": "Denver",
         "climate_zone_id": "US_IECC_2021_5B",
-        "period_id": "2001_2012_good_insulation",
+        "construction_era_id": "us_2000_2009",
         "wall_insulation": {"u_factor": 1.0},
         "roof_insulation": {"u_factor": 1.0},
         "floor_insulation": {"u_factor": 1.0},

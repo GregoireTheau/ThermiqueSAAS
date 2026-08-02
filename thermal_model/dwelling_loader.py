@@ -284,6 +284,15 @@ def _validate_systems(systems: Mapping[str, Any], room_ids: set[str]) -> None:
                 system["id"],
                 system["type"],
             )
+            if "distribution_efficiency" in system:
+                _validate_factor(
+                    system["distribution_efficiency"],
+                    f"{system_type} system {system['id']}.distribution_efficiency",
+                )
+                if system["distribution_efficiency"] == 0:
+                    raise DwellingValidationError(
+                        f"{system_type} system {system['id']}.distribution_efficiency must be > 0"
+                    )
 
     _validate_unique(system_ids, "system ids")
 

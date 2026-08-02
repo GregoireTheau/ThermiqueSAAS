@@ -157,6 +157,7 @@ def compare_scenarios(
         "dwelling_id": dwelling["dwelling_id"],
         "dwelling_name": dwelling.get("metadata", {}).get("name", dwelling["dwelling_id"]),
         "location": dwelling.get("location", {}),
+        "building_characteristics": dwelling.get("building_characteristics", {}),
         "before_scenario_id": before_scenario["scenario_id"],
         "after_scenario_id": after_scenario["scenario_id"],
         "experiment": _build_experiment_context(

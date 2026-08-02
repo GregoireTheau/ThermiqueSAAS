@@ -47,9 +47,9 @@
             ]
           },
           {
-            "id": "period_id",
+            "id": "construction_era_id",
             "type": "select",
-            "label": "Construction or renovation period",
+            "label": "Construction era",
             "required": true,
             "options_ref": "envelope_defaults"
           },

@@ -7,7 +7,7 @@ def _answers():
         "postal_code": "80202",
         "dwelling_type": "house",
         "position_id": "single_storey_house",
-        "period_id": "2001_2012_good_insulation",
+        "construction_era_id": "us_2000_2009",
         "current_energy_id": "electricity",
         "heating_ref": "electric_radiator",
         "heat_emitters_id": "electric_radiators",

@@ -87,15 +87,15 @@ Unités :
 - `equivalent_capacity_j_m2k` : J/m2.K
 - `C_room` : J/K
 
-Valeurs par période de construction :
+Valeurs de travail par époque de construction US :
 
-| Période | Capacité équivalente J/m2.K |
+| Époque US | Capacité équivalente J/m2.K |
 |---|---:|
-| `pre_1975_uninsulated` | 190000 |
-| `1975_1988_basic_insulation` | 175000 |
-| `1989_2000_improved_insulation` | 165000 |
-| `2001_2012_good_insulation` | 160000 |
-| `2013_or_later_high_efficiency` | 155000 |
+| `us_pre_1940` | 190000 |
+| `us_1940_1979` | 175000 |
+| `us_1980_1999` | 165000 |
+| `us_2000_2009` | 160000 |
+| `us_2010_or_later` | 155000 |
 
 Remarque : cette capacité est une inertie équivalente globale par m2. Le modèle ne distingue pas explicitement air, murs internes, mobilier et structure.
 
@@ -162,25 +162,39 @@ La perte affichée en statique est :
 Loss_transmission = H_transmission * (T_room - T_out)
 ```
 
-## 5. Valeurs U Par Période
+## 5. Valeurs U Par Époque De Construction US
 
 Valeurs U de base, avant correction par niveau d’isolation :
 
-| Période | Mur extérieur | Toiture | Plancher | Ponts thermiques |
+| Époque US | Mur extérieur | Toiture | Plancher | Ponts thermiques |
 |---|---:|---:|---:|---:|
-| `pre_1975_uninsulated` | 1.80 | 1.50 | 1.20 | 0.18 |
-| `1975_1988_basic_insulation` | 1.00 | 0.70 | 0.80 | 0.15 |
-| `1989_2000_improved_insulation` | 0.65 | 0.40 | 0.55 | 0.12 |
-| `2001_2012_good_insulation` | 0.45 | 0.28 | 0.40 | 0.10 |
-| `2013_or_later_high_efficiency` | 0.28 | 0.18 | 0.25 | 0.06 |
+| `us_pre_1940` | 1.80 | 1.50 | 1.20 | 0.18 |
+| `us_1940_1979` | 1.00 | 0.70 | 0.80 | 0.15 |
+| `us_1980_1999` | 0.65 | 0.40 | 0.55 | 0.12 |
+| `us_2000_2009` | 0.45 | 0.28 | 0.40 | 0.10 |
+| `us_2010_or_later` | 0.28 | 0.18 | 0.25 | 0.06 |
 
 Unités U : W/m2.K.
 
-Dans `build_surfaces()`, les U finaux sont :
+Pour les murs et planchers, les U finaux sont :
 
 ```text
 U_final = U_period[type] * u_factor_isolation
 ```
+
+Dans les parcours toiture US, la toiture n'utilise plus une classe qualitative :
+
+```text
+U_roof = 1 / (R_US * 0.1761101838)
+```
+
+La R-value saisie décrit l'assemblage qui sépare le volume conditionné de
+l'extérieur : plancher du grenier pour un attic ventilé, roof deck pour un
+attic conditionné, un plafond cathédrale ou une toiture compacte.
+
+Pour un système aéraulique, l'énergie finale inclut une efficacité de
+distribution liée à la position des gaines. Cette hypothèse n'affecte pas la
+chaleur livrée au logement et n'est pas appliquée aux systèmes non gainés.
 
 Les `u_factor` viennent des choix métier d’isolation. Le résultat est arrondi à 3 décimales.
 

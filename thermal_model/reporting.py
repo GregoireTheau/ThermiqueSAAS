@@ -133,6 +133,7 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
             "dwelling_id": comparison["dwelling_id"],
             "dwelling_name": comparison.get("dwelling_name", comparison["dwelling_id"]),
             "location": _report_location(comparison.get("location", {})),
+            "building_characteristics": comparison.get("building_characteristics", {}),
             "before_scenario_id": comparison["before_scenario_id"],
             "after_scenario_id": comparison["after_scenario_id"],
         },
@@ -186,6 +187,7 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
             "setpoints": experiment["setpoints"],
             "has_cooling": experiment.get("has_cooling", False),
             "intervention": experiment["intervention"],
+            "building_characteristics": comparison.get("building_characteristics", {}),
         },
         "comfort_mode": comfort_mode,
         "narrative": {
@@ -1985,6 +1987,11 @@ def _render_context_params(
     weather = experiment["weather_summary"]
     trace = experiment.get("weather_trace", {})
     thresholds = temperature_profiles["thresholds"]
+    building = experiment.get("building_characteristics", {})
+    construction_era = building.get("construction_era", {})
+    roof_assembly = building.get("roof_assembly", {})
+    framing = building.get("framing", {})
+    ducts = building.get("hvac_ducts", {})
     rows = [
         ("Duration", _format_duration(experiment)),
         (
@@ -2004,6 +2011,11 @@ def _render_context_params(
             "Building-code climate zone",
             escape(_climate_zone_label(experiment)),
         ),
+        ("Construction era", escape(str(construction_era.get("label", "Not recorded")))),
+        ("Attic / roof assembly", escape(str(roof_assembly.get("label", "Not recorded")))),
+        ("Roof framing", escape(str(framing.get("label", "Not recorded")))),
+        ("Roof insulation", escape(_roof_insulation_label(building, experiment))),
+        ("HVAC ducts", escape(str(ducts.get("label", "Not recorded")))),
         (
             "Reproducibility",
             escape(
@@ -2038,6 +2050,17 @@ def _weather_basis_label(trace: dict[str, Any], experiment: dict[str, Any]) -> s
     if trace.get("weather_type") == "historical" or year:
         return f"Historical weather year {year}"
     return "Synthetic weather scenario"
+
+
+def _roof_insulation_label(
+    building: dict[str, Any],
+    experiment: dict[str, Any],
+) -> str:
+    existing = building.get("existing_roof_r_value", "not recorded")
+    if experiment.get("adaptation_id") != "roof_insulation":
+        return f"Existing R-{existing}"
+    proposed = building.get("proposed_roof_r_value", "not recorded")
+    return f"Existing R-{existing} · proposed R-{proposed}"
 
 
 def _weather_source_label(trace: dict[str, Any], experiment: dict[str, Any]) -> str:

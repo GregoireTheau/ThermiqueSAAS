@@ -525,7 +525,7 @@ function applyDefaults() {
   setField("annual_weather_year", 2023);
   setField("dwelling_type", "house");
   setField("position_id", "single_storey_house");
-  setField("period_id", "2001_2012_good_insulation");
+  setField("construction_era_id", "us_2000_2009");
   setField("heating_ref", "electric_radiator");
   setField("heating_setpoint_c", 19);
   setField("heating_energy_price_eur_kwh", 0.25);
@@ -1525,7 +1525,7 @@ function demoAnswers(demoId) {
     annual_weather_year: 2023,
     dwelling_type: "house",
     position_id: "single_storey_house",
-    period_id: "2001_2012_good_insulation",
+    construction_era_id: "us_2000_2009",
     rooms: [
       {
         name: "Living room",
@@ -1564,9 +1564,12 @@ function demoAnswers(demoId) {
   if (demoId === "roof_insulation_seller") {
     return {
       ...common,
-      roof_insulation_id: "poor",
+      roof_assembly_id: "vented_attic_ceiling",
+      existing_roof_r_value: 11,
+      proposed_roof_r_value: 49,
+      framing_type_id: "wood_frame",
+      hvac_duct_location_id: "vented_attic",
       roof_color_id: "medium",
-      attic_ventilation_id: "attic",
       wall_insulation_id: "standard",
       heating_ref: "electric_radiator",
       heating_setpoint_c: 19,
@@ -1576,9 +1579,12 @@ function demoAnswers(demoId) {
   return {
     ...common,
     adaptation_id: "reflective_roof",
-    roof_insulation_id: "standard",
+    roof_assembly_id: "vented_attic_ceiling",
+    existing_roof_r_value: 19,
+    proposed_roof_r_value: 49,
+    framing_type_id: "wood_frame",
+    hvac_duct_location_id: "conditioned_space",
     roof_color_id: "dark",
-    attic_ventilation_id: "attic",
   };
 }
 

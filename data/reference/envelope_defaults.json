@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1",
   "data_quality": "mvp_working_assumptions_to_calibrate",
-  "description": "Default U-values and inertia assumptions by broad building period for quick first tests.",
+  "description": "Working US envelope defaults by broad construction era. Roof insulation is overridden by the entered R-value in roof-insulation flows.",
     "units": {
         "u_value_w_m2k": "W/m2.K",
         "equivalent_capacity_j_m2k": "J/m2.K",
@@ -34,10 +34,10 @@
             "u_factor": 0.45
         }
     ],
-    "building_periods": [
+    "construction_eras": [
     {
-      "id": "pre_1975_uninsulated",
-      "name": "Before 1975, not insulated",
+      "id": "us_pre_1940",
+      "name": "US home built before 1940",
       "thermal_bridge_factor": 0.18,
       "equivalent_capacity_j_m2k": 190000,
       "u_values": {
@@ -47,8 +47,8 @@
       }
     },
     {
-      "id": "1975_1988_basic_insulation",
-      "name": "1975-1988 basic insulation",
+      "id": "us_1940_1979",
+      "name": "US home built 1940-1979",
       "thermal_bridge_factor": 0.15,
       "equivalent_capacity_j_m2k": 175000,
       "u_values": {
@@ -58,8 +58,8 @@
       }
     },
     {
-      "id": "1989_2000_improved_insulation",
-      "name": "1989-2000 improved insulation",
+      "id": "us_1980_1999",
+      "name": "US home built 1980-1999",
       "thermal_bridge_factor": 0.12,
       "equivalent_capacity_j_m2k": 165000,
       "u_values": {
@@ -69,8 +69,8 @@
       }
     },
     {
-      "id": "2001_2012_good_insulation",
-      "name": "2001-2012 good insulation",
+      "id": "us_2000_2009",
+      "name": "US home built 2000-2009",
       "thermal_bridge_factor": 0.1,
       "equivalent_capacity_j_m2k": 160000,
       "u_values": {
@@ -80,8 +80,8 @@
       }
     },
     {
-      "id": "2013_or_later_high_efficiency",
-      "name": "2013 or later / high-efficiency construction",
+      "id": "us_2010_or_later",
+      "name": "US home built 2010 or later",
       "thermal_bridge_factor": 0.06,
       "equivalent_capacity_j_m2k": 155000,
       "u_values": {

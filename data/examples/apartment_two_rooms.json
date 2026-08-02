@@ -31,7 +31,7 @@
     "thermal_bridge_factor": 0.08,
     "internal_gain_w_m2": 4.5,
     "ach_h": 0.45,
-    "building_period_ref": "1989_2000_improved_insulation"
+    "construction_era_ref": "us_1980_1999"
   },
   "rooms": [
     {

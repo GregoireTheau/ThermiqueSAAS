@@ -29,8 +29,31 @@
     "location": {
       "$ref": "#/$defs/location"
     },
+    "building_characteristics": {
+      "$ref": "#/$defs/building_characteristics"
+    },
     "defaults": {
       "$ref": "#/$defs/defaults"
+    },
+    "building_characteristics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "construction_era",
+        "roof_assembly",
+        "framing",
+        "existing_roof_r_value",
+        "proposed_roof_r_value",
+        "hvac_ducts"
+      ],
+      "properties": {
+        "construction_era": {"$ref": "#/$defs/labeled_characteristic"},
+        "roof_assembly": {"$ref": "#/$defs/roof_assembly"},
+        "framing": {"$ref": "#/$defs/labeled_characteristic"},
+        "existing_roof_r_value": {"$ref": "#/$defs/positive_number"},
+        "proposed_roof_r_value": {"$ref": "#/$defs/positive_number"},
+        "hvac_ducts": {"$ref": "#/$defs/hvac_ducts"}
+      }
     },
     "rooms": {
       "type": "array",
@@ -57,6 +80,37 @@
     "non_empty_string": {
       "type": "string",
       "minLength": 1
+    },
+    "labeled_characteristic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "label": {"$ref": "#/$defs/non_empty_string"}
+      }
+    },
+    "roof_assembly": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "thermal_boundary", "roof_configuration_id"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "label": {"$ref": "#/$defs/non_empty_string"},
+        "thermal_boundary": {"enum": ["attic_floor", "roof_deck"]},
+        "roof_configuration_id": {"$ref": "#/$defs/id"}
+      }
+    },
+    "hvac_ducts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "present", "distribution_efficiency"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "label": {"$ref": "#/$defs/non_empty_string"},
+        "present": {"type": "boolean"},
+        "distribution_efficiency": {"$ref": "#/$defs/factor_0_1"}
+      }
     },
     "positive_number": {
       "type": "number",
@@ -208,7 +262,7 @@
         "recovery_efficiency": {
           "$ref": "#/$defs/factor_0_1"
         },
-        "building_period_ref": {
+        "construction_era_ref": {
           "$ref": "#/$defs/id"
         }
       }
@@ -536,6 +590,9 @@
         },
         "system_ref": {
           "$ref": "#/$defs/id"
+        },
+        "distribution_efficiency": {
+          "$ref": "#/$defs/factor_0_1"
         }
       }
     },
@@ -569,6 +626,9 @@
         },
         "system_ref": {
           "$ref": "#/$defs/id"
+        },
+        "distribution_efficiency": {
+          "$ref": "#/$defs/factor_0_1"
         }
       }
     },

@@ -45,9 +45,9 @@
             ]
           },
           {
-            "id": "period_id",
+            "id": "construction_era_id",
             "type": "select",
-            "label": "Construction or renovation period",
+            "label": "Construction era",
             "required": true,
             "options_ref": "envelope_defaults"
           },
@@ -103,15 +103,44 @@
         "label": "Roof",
         "questions": [
           {
-            "id": "roof_insulation_id",
+            "id": "roof_assembly_id",
             "type": "select",
-            "label": "Current roof insulation level",
+            "label": "Attic and roof assembly",
             "required": true,
             "options": [
-              {"id": "poor", "label": "Roof or attic with weak insulation"},
-              {"id": "standard", "label": "Standard roof insulation"},
-              {"id": "renovated", "label": "Well-insulated or renovated roof"},
-              {"id": "unknown", "label": "I don't know"}
+              {"id": "vented_attic_ceiling", "label": "Vented attic — insulation at attic floor / ceiling"},
+              {"id": "unvented_conditioned_attic_roof_deck", "label": "Unvented conditioned attic — insulation at roof deck"},
+              {"id": "cathedral_ceiling_roof_deck", "label": "Cathedral ceiling — insulation at roof deck"},
+              {"id": "compact_flat_roof", "label": "Compact or flat roof assembly"}
+            ]
+          },
+          {"id": "existing_roof_r_value", "type": "number", "label": "Existing insulation R-value (US)", "required": true, "default": 19},
+          {
+            "id": "framing_type_id",
+            "type": "select",
+            "label": "Roof framing type",
+            "required": true,
+            "options": [
+              {"id": "wood_frame", "label": "Wood framing / trusses"},
+              {"id": "steel_frame", "label": "Steel framing"},
+              {"id": "masonry_concrete", "label": "Masonry or concrete"},
+              {"id": "unknown", "label": "Unknown"}
+            ]
+          },
+          {
+            "id": "hvac_duct_location_id",
+            "type": "select",
+            "label": "HVAC duct presence and location",
+            "required": true,
+            "options": [
+              {"id": "no_ducts", "label": "No HVAC ducts"},
+              {"id": "conditioned_space", "label": "Ducts inside conditioned space"},
+              {"id": "conditioned_attic", "label": "Ducts in conditioned attic"},
+              {"id": "vented_attic", "label": "Ducts in vented attic"},
+              {"id": "unconditioned_crawlspace", "label": "Ducts in unconditioned crawlspace"},
+              {"id": "unconditioned_basement", "label": "Ducts in unconditioned basement"},
+              {"id": "garage", "label": "Ducts in garage"},
+              {"id": "mixed_unknown", "label": "Mixed or unknown location"}
             ]
           },
           {
@@ -124,17 +153,6 @@
               {"id": "medium", "label": "Medium"},
               {"id": "light", "label": "Light"},
               {"id": "unknown", "label": "I don't know"}
-            ]
-          },
-          {
-            "id": "attic_ventilation_id",
-            "type": "select",
-            "label": "Roof configuration above the home",
-            "required": true,
-            "options": [
-              {"id": "attic", "label": "Attic above the home"},
-              {"id": "sloped_ceiling", "label": "Sloped roof above the home"},
-              {"id": "flat_roof", "label": "Flat roof above the home"}
             ]
           }
         ]

@@ -16,7 +16,12 @@ def _base_answers():
         "postal_code": "80202",
         "dwelling_type": "house",
         "position_id": "single_storey_house",
-        "period_id": "2001_2012_good_insulation",
+        "construction_era_id": "us_2000_2009",
+        "roof_assembly_id": "vented_attic_ceiling",
+        "existing_roof_r_value": 19,
+        "proposed_roof_r_value": 49,
+        "framing_type_id": "wood_frame",
+        "hvac_duct_location_id": "vented_attic",
         "heating_ref": "electric_radiator",
         "rooms": [
             {
@@ -58,36 +63,32 @@ def test_all_business_profiles_ask_ventilation_and_airtightness():
 
 
 def test_roof_profiles_ask_roof_configuration_above_dwelling():
-    reflective_expected_options = [
-        ("attic", "Attic above the home"),
-        ("sloped_ceiling", "Sloped roof above the home"),
-        ("flat_roof", "Flat roof above the home"),
-    ]
-    roof_insulation_expected_options = [
-        ("attic", "Unconverted attic above the home"),
-        ("sloped_ceiling", "Sloped ceilings / rooms under the roof"),
-        ("flat_roof", "Flat roof above the home"),
+    expected_options = [
+        ("vented_attic_ceiling", "Vented attic — insulation at attic floor / ceiling"),
+        ("unvented_conditioned_attic_roof_deck", "Unvented conditioned attic — insulation at roof deck"),
+        ("cathedral_ceiling_roof_deck", "Cathedral ceiling — insulation at roof deck"),
+        ("compact_flat_roof", "Compact or flat roof assembly"),
     ]
 
     reflective_question = _question_by_id(
         get_profile_questionnaire("reflective_roof_seller"),
-        "attic_ventilation_id",
+        "roof_assembly_id",
     )
     roof_insulation_question = _question_by_id(
         get_profile_questionnaire("roof_insulation_seller"),
-        "attic_ventilation_id",
+        "roof_assembly_id",
     )
 
-    assert reflective_question["label"] == "Roof configuration above the home"
+    assert reflective_question["label"] == "Attic and roof assembly"
     assert [
         (option["id"], option["label"])
         for option in reflective_question["options"]
-    ] == reflective_expected_options
-    assert roof_insulation_question["label"] == "Roof or attic type above the home"
+    ] == expected_options
+    assert roof_insulation_question["label"] == "Attic and roof assembly"
     assert [
         (option["id"], option["label"])
         for option in roof_insulation_question["options"]
-    ] == roof_insulation_expected_options
+    ] == expected_options
 
 
 def test_roof_profile_uses_us_location_and_explicit_annual_weather_basis():
@@ -99,6 +100,11 @@ def test_roof_profile_uses_us_location_and_explicit_annual_weather_basis():
     assert "annual_weather_type" in question_ids
     assert "annual_weather_year" in question_ids
     assert "city" not in question_ids
+    assert "construction_era_id" in question_ids
+    assert "existing_roof_r_value" in question_ids
+    assert "framing_type_id" in question_ids
+    assert "hvac_duct_location_id" in question_ids
+    assert "period_id" not in question_ids
 
 
 def test_roof_insulation_profile_asks_heating_energy_price():
@@ -262,9 +268,13 @@ def test_heat_pump_profile_maps_existing_energy_to_initial_heating():
 def test_roof_insulation_profile_runs_roof_insulation_experiences():
     answers = _base_answers() | {
         "adaptation_id": "roof_insulation",
-        "roof_insulation_id": "poor",
+        "roof_assembly_id": "compact_flat_roof",
+        "existing_roof_r_value": 11,
+        "proposed_roof_r_value": 49,
+        "framing_type_id": "wood_frame",
+        "hvac_duct_location_id": "vented_attic",
         "roof_color_id": "dark",
-        "attic_ventilation_id": "flat_roof",
+        "heating_ref": "air_air_heat_pump_standard",
     }
 
     result = run_profile_experience("roof_insulation_seller", answers)
@@ -272,18 +282,27 @@ def test_roof_insulation_profile_runs_roof_insulation_experiences():
     assert result["adaptation_id"] == "roof_insulation"
     roof = next(surface for surface in result["dwelling"]["rooms"][0]["surfaces"] if surface["type"] == "roof")
     assert roof["solar_to_room_factor"] == 0.07
+    assert roof["u_value_w_m2k"] == customer_experience.roof_u_from_r_value(11)
+    assert result["dwelling"]["systems"]["heating"][0]["distribution_efficiency"] == 0.85
+    assert result["dwelling"]["building_characteristics"]["roof_assembly"]["thermal_boundary"] == "roof_deck"
     assert [run["season"] for run in result["simulation_runs"]] == ["winter", "summer", "annual"]
     for run in result["simulation_runs"]:
         assert run["after_scenario"]["retrofit"]["surface_overrides"]
+        assert run["after_scenario"]["retrofit"]["surface_overrides"][0]["u_value_w_m2k"] == customer_experience.roof_u_from_r_value(49)
+        assert "US home built 2000-2009" in run["report_html"]
+        assert "Ducts in vented attic" in run["report_html"]
     _assert_annual_run(result["simulation_runs"][-1])
 
 
 def test_roof_insulation_uses_custom_heating_energy_price():
     base_answers = _base_answers() | {
         "adaptation_id": "roof_insulation",
-        "roof_insulation_id": "poor",
+        "roof_assembly_id": "compact_flat_roof",
+        "existing_roof_r_value": 11,
+        "proposed_roof_r_value": 49,
+        "framing_type_id": "wood_frame",
+        "hvac_duct_location_id": "vented_attic",
         "roof_color_id": "dark",
-        "attic_ventilation_id": "flat_roof",
         "heating_energy_price_eur_kwh": 0.5,
     }
 

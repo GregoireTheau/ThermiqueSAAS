@@ -63,11 +63,11 @@ def _resolve_defaults(
     catalog: ReferenceCatalog,
 ) -> dict[str, Any] | None:
     defaults = dwelling["defaults"]
-    building_period_ref = defaults.get("building_period_ref")
-    if not building_period_ref:
+    construction_era_ref = defaults.get("construction_era_ref")
+    if not construction_era_ref:
         return None
 
-    envelope_default = get_envelope_default_reference(catalog, building_period_ref)
+    envelope_default = get_envelope_default_reference(catalog, construction_era_ref)
     _set_if_missing(
         defaults,
         "thermal_bridge_factor",

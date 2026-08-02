@@ -88,7 +88,7 @@ def test_profile_experience_api_returns_clear_user_error(tmp_path, monkeypatch):
             "postal_code": "33000",
             "dwelling_type": "house",
             "position_id": "single_storey_house",
-            "period_id": "2001_2012_good_insulation",
+            "construction_era_id": "us_2000_2009",
             "rooms": [
                 {
                     "name": "Salon",
@@ -286,7 +286,7 @@ def test_profile_experience_api_accepts_window_profile(tmp_path, monkeypatch):
             "postal_code": "33000",
             "dwelling_type": "house",
             "position_id": "single_storey_house",
-            "period_id": "2001_2012_good_insulation",
+            "construction_era_id": "us_2000_2009",
             "rooms": [
                 {
                     "name": "Salon",
@@ -356,7 +356,7 @@ def test_persistent_project_api_runs_and_exposes_report(tmp_path, monkeypatch):
                 "postal_code": "33000",
                 "dwelling_type": "house",
                 "position_id": "single_storey_house",
-                "period_id": "2001_2012_good_insulation",
+                "construction_era_id": "us_2000_2009",
                 "rooms": [
                     {
                         "name": "Salon",

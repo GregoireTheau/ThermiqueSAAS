@@ -120,7 +120,7 @@ Hypotheses utilisees si une piece ou une paroi ne specifie pas tout :
 ```json
 {
   "initial_temperature_c": 20.0,
-  "building_period_ref": "2001_2012_good_insulation",
+  "construction_era_ref": "us_2000_2009",
   "equivalent_capacity_j_m2k": 165000,
   "thermal_bridge_factor": 0.1,
   "internal_gain_w_m2": 5.0,

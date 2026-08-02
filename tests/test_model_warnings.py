@@ -200,7 +200,7 @@ def test_business_flow_exposes_model_warnings_without_blocking_runs():
             "postal_code": "33000",
             "dwelling_type": "house",
             "position_id": "single_storey_house",
-            "period_id": "1975_1988_basic_insulation",
+            "construction_era_id": "us_1940_1979",
             "include_annual_experiment": False,
             "rooms": [
                 {

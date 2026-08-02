@@ -18,7 +18,7 @@ DEFAULT_ANSWERS = {
     "postal_code": "33000",
     "dwelling_type": "house",
     "position_id": "single_storey_house",
-    "period_id": "2001_2012_good_insulation",
+    "construction_era_id": "us_2000_2009",
     "rooms": [
         {
             "name": "Salon",

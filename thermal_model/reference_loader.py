@@ -18,7 +18,7 @@ DEFAULT_REFERENCE_DIR = Path(__file__).resolve().parents[1] / "data" / "referenc
 
 REFERENCE_COLLECTIONS = {
     "materials": ("materials.json", "materials"),
-    "envelope_defaults": ("envelope_defaults.json", "building_periods"),
+    "envelope_defaults": ("envelope_defaults.json", "construction_eras"),
     "isolation_levels": ("envelope_defaults.json", "isolation_levels"),
     "windows": ("windows.json", "windows"),
     "shutters": ("windows.json", "shutters"),
@@ -86,10 +86,10 @@ def get_material_reference(
 
 def get_envelope_default_reference(
     catalog: ReferenceCatalog,
-    building_period_id: str,
+    construction_era_id: str,
 ) -> ReferenceItem:
-    """Return an envelope defaults reference for a building period."""
-    return get_reference(catalog, "envelope_defaults", building_period_id)
+    """Return an envelope defaults reference for a US construction era."""
+    return get_reference(catalog, "envelope_defaults", construction_era_id)
 
 
 def get_window_reference(

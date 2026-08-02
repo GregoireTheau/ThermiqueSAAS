@@ -90,6 +90,53 @@ ROOF_INSULATION_LEVELS = [
     {"id": "renovated", "label": "Well-insulated or renovated roof", "u_factor": 0.65},
 ]
 
+ROOF_ASSEMBLIES = [
+    {
+        "id": "vented_attic_ceiling",
+        "label": "Vented attic — insulation at attic floor / ceiling",
+        "thermal_boundary": "attic_floor",
+        "roof_configuration_id": "attic",
+    },
+    {
+        "id": "unvented_conditioned_attic_roof_deck",
+        "label": "Unvented conditioned attic — insulation at roof deck",
+        "thermal_boundary": "roof_deck",
+        "roof_configuration_id": "sloped_ceiling",
+    },
+    {
+        "id": "cathedral_ceiling_roof_deck",
+        "label": "Cathedral ceiling — insulation at roof deck",
+        "thermal_boundary": "roof_deck",
+        "roof_configuration_id": "sloped_ceiling",
+    },
+    {
+        "id": "compact_flat_roof",
+        "label": "Compact or flat roof assembly",
+        "thermal_boundary": "roof_deck",
+        "roof_configuration_id": "flat_roof",
+    },
+]
+
+FRAMING_TYPES = [
+    {"id": "wood_frame", "label": "Wood framing / trusses"},
+    {"id": "steel_frame", "label": "Steel framing"},
+    {"id": "masonry_concrete", "label": "Masonry or concrete"},
+    {"id": "unknown", "label": "Unknown"},
+]
+
+HVAC_DUCT_LOCATIONS = [
+    {"id": "no_ducts", "label": "No HVAC ducts", "distribution_efficiency": 1.0},
+    {"id": "conditioned_space", "label": "Ducts inside conditioned space", "distribution_efficiency": 1.0},
+    {"id": "conditioned_attic", "label": "Ducts in conditioned attic", "distribution_efficiency": 1.0},
+    {"id": "unconditioned_basement", "label": "Ducts in unconditioned basement", "distribution_efficiency": 0.92},
+    {"id": "mixed_unknown", "label": "Mixed or unknown location", "distribution_efficiency": 0.90},
+    {"id": "vented_attic", "label": "Ducts in vented attic", "distribution_efficiency": 0.85},
+    {"id": "unconditioned_crawlspace", "label": "Ducts in unconditioned crawlspace", "distribution_efficiency": 0.85},
+    {"id": "garage", "label": "Ducts in garage", "distribution_efficiency": 0.85},
+]
+
+R_VALUE_IP_TO_M2K_W = 0.1761101838
+
 FLOOR_INSULATION_LEVELS = [
     {"id": "unknown", "label": "I don't know", "u_factor": 1.0},
     {"id": "not_concerned", "label": "No directly affected ground floor", "u_factor": 1.0},
@@ -497,11 +544,16 @@ def collect_customer_input(catalog: dict[str, Any]) -> dict[str, Any]:
     change_details = collect_change_details(change["id"])
 
     period = choose_one(
-        "When was the dwelling built or heavily renovated?",
+        "When was the dwelling built?",
         envelope_period_options(catalog),
     )
     wall_insulation = choose_one("Are exterior walls insulated?", WALL_INSULATION_LEVELS)
     roof_insulation = collect_roof_insulation(dwelling_type["id"], position["id"])
+    roof_assembly = choose_one("Attic and roof assembly", ROOF_ASSEMBLIES)
+    framing = choose_one("Roof framing type", FRAMING_TYPES)
+    existing_roof_r_value = ask_float("Existing insulation R-value (US)", default=19.0, minimum=1.0)
+    proposed_roof_r_value = ask_float("Proposed insulation R-value (US)", default=49.0, minimum=1.0)
+    hvac_ducts = choose_one("HVAC duct presence and location", HVAC_DUCT_LOCATIONS)
     floor_insulation = collect_floor_insulation(dwelling_type["id"], position["id"])
     airtightness = choose_one("Do you feel drafts?", AIRTIGHTNESS_LEVELS)
     ventilation = choose_one("Main ventilation", VENTILATION_SYSTEMS)
@@ -534,9 +586,17 @@ def collect_customer_input(catalog: dict[str, Any]) -> dict[str, Any]:
         "postal_code": postal_code,
         "location": location,
         "climate_zone_id": climate_zone_id,
-        "period_id": period["id"],
+        "construction_era_id": period["id"],
         "wall_insulation": wall_insulation,
         "roof_insulation": roof_insulation,
+        "building_characteristics": {
+            "construction_era": {"id": period["id"], "label": period["label"]},
+            "roof_assembly": roof_assembly,
+            "framing": framing,
+            "existing_roof_r_value": existing_roof_r_value,
+            "proposed_roof_r_value": proposed_roof_r_value,
+            "hvac_ducts": {**hvac_ducts, "present": hvac_ducts["id"] != "no_ducts"},
+        },
         "floor_insulation": floor_insulation,
         "airtightness": airtightness,
         "ventilation_id": ventilation["id"],
@@ -795,7 +855,11 @@ def default_window_area(room_type: str, area_m2: float, orientation: str) -> flo
 
 
 def build_dwelling(customer: dict[str, Any], catalog: dict[str, Any]) -> dict[str, Any]:
-    period = get_catalog_item(catalog, "envelope_defaults", customer["period_id"])
+    period = get_catalog_item(catalog, "envelope_defaults", customer["construction_era_id"])
+    building_characteristics = customer.get(
+        "building_characteristics",
+        default_building_characteristics(customer["construction_era_id"], period),
+    )
     ventilation = get_catalog_item(catalog, "ventilation", customer["ventilation_id"])
     ach_factor = customer["airtightness"]["ach_factor"]
     ventilation_split = ventilation_components(
@@ -832,9 +896,10 @@ def build_dwelling(customer: dict[str, Any], catalog: dict[str, Any]) -> dict[st
             "climate_zone_id": customer["climate_zone_id"],
             "ground_albedo": 0.2,
         },
+        "building_characteristics": building_characteristics,
         "defaults": {
             "initial_temperature_c": 20.0,
-            "building_period_ref": customer["period_id"],
+            "construction_era_ref": customer["construction_era_id"],
             "equivalent_capacity_j_m2k": period["equivalent_capacity_j_m2k"],
             "thermal_bridge_factor": period["thermal_bridge_factor"],
             "internal_gain_w_m2": 4.0,
@@ -852,12 +917,17 @@ def build_dwelling(customer: dict[str, Any], catalog: dict[str, Any]) -> dict[st
                     room_ids,
                     total_area_m2,
                     catalog,
+                    duct_efficiency_for_heating(
+                        customer["heating_ref"],
+                        building_characteristics["hvac_ducts"]["distribution_efficiency"],
+                    ),
                 ),
             ],
             "cooling": build_cooling_systems(
                 customer["has_cooling"],
                 rooms,
                 total_area_m2,
+                building_characteristics["hvac_ducts"]["distribution_efficiency"],
             ),
             "ventilation": {
                 "ventilation_ref": customer["ventilation_id"],
@@ -882,6 +952,23 @@ def build_dwelling_description(customer: dict[str, Any]) -> str:
     if not details:
         return "Dwelling created from the ThermalTwin customer CLI."
     return "Dwelling created from the ThermalTwin customer CLI. " + " / ".join(details)
+
+
+def default_building_characteristics(
+    construction_era_id: str,
+    period: dict[str, Any],
+) -> dict[str, Any]:
+    existing_r_value = 1.0 / (
+        float(period["u_values"]["roof"]) * R_VALUE_IP_TO_M2K_W
+    )
+    return {
+        "construction_era": {"id": construction_era_id, "label": period["name"]},
+        "roof_assembly": deepcopy(ROOF_ASSEMBLIES[0]),
+        "framing": deepcopy(FRAMING_TYPES[-1]),
+        "existing_roof_r_value": round(existing_r_value, 2),
+        "proposed_roof_r_value": 49.0,
+        "hvac_ducts": {**HVAC_DUCT_LOCATIONS[0], "present": False},
+    }
 
 
 def build_room(
@@ -990,11 +1077,7 @@ def build_surfaces(
                 "type": "roof",
                 "boundary": "exterior",
                 "area_m2": round(area_m2, 2),
-                "u_value_w_m2k": rounded_u(
-                    period,
-                    "roof",
-                    customer["roof_insulation"]["u_factor"],
-                ),
+                "u_value_w_m2k": roof_u_value(customer, period),
                 "azimuth_deg": 180,
                 "tilt_deg": 25,
                 "albedo": roof_color.get("albedo", 0.25),
@@ -1068,6 +1151,19 @@ def internal_gain_for_room(room_type: str) -> float:
 
 def rounded_u(period: dict[str, Any], surface_type: str, u_factor: float) -> float:
     return round(period["u_values"][surface_type] * u_factor, 3)
+
+
+def roof_u_from_r_value(r_value_ip: float) -> float:
+    """Convert an effective US R-value to W/m².K for the 1R1C envelope."""
+    return round(1.0 / (float(r_value_ip) * R_VALUE_IP_TO_M2K_W), 3)
+
+
+def roof_u_value(customer: dict[str, Any], period: dict[str, Any]) -> float:
+    characteristics = customer.get("building_characteristics", {})
+    r_value = characteristics.get("existing_roof_r_value")
+    if r_value is not None:
+        return roof_u_from_r_value(r_value)
+    return rounded_u(period, "roof", customer["roof_insulation"]["u_factor"])
 
 
 def ventilation_components(
@@ -1162,6 +1258,7 @@ def build_heating_system(
     room_ids: list[str],
     total_area_m2: float,
     catalog: dict[str, Any],
+    distribution_efficiency: float = 1.0,
 ) -> dict[str, Any]:
     reference = get_catalog_item(catalog, "heating_systems", heating_ref)
     return {
@@ -1171,13 +1268,24 @@ def build_heating_system(
         "served_rooms": room_ids,
         "max_power_w": round(max(1500.0, total_area_m2 * 95.0), 0),
         "performance_ref": deepcopy(reference["performance_ref"]),
+        "distribution_efficiency": distribution_efficiency,
     }
+
+
+def duct_efficiency_for_heating(
+    heating_ref: str,
+    duct_distribution_efficiency: float,
+) -> float:
+    if heating_ref == "air_air_heat_pump_standard":
+        return duct_distribution_efficiency
+    return 1.0
 
 
 def build_cooling_systems(
     has_cooling: bool,
     rooms: list[dict[str, Any]],
     total_area_m2: float,
+    distribution_efficiency: float = 1.0,
 ) -> list[dict[str, Any]]:
     if not has_cooling:
         return []
@@ -1200,6 +1308,7 @@ def build_cooling_systems(
             "served_rooms": served_rooms,
             "max_power_w": round(max(1200.0, total_area_m2 * 70.0), 0),
             "performance_ref": {"mode": "constant", "eer": 3.0},
+            "distribution_efficiency": distribution_efficiency,
         },
     ]
 
@@ -1688,9 +1797,16 @@ def build_retrofit(
 ) -> dict[str, Any]:
     rooms = [room for room in dwelling["rooms"] if room["id"] in room_ids]
     if change_id == "roof_insulation":
+        target_r_value = dwelling.get("building_characteristics", {}).get(
+            "proposed_roof_r_value",
+            49.0,
+        )
         return clean_retrofit({
             "surface_overrides": [
-                {"surface_id": surface["id"], "u_value_w_m2k": 0.18}
+                {
+                    "surface_id": surface["id"],
+                    "u_value_w_m2k": roof_u_from_r_value(target_r_value),
+                }
                 for room in rooms
                 for surface in room["surfaces"]
                 if surface["type"] == "roof"

@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from thermal_model import (
     apply_scenario_overrides,
     load_dwelling,
@@ -42,6 +44,20 @@ def test_winter_simulation_energy_totals():
     assert living_summary["room_name"] == "Salon cuisine"
     assert living_summary["max_temperature_c"] == max(living_temperatures)
     assert living_summary["final_temperature_c"] == living_temperatures[-1]
+
+
+def test_duct_distribution_losses_increase_final_energy_not_delivered_heat():
+    dwelling = _resolved_dwelling()
+    scenario = load_scenario("data/examples/scenario_simple.json")
+    with_losses = deepcopy(dwelling)
+    for system in with_losses["systems"]["heating"]:
+        system["distribution_efficiency"] = 0.85
+
+    baseline = simulate_1r1c(dwelling, scenario, 1.2, 1005.0)
+    losses = simulate_1r1c(with_losses, scenario, 1.2, 1005.0)
+
+    assert losses["totals"]["heating_thermal_kwh"] == baseline["totals"]["heating_thermal_kwh"]
+    assert losses["totals"]["heating_final_kwh"] > baseline["totals"]["heating_final_kwh"]
 
 
 def test_heatwave_after_reflective_roof_simulation():

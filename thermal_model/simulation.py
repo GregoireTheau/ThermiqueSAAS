@@ -602,7 +602,7 @@ def _compute_heating(
         final_power_w = heating_electric_power(
             system_thermal_power_w,
             _heating_performance(system["performance_ref"], outdoor_temperature_c),
-        )
+        ) / system.get("distribution_efficiency", 1.0)
         energy_vector = _heating_energy_vector(system)
         final_power_by_energy[energy_vector] = (
             final_power_by_energy.get(energy_vector, 0.0) + final_power_w
@@ -714,7 +714,7 @@ def _compute_cooling(
         cooling_electric_power(
             cooling_power_w * system["max_power_w"] / max_power_w,
             system["performance_ref"]["eer"],
-        )
+        ) / system.get("distribution_efficiency", 1.0)
         for system in systems
     )
     return cooling_power_w, electric_power_w

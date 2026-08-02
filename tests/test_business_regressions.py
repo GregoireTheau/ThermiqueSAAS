@@ -8,12 +8,15 @@ def _base_answers():
         "postal_code": "33000",
         "dwelling_type": "house",
         "position_id": "single_storey_house",
-        "period_id": "1975_1988_basic_insulation",
+        "construction_era_id": "us_1940_1979",
         "heating_ref": "electric_radiator",
         "window_ref": "double_glazing_old",
-        "roof_insulation_id": "poor",
+        "roof_assembly_id": "vented_attic_ceiling",
+        "existing_roof_r_value": 11,
+        "proposed_roof_r_value": 49,
+        "framing_type_id": "wood_frame",
+        "hvac_duct_location_id": "vented_attic",
         "roof_color_id": "dark",
-        "attic_ventilation_id": "attic",
         "include_annual_experiment": False,
         "rooms": [
             {

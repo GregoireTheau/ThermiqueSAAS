@@ -156,7 +156,7 @@ def build_customer(
             "postal_code",
             "dwelling_type",
             "position_id",
-            "period_id",
+            "construction_era_id",
             "rooms",
         ],
     )
@@ -246,7 +246,7 @@ def build_customer(
         "address": str(answers.get("address") or "").strip(),
         "location": location,
         "climate_zone_id": climate_zone_id,
-        "period_id": answers["period_id"],
+        "construction_era_id": answers["construction_era_id"],
         "wall_insulation": _option_by_id(
             customer_experience.WALL_INSULATION_LEVELS,
             answers.get("wall_insulation_id", "standard"),
@@ -273,6 +273,11 @@ def build_customer(
         "thermal_layout": _thermal_layout(rooms, answers.get("thermal_layout")),
         "change": change,
         "change_details": _change_details(adaptation_id, answers),
+        "building_characteristics": _building_characteristics(
+            answers,
+            profile["id"],
+            catalog,
+        ),
         "energy_prices": _energy_prices(answers),
         "target_scope": answers.get("target_scope", "all"),
         "include_annual_experiment": _answer_bool(
@@ -456,6 +461,10 @@ def _change_details(adaptation_id: str, answers: dict[str, Any]) -> dict[str, An
 
 
 def _roof_configuration_id(answers: dict[str, Any]) -> str:
+    roof_assembly_id = answers.get("roof_assembly_id")
+    if roof_assembly_id:
+        assembly = _option_by_id(customer_experience.ROOF_ASSEMBLIES, roof_assembly_id)
+        return assembly["roof_configuration_id"]
     value = answers.get("attic_ventilation_id") or answers.get("roof_type_id") or "attic"
     legacy_mapping = {
         "lost_attic": "attic",
@@ -464,6 +473,80 @@ def _roof_configuration_id(answers: dict[str, Any]) -> str:
         "not_ventilated": "attic",
     }
     return legacy_mapping.get(value, value)
+
+
+def _building_characteristics(
+    answers: dict[str, Any],
+    profile_id: str,
+    catalog: dict[str, Any],
+) -> dict[str, Any]:
+    construction_era_id = answers["construction_era_id"]
+    construction_era = customer_experience.get_catalog_item(
+        catalog,
+        "envelope_defaults",
+        construction_era_id,
+    )
+    if profile_id in {"roof_insulation_seller", "reflective_roof_seller"}:
+        _require_fields(
+            answers,
+            [
+                "roof_assembly_id",
+                "existing_roof_r_value",
+                "framing_type_id",
+                "hvac_duct_location_id",
+            ],
+        )
+    if profile_id == "roof_insulation_seller":
+        _require_fields(answers, ["proposed_roof_r_value"])
+    roof_assembly = _option_by_id(
+        customer_experience.ROOF_ASSEMBLIES,
+        answers.get("roof_assembly_id", "vented_attic_ceiling"),
+    )
+    framing = _option_by_id(
+        customer_experience.FRAMING_TYPES,
+        answers.get("framing_type_id", "unknown"),
+    )
+    ducts = _option_by_id(
+        customer_experience.HVAC_DUCT_LOCATIONS,
+        answers.get("hvac_duct_location_id", "no_ducts"),
+    )
+    default_roof_u = float(construction_era["u_values"]["roof"])
+    default_r_value = 1.0 / (
+        default_roof_u * customer_experience.R_VALUE_IP_TO_M2K_W
+    )
+    existing_r_value = _r_value(
+        answers.get("existing_roof_r_value", default_r_value),
+        "existing_roof_r_value",
+    )
+    proposed_r_value = _r_value(
+        answers.get("proposed_roof_r_value", 49.0),
+        "proposed_roof_r_value",
+    )
+    if proposed_r_value <= existing_r_value and profile_id == "roof_insulation_seller":
+        raise BusinessFlowError(
+            "proposed_roof_r_value must be greater than existing_roof_r_value."
+        )
+    return {
+        "construction_era": {
+            "id": construction_era_id,
+            "label": construction_era["name"],
+        },
+        "roof_assembly": roof_assembly,
+        "framing": framing,
+        "existing_roof_r_value": round(existing_r_value, 2),
+        "proposed_roof_r_value": round(proposed_r_value, 2),
+        "hvac_ducts": {
+            **ducts,
+            "present": ducts["id"] != "no_ducts",
+        },
+    }
+
+
+def _r_value(value: Any, field_name: str) -> float:
+    result = _float_field(value, field_name)
+    if result < 1 or result > 100:
+        raise BusinessFlowError(f"{field_name} must be between R-1 and R-100.")
+    return result
 
 
 def _initial_heating_ref(profile_id: str, answers: dict[str, Any]) -> str:
