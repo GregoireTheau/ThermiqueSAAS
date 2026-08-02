@@ -77,9 +77,11 @@ def test_health_endpoint(tmp_path, monkeypatch):
 def test_profile_experience_api_returns_clear_user_error(tmp_path, monkeypatch):
     monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
     client = TestClient(app)
+    _, headers = _register(client)
 
     response = client.post(
         "/business-profiles/window_seller/experiences",
+        headers=headers,
         json={
             "project_name": "Erreur claire",
             "city": "Bordeaux",
@@ -121,40 +123,37 @@ def test_startup_initializes_empty_database(tmp_path, monkeypatch):
     assert db_path.exists()
 
 
-def test_render_external_hostname_is_allowed(monkeypatch):
+def test_configured_production_host_is_allowed(monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_ENV", "production")
     monkeypatch.setenv("THERMAL_SAAS_ALLOWED_HOSTS", "thermal-beta.example.com")
-    monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", "thermal-saas-beta.onrender.com")
 
-    assert _allowed_hosts() == [
-        "thermal-beta.example.com",
-        "thermal-saas-beta.onrender.com",
-    ]
+    assert _allowed_hosts() == ["thermal-beta.example.com"]
 
 
-def test_production_allowed_hosts_do_not_include_local_defaults(monkeypatch):
+def test_production_requires_allowed_hosts(monkeypatch):
     monkeypatch.setenv("THERMAL_SAAS_ENV", "production")
     monkeypatch.delenv("THERMAL_SAAS_ALLOWED_HOSTS", raising=False)
-    monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", "thermal-saas-beta.onrender.com")
 
-    assert _allowed_hosts() == ["thermal-saas-beta.onrender.com"]
+    try:
+        _allowed_hosts()
+    except RuntimeError as exc:
+        assert "THERMAL_SAAS_ALLOWED_HOSTS" in str(exc)
+    else:
+        raise AssertionError("Production should require explicit allowed hosts.")
 
 
-def test_render_external_url_is_allowed_for_cors(monkeypatch):
+def test_configured_production_cors_origin_is_allowed(monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_ENV", "production")
     monkeypatch.setenv("THERMAL_SAAS_CORS_ORIGINS", "https://thermal-beta.example.com")
-    monkeypatch.setenv("RENDER_EXTERNAL_URL", "https://thermal-saas-beta.onrender.com/")
 
-    assert _cors_origins() == [
-        "https://thermal-beta.example.com",
-        "https://thermal-saas-beta.onrender.com",
-    ]
+    assert _cors_origins() == ["https://thermal-beta.example.com"]
 
 
 def test_production_cors_does_not_include_local_defaults(monkeypatch):
     monkeypatch.setenv("THERMAL_SAAS_ENV", "production")
     monkeypatch.delenv("THERMAL_SAAS_CORS_ORIGINS", raising=False)
-    monkeypatch.setenv("RENDER_EXTERNAL_URL", "https://thermal-saas-beta.onrender.com/")
 
-    assert _cors_origins() == ["https://thermal-saas-beta.onrender.com"]
+    assert _cors_origins() == []
 
 
 def test_production_rejects_wildcard_cors(monkeypatch):
@@ -276,9 +275,11 @@ def test_admin_beta_user_creates_roof_insulation_user_by_default(tmp_path, monke
 def test_profile_experience_api_accepts_window_profile(tmp_path, monkeypatch):
     monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
     client = TestClient(app)
+    _, headers = _register(client)
 
     response = client.post(
         "/business-profiles/window_seller/experiences",
+        headers=headers,
         json={
             "project_name": "Maison API fenetres",
             "city": "Bordeaux",
@@ -307,6 +308,19 @@ def test_profile_experience_api_accepts_window_profile(tmp_path, monkeypatch):
     payload = response.json()
     assert payload["business_profile_id"] == "window_seller"
     assert payload["adaptation_id"] == "better_windows"
+
+
+def test_profile_experience_api_requires_authentication(tmp_path, monkeypatch):
+    monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))
+    client = TestClient(app)
+
+    response = client.post(
+        "/business-profiles/window_seller/experiences",
+        json={},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Authentication required."
 
 
 def test_persistent_project_api_runs_and_exposes_report(tmp_path, monkeypatch):

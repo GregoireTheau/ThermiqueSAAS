@@ -78,11 +78,8 @@ def _is_production() -> bool:
 def _allowed_hosts() -> list[str]:
     default_hosts = "" if _is_production() else "127.0.0.1,localhost,testserver"
     hosts = _csv_env("THERMAL_SAAS_ALLOWED_HOSTS", default_hosts)
-    render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
-    if render_hostname and render_hostname not in hosts:
-        hosts.append(render_hostname)
     if _is_production() and not hosts:
-        raise RuntimeError("THERMAL_SAAS_ALLOWED_HOSTS or RENDER_EXTERNAL_HOSTNAME is required in production.")
+        raise RuntimeError("THERMAL_SAAS_ALLOWED_HOSTS is required in production.")
     return hosts
 
 
@@ -94,9 +91,6 @@ def _cors_origins() -> list[str]:
     )
     if _is_production() and "*" in origins:
         raise RuntimeError("THERMAL_SAAS_CORS_ORIGINS cannot contain '*' in production.")
-    render_url = os.environ.get("RENDER_EXTERNAL_URL", "").strip().rstrip("/")
-    if render_url and render_url not in origins:
-        origins.append(render_url)
     return origins
 
 
@@ -424,7 +418,11 @@ def logout_endpoint(
 
 
 @app.post("/business-profiles/{profile_id}/experiences")
-def create_profile_experience(profile_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+def create_profile_experience(
+    profile_id: str,
+    payload: dict[str, Any],
+    user: dict[str, Any] = Depends(current_user),
+) -> dict[str, Any]:
     try:
         return run_profile_experience(profile_id, payload)
     except (BusinessFlowError, DwellingValidationError, ScenarioValidationError) as exc:

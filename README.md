@@ -199,7 +199,9 @@ See `.env.example` for placeholders. Real secrets, local `.env` files, generated
 
 ## Deployment Notes
 
-The app can run as a Docker web service with a persistent disk for SQLite. On startup and on `/health`, the app initializes the database and applies Alembic migrations.
+The beta is deployed on Railway from the repository Dockerfile. Attach a persistent volume at `/app/storage` and set `THERMAL_SAAS_DB_PATH=/app/storage/thermal_saas.sqlite`. On startup and on `/health`, the app initializes the database and applies Alembic migrations.
+
+Set `THERMAL_SAAS_ALLOWED_HOSTS` to the Railway public hostname and `THERMAL_SAAS_CORS_ORIGINS` to its full HTTPS URL. Production does not infer these values from a hosting provider.
 
 PDF export requires Chrome or Chromium. Set `THERMAL_PDF_BROWSER_PATH` if the binary is not available in the default system path.
 
