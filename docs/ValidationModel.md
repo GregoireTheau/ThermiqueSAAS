@@ -2,6 +2,12 @@
 
 Ce document est le livrable de la phase 6. Il consolide les cas de référence, les premiers résultats de calibrage et les limites connues du modèle 1R1C horaire.
 
+> Archive de calibration française : les tableaux annuels ci-dessous précèdent
+> la migration météo US et la suppression du coefficient climatique sur le
+> rayonnement. Ils documentent l'historique du projet, pas les sorties actuelles.
+> Les bandes de non-régression courantes sont dans
+> `data/reference_cases/reference_cases.json`.
+
 Les résultats ci-dessous sont des consommations de chauffage en énergie finale, en kWh/m²/an, obtenues en remplaçant la météo 24 h des cas hiver par les fichiers Open-Meteo thermiques 2023 locaux.
 
 ## Résultats annuels chauffage
@@ -10,7 +16,7 @@ Les résultats ci-dessous sont des consommations de chauffage en énergie finale
 |---|---:|---:|---:|---|
 | Appartement ancien mal isolé | 270.8 | 361.8 | 405.7 | Cas très sévère après ajout toiture et plancher bas exposés. Il dépasse la plage ancien 200-350 à Strasbourg. |
 | Appartement ancien moyen | 74.3 | 104.1 | 119.9 | Trop bas pour la cible 150-220 à Strasbourg avec les paramètres imposés. L'exposition est trop faible sans toiture/plancher. |
-| Maison récente RT2012 | 5.9 | 9.3 | 11.4 | Besoin thermique corrigé par la nébulosité, mais énergie finale encore basse avec PAC COP 3.2. |
+| Maison moderne performante | 5.9 | 9.3 | 11.4 | Énergie finale basse avec PAC COP 3.2 ; ancien résultat de non-régression française. |
 | Maison années 70 | 119.5 | 165.0 | 188.9 | Cohérent en tendance, mais encore bas pour un logement ancien énergivore. |
 | Hiver avec PAC | 6.0 | 9.4 | 11.5 | Besoin final très bas car la PAC du cas a un COP constant de 3.2. |
 | Isolation toiture | 20.4 | 31.7 | 38.6 | Cas de comparaison rénovation, pas un niveau annuel réglementaire. |
@@ -24,7 +30,7 @@ Les résultats ci-dessous sont des consommations de chauffage en énergie finale
 |---|---:|---:|---|
 | Logement ancien énergivore | 200-350 kWh/m²/an | Appartement mal isolé : 271-406 selon météo | Cohérent à Bordeaux, trop sévère à Paris/Strasbourg. |
 | Appartement ancien moyen | 150-220 kWh/m²/an cible interne | 74-120 selon météo | Sous-estimé avec les hypothèses actuelles. Il manque de surface déperditive exposée. |
-| RT2012 | 40-80 kWh/m²/an | 6-11 final, 36 thermique à Strasbourg | Besoin thermique plausible, énergie finale basse car le cas utilise une PAC COP 3.2. |
+| Maison moderne performante | 40-80 kWh/m²/an | 6-11 final, 36 thermique à Strasbourg | Ancien repère de non-régression ; énergie finale basse car le cas utilise une PAC COP 3.2. |
 | Puissance chauffage typique | 30-80 W/m² | Mal isolé : plafonné à 133 W/m² | Le cas mal isolé est très sévère et peut être limité par la puissance installée. |
 
 Conclusion de calibrage : le modèle respecte les signes physiques, mais les cas annuels ne sont pas encore calibrés pour représenter des consommations françaises robustes par typologie. Les cas de référence restent utiles pour la non-régression, pas encore pour une promesse commerciale de consommation annuelle.
@@ -54,7 +60,7 @@ Le scénario occupant raisonnable est commercialement présentable pour les cas 
 - Le modèle est un 1R1C horaire : une pièce est représentée par une seule température d'air et une capacité thermique équivalente.
 - Les consommations annuelles sont sensibles à l'exposition. Un appartement sans toiture ni plancher exposés peut rester très bas même avec des U anciens.
 - Les apports solaires sont simplifiés et peuvent dominer fortement les résultats, surtout sur les orientations sud et toiture.
-- Un facteur de nébulosité mensuel est appliqué dans le moteur à partir de la zone climatique et du mois météo. Sans mois ou zone climatique, le facteur vaut 1.0 pour préserver la rétrocompatibilité.
+- Le moteur utilise directement le rayonnement du fichier météo local. La zone IECC/ASHRAE est une métadonnée bâtiment indépendante et ne corrige pas la météo.
 - Les scénarios canicule actuels sont sévères. Sans protections solaires déclarées sur les fenêtres, les volets n'ont aucun effet.
 - Le COP des PAC peut être variable via un profil de référence, mais plusieurs cas de référence utilisent encore un COP constant.
 - Les usages réels ne sont pas encore modélisés finement : intermittence de chauffage, consignes variables, occupation, ouverture manuelle des fenêtres, ECS et auxiliaires.
@@ -65,6 +71,6 @@ Le scénario occupant raisonnable est commercialement présentable pour les cas 
 ## Points à calibrer ensuite
 
 - Revoir le cas `old_apartment_average_winter` si la cible 150-220 kWh/m²/an à Strasbourg doit être tenue : augmenter l'exposition extérieure, ajouter un plancher haut/faiblement déperditif, ou revoir l'ACH.
-- Créer des profils annuels calibrés par typologie : appartement intermédiaire, appartement sous toiture, maison années 70, maison RT2012.
+- Créer des profils annuels calibrés par typologie : appartement intermédiaire, appartement sous toiture, maison ancienne et maison moderne performante.
 - Séparer clairement les cas de non-régression physique des cas de démonstration commerciale.
 - Calibrer les profils canicule commerciaux pour viser 28-35 °C avec comportement occupant raisonnable sur les logements standards.

@@ -12,24 +12,98 @@
       "equivalent_capacity_j_m2k": 190000,
       "internal_gain_w_m2": 4.0,
       "thermal_bridge_factor": 0.18,
-      "ventilation": {"infiltration_ach": 0.9, "mechanical_ach": 0.0, "recovery_efficiency": 0.0},
+      "ventilation": {
+        "infiltration_ach": 0.9,
+        "mechanical_ach": 0.0,
+        "recovery_efficiency": 0.0
+      },
       "surfaces": [
-        {"id": "south_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 22.0, "u_value_w_m2k": 1.8, "azimuth_deg": 180, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0},
-        {"id": "party_wall", "type": "party_wall", "boundary": "party", "area_m2": 35.0, "u_value_w_m2k": 1.8},
-        {"id": "roof", "type": "roof", "boundary": "exterior", "area_m2": 45.0, "u_value_w_m2k": 2.5, "azimuth_deg": 180, "tilt_deg": 25, "albedo": 0.25, "solar_to_room_factor": 0.04, "mask_factor": 1.0},
-        {"id": "floor", "type": "floor", "boundary": "ground", "area_m2": 45.0, "u_value_w_m2k": 1.0}
+        {
+          "id": "south_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 22.0,
+          "u_value_w_m2k": 1.8,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "party_wall",
+          "type": "party_wall",
+          "boundary": "party",
+          "area_m2": 35.0,
+          "u_value_w_m2k": 1.8
+        },
+        {
+          "id": "roof",
+          "type": "roof",
+          "boundary": "exterior",
+          "area_m2": 45.0,
+          "u_value_w_m2k": 2.5,
+          "azimuth_deg": 180,
+          "tilt_deg": 25,
+          "albedo": 0.25,
+          "solar_to_room_factor": 0.04,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "floor",
+          "type": "floor",
+          "boundary": "ground",
+          "area_m2": 45.0,
+          "u_value_w_m2k": 1.0
+        }
       ],
       "windows": [
-        {"id": "south_window", "area_m2": 6.0, "u_value_w_m2k": 5.0, "g_value": 0.85, "azimuth_deg": 180, "tilt_deg": 90, "mask_factor": 1.0}
+        {
+          "id": "south_window",
+          "area_m2": 6.0,
+          "u_value_w_m2k": 5.0,
+          "g_value": 0.85,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "mask_factor": 1.0
+        }
       ],
-      "systems": {"heating": {"type": "electric_radiator", "max_power_w": 6000, "cop": 1.0}, "cooling": null},
-      "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
+      "systems": {
+        "heating": {
+          "type": "electric_radiator",
+          "max_power_w": 6000,
+          "cop": 1.0
+        },
+        "cooling": null
+      },
+      "scenario": {
+        "weather_ref": "weather_winter_24h.json",
+        "heating_c": 19.0,
+        "cooling_c": 30.0,
+        "shutter_opening_ratio": 1.0,
+        "natural_ventilation_default_ach": 0.0
+      },
       "expected_metrics": {
-        "heating_electric_kwh": {"min": 120.4, "max": 121.6},
-        "max_temperature_c": {"min": 18.9, "max": 19.1},
-        "solar_gain_kwh": {"min": 9.3, "max": 9.8},
-        "transmission_exchange_kwh": {"min": -121.8, "max": -120.6},
-        "ventilation_exchange_kwh": {"min": -15.4, "max": -14.8}
+        "heating_electric_kwh": {
+          "min": 101.4,
+          "max": 105.54
+        },
+        "max_temperature_c": {
+          "min": 18.7,
+          "max": 19.7
+        },
+        "solar_gain_kwh": {
+          "min": 26.73,
+          "max": 27.82
+        },
+        "transmission_exchange_kwh": {
+          "min": -123.82,
+          "max": -118.96
+        },
+        "ventilation_exchange_kwh": {
+          "min": -15.38,
+          "max": -14.78
+        }
       }
     },
     {
@@ -42,27 +116,84 @@
       "equivalent_capacity_j_m2k": 180000,
       "internal_gain_w_m2": 4.0,
       "thermal_bridge_factor": 0.15,
-      "ventilation": {"infiltration_ach": 0.6, "mechanical_ach": 0.0, "recovery_efficiency": 0.0},
+      "ventilation": {
+        "infiltration_ach": 0.6,
+        "mechanical_ach": 0.0,
+        "recovery_efficiency": 0.0
+      },
       "surfaces": [
-        {"id": "south_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 22.0, "u_value_w_m2k": 1.5, "azimuth_deg": 180, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0},
-        {"id": "party_wall", "type": "party_wall", "boundary": "party", "area_m2": 35.0, "u_value_w_m2k": 1.5}
+        {
+          "id": "south_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 22.0,
+          "u_value_w_m2k": 1.5,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "party_wall",
+          "type": "party_wall",
+          "boundary": "party",
+          "area_m2": 35.0,
+          "u_value_w_m2k": 1.5
+        }
       ],
       "windows": [
-        {"id": "south_window", "area_m2": 6.0, "u_value_w_m2k": 3.0, "g_value": 0.7, "azimuth_deg": 180, "tilt_deg": 90, "mask_factor": 1.0}
+        {
+          "id": "south_window",
+          "area_m2": 6.0,
+          "u_value_w_m2k": 3.0,
+          "g_value": 0.7,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "mask_factor": 1.0
+        }
       ],
-      "systems": {"heating": {"type": "electric_radiator", "max_power_w": 6000, "cop": 1.0}, "cooling": null},
-      "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
+      "systems": {
+        "heating": {
+          "type": "electric_radiator",
+          "max_power_w": 6000,
+          "cop": 1.0
+        },
+        "cooling": null
+      },
+      "scenario": {
+        "weather_ref": "weather_winter_24h.json",
+        "heating_c": 19.0,
+        "cooling_c": 30.0,
+        "shutter_opening_ratio": 1.0,
+        "natural_ventilation_default_ach": 0.0
+      },
       "expected_metrics": {
-        "heating_electric_kwh": {"min": 37.2, "max": 38.0},
-        "max_temperature_c": {"min": 18.9, "max": 19.1},
-        "solar_gain_kwh": {"min": 6.3, "max": 6.9},
-        "transmission_exchange_kwh": {"min": -38.8, "max": -37.9},
-        "ventilation_exchange_kwh": {"min": -10.5, "max": -9.8}
+        "heating_electric_kwh": {
+          "min": 26.36,
+          "max": 27.43
+        },
+        "max_temperature_c": {
+          "min": 21.03,
+          "max": 22.03
+        },
+        "solar_gain_kwh": {
+          "min": 18.43,
+          "max": 19.19
+        },
+        "transmission_exchange_kwh": {
+          "min": -40.35,
+          "max": -38.76
+        },
+        "ventilation_exchange_kwh": {
+          "min": -10.68,
+          "max": -10.26
+        }
       }
     },
     {
-      "case_id": "rt2012_house_winter",
-      "label": "Maison recente RT2012",
+      "case_id": "modern_high_efficiency_house_winter",
+      "label": "Modern high-efficiency house",
       "physical_comment": "Enveloppe performante et PAC: les besoins thermiques restent moderes et l'energie finale est fortement reduite par le COP.",
       "area_m2": 90.0,
       "height_m": 2.5,
@@ -70,54 +201,212 @@
       "equivalent_capacity_j_m2k": 155000,
       "internal_gain_w_m2": 4.0,
       "thermal_bridge_factor": 0.06,
-      "ventilation": {"infiltration_ach": 0.15, "mechanical_ach": 0.3, "recovery_efficiency": 0.0},
+      "ventilation": {
+        "infiltration_ach": 0.15,
+        "mechanical_ach": 0.3,
+        "recovery_efficiency": 0.0
+      },
       "surfaces": [
-        {"id": "south_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 35.0, "u_value_w_m2k": 0.28, "azimuth_deg": 180, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0},
-        {"id": "north_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 35.0, "u_value_w_m2k": 0.28, "azimuth_deg": 0, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0},
-        {"id": "roof", "type": "roof", "boundary": "exterior", "area_m2": 90.0, "u_value_w_m2k": 0.18, "azimuth_deg": 180, "tilt_deg": 25, "albedo": 0.3, "solar_to_room_factor": 0.02, "mask_factor": 1.0},
-        {"id": "floor", "type": "floor", "boundary": "ground", "area_m2": 90.0, "u_value_w_m2k": 0.25}
+        {
+          "id": "south_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 35.0,
+          "u_value_w_m2k": 0.28,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "north_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 35.0,
+          "u_value_w_m2k": 0.28,
+          "azimuth_deg": 0,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "roof",
+          "type": "roof",
+          "boundary": "exterior",
+          "area_m2": 90.0,
+          "u_value_w_m2k": 0.18,
+          "azimuth_deg": 180,
+          "tilt_deg": 25,
+          "albedo": 0.3,
+          "solar_to_room_factor": 0.02,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "floor",
+          "type": "floor",
+          "boundary": "ground",
+          "area_m2": 90.0,
+          "u_value_w_m2k": 0.25
+        }
       ],
       "windows": [
-        {"id": "south_window", "area_m2": 10.0, "u_value_w_m2k": 1.2, "g_value": 0.5, "azimuth_deg": 180, "tilt_deg": 90, "mask_factor": 1.0}
+        {
+          "id": "south_window",
+          "area_m2": 10.0,
+          "u_value_w_m2k": 1.2,
+          "g_value": 0.5,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "mask_factor": 1.0
+        }
       ],
-      "systems": {"heating": {"type": "heat_pump", "max_power_w": 9000, "cop": 3.2}, "cooling": null},
-      "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
+      "systems": {
+        "heating": {
+          "type": "heat_pump",
+          "max_power_w": 9000,
+          "cop": 3.2
+        },
+        "cooling": null
+      },
+      "scenario": {
+        "weather_ref": "weather_winter_24h.json",
+        "heating_c": 19.0,
+        "cooling_c": 30.0,
+        "shutter_opening_ratio": 1.0,
+        "natural_ventilation_default_ach": 0.0
+      },
       "expected_metrics": {
-        "heating_thermal_kwh": {"min": 23.5, "max": 24.2},
-        "heating_electric_kwh": {"min": 7.2, "max": 7.7},
-        "max_temperature_c": {"min": 19.3, "max": 19.8},
-        "solar_gain_kwh": {"min": 10.1, "max": 10.8},
-        "transmission_exchange_kwh": {"min": -28.7, "max": -27.7}
+        "heating_thermal_kwh": {
+          "min": 11.9,
+          "max": 12.38
+        },
+        "heating_electric_kwh": {
+          "min": 3.72,
+          "max": 3.87
+        },
+        "max_temperature_c": {
+          "min": 22.88,
+          "max": 23.88
+        },
+        "solar_gain_kwh": {
+          "min": 29.19,
+          "max": 30.38
+        },
+        "transmission_exchange_kwh": {
+          "min": -31.19,
+          "max": -29.97
+        }
       }
     },
     {
       "case_id": "seventies_house_winter",
       "label": "Maison annees 70",
-      "physical_comment": "Isolation de base, ponts thermiques et vitrages anciens: le besoin est nettement superieur au cas RT2012.",
+      "physical_comment": "Basic insulation, thermal bridges, and older glazing produce much greater demand than the modern high-efficiency case.",
       "area_m2": 95.0,
       "height_m": 2.5,
       "initial_temperature_c": 19.0,
       "equivalent_capacity_j_m2k": 175000,
       "internal_gain_w_m2": 4.0,
       "thermal_bridge_factor": 0.15,
-      "ventilation": {"infiltration_ach": 0.6, "mechanical_ach": 0.0, "recovery_efficiency": 0.0},
+      "ventilation": {
+        "infiltration_ach": 0.6,
+        "mechanical_ach": 0.0,
+        "recovery_efficiency": 0.0
+      },
       "surfaces": [
-        {"id": "south_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 45.0, "u_value_w_m2k": 1.0, "azimuth_deg": 180, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0},
-        {"id": "north_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 45.0, "u_value_w_m2k": 1.0, "azimuth_deg": 0, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0},
-        {"id": "roof", "type": "roof", "boundary": "exterior", "area_m2": 95.0, "u_value_w_m2k": 0.7, "azimuth_deg": 180, "tilt_deg": 25, "albedo": 0.25, "solar_to_room_factor": 0.03, "mask_factor": 1.0},
-        {"id": "floor", "type": "floor", "boundary": "ground", "area_m2": 95.0, "u_value_w_m2k": 0.8}
+        {
+          "id": "south_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 45.0,
+          "u_value_w_m2k": 1.0,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "north_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 45.0,
+          "u_value_w_m2k": 1.0,
+          "azimuth_deg": 0,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "roof",
+          "type": "roof",
+          "boundary": "exterior",
+          "area_m2": 95.0,
+          "u_value_w_m2k": 0.7,
+          "azimuth_deg": 180,
+          "tilt_deg": 25,
+          "albedo": 0.25,
+          "solar_to_room_factor": 0.03,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "floor",
+          "type": "floor",
+          "boundary": "ground",
+          "area_m2": 95.0,
+          "u_value_w_m2k": 0.8
+        }
       ],
       "windows": [
-        {"id": "south_window", "area_m2": 12.0, "u_value_w_m2k": 2.8, "g_value": 0.7, "azimuth_deg": 180, "tilt_deg": 90, "mask_factor": 1.0}
+        {
+          "id": "south_window",
+          "area_m2": 12.0,
+          "u_value_w_m2k": 2.8,
+          "g_value": 0.7,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "mask_factor": 1.0
+        }
       ],
-      "systems": {"heating": {"type": "boiler", "max_power_w": 12000, "cop": 0.9}, "cooling": null},
-      "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
+      "systems": {
+        "heating": {
+          "type": "boiler",
+          "max_power_w": 12000,
+          "cop": 0.9
+        },
+        "cooling": null
+      },
+      "scenario": {
+        "weather_ref": "weather_winter_24h.json",
+        "heating_c": 19.0,
+        "cooling_c": 30.0,
+        "shutter_opening_ratio": 1.0,
+        "natural_ventilation_default_ach": 0.0
+      },
       "expected_metrics": {
-        "heating_thermal_kwh": {"min": 111.0, "max": 113.0},
-        "heating_electric_kwh": {"min": 123.0, "max": 126.0},
-        "max_temperature_c": {"min": 18.9, "max": 19.1},
-        "solar_gain_kwh": {"min": 16.1, "max": 17.0},
-        "transmission_exchange_kwh": {"min": -117.8, "max": -116.1}
+        "heating_thermal_kwh": {
+          "min": 83.12,
+          "max": 86.51
+        },
+        "heating_electric_kwh": {
+          "min": 92.35,
+          "max": 96.12
+        },
+        "max_temperature_c": {
+          "min": 20.89,
+          "max": 21.89
+        },
+        "solar_gain_kwh": {
+          "min": 46.31,
+          "max": 48.21
+        },
+        "transmission_exchange_kwh": {
+          "min": -122.45,
+          "max": -117.65
+        }
       }
     },
     {
@@ -130,27 +419,122 @@
       "equivalent_capacity_j_m2k": 160000,
       "internal_gain_w_m2": 4.0,
       "thermal_bridge_factor": 0.1,
-      "ventilation": {"infiltration_ach": 0.25, "mechanical_ach": 0.25, "recovery_efficiency": 0.0},
+      "ventilation": {
+        "infiltration_ach": 0.25,
+        "mechanical_ach": 0.25,
+        "recovery_efficiency": 0.0
+      },
       "surfaces": [
-        {"id": "east_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 22.0, "u_value_w_m2k": 0.45, "azimuth_deg": 90, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0},
-        {"id": "west_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 22.0, "u_value_w_m2k": 0.45, "azimuth_deg": 270, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0}
+        {
+          "id": "east_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 22.0,
+          "u_value_w_m2k": 0.45,
+          "azimuth_deg": 90,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "west_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 22.0,
+          "u_value_w_m2k": 0.45,
+          "azimuth_deg": 270,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        }
       ],
       "windows": [
-        {"id": "east_window", "area_m2": 3.0, "u_value_w_m2k": 1.6, "g_value": 0.55, "azimuth_deg": 90, "tilt_deg": 90, "mask_factor": 1.0, "shutter": {"type": "roller_shutter", "solar_factor_closed": 0.15, "solar_factor_open": 1.0, "u_factor_closed": 0.8}},
-        {"id": "west_window", "area_m2": 3.0, "u_value_w_m2k": 1.6, "g_value": 0.55, "azimuth_deg": 270, "tilt_deg": 90, "mask_factor": 1.0, "shutter": {"type": "roller_shutter", "solar_factor_closed": 0.15, "solar_factor_open": 1.0, "u_factor_closed": 0.8}}
+        {
+          "id": "east_window",
+          "area_m2": 3.0,
+          "u_value_w_m2k": 1.6,
+          "g_value": 0.55,
+          "azimuth_deg": 90,
+          "tilt_deg": 90,
+          "mask_factor": 1.0,
+          "shutter": {
+            "type": "roller_shutter",
+            "solar_factor_closed": 0.15,
+            "solar_factor_open": 1.0,
+            "u_factor_closed": 0.8
+          }
+        },
+        {
+          "id": "west_window",
+          "area_m2": 3.0,
+          "u_value_w_m2k": 1.6,
+          "g_value": 0.55,
+          "azimuth_deg": 270,
+          "tilt_deg": 90,
+          "mask_factor": 1.0,
+          "shutter": {
+            "type": "roller_shutter",
+            "solar_factor_closed": 0.15,
+            "solar_factor_open": 1.0,
+            "u_factor_closed": 0.8
+          }
+        }
       ],
-      "systems": {"heating": null, "cooling": null},
-      "scenario": {"weather_ref": "weather_heatwave_24h.json", "heating_c": 0.0, "cooling_c": 26.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0, "smart_night_cooling": true, "smart_ach": 4.0},
+      "systems": {
+        "heating": null,
+        "cooling": null
+      },
+      "scenario": {
+        "weather_ref": "weather_heatwave_24h.json",
+        "heating_c": 0.0,
+        "cooling_c": 26.0,
+        "shutter_opening_ratio": 1.0,
+        "natural_ventilation_default_ach": 0.0,
+        "smart_night_cooling": true,
+        "smart_ach": 4.0
+      },
       "scenario_variants": {
-        "canicule_sans_protection": {"shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
-        "canicule_occupant_raisonnable": {"shutter_opening_ratio": 1.0, "shutter_hourly": [{"start_hour": 8, "end_hour": 19, "opening_ratio": 0.1}], "natural_ventilation_default_ach": 0.0, "smart_night_cooling": true, "smart_ach": 4.0}
+        "canicule_sans_protection": {
+          "shutter_opening_ratio": 1.0,
+          "natural_ventilation_default_ach": 0.0
+        },
+        "canicule_occupant_raisonnable": {
+          "shutter_opening_ratio": 1.0,
+          "shutter_hourly": [
+            {
+              "start_hour": 8,
+              "end_hour": 19,
+              "opening_ratio": 0.1
+            }
+          ],
+          "natural_ventilation_default_ach": 0.0,
+          "smart_night_cooling": true,
+          "smart_ach": 4.0
+        }
       },
       "expected_metrics": {
-        "max_temperature_c": {"min": 34.2, "max": 34.9},
-        "final_temperature_c": {"min": 32.5, "max": 33.2},
-        "hot_degree_hours": {"min": 99.0, "max": 102.0},
-        "solar_gain_kwh": {"min": 13.5, "max": 14.3},
-        "ventilation_exchange_kwh": {"min": -4.1, "max": -3.4}
+        "max_temperature_c": {
+          "min": 36.0,
+          "max": 37.0
+        },
+        "final_temperature_c": {
+          "min": 33.54,
+          "max": 34.54
+        },
+        "hot_degree_hours": {
+          "min": 120.64,
+          "max": 125.56
+        },
+        "solar_gain_kwh": {
+          "min": 19.5,
+          "max": 20.29
+        },
+        "ventilation_exchange_kwh": {
+          "min": -6.26,
+          "max": -6.02
+        }
       }
     },
     {
@@ -163,26 +547,105 @@
       "equivalent_capacity_j_m2k": 120000,
       "internal_gain_w_m2": 3.0,
       "thermal_bridge_factor": 0.12,
-      "ventilation": {"infiltration_ach": 0.5, "mechanical_ach": 0.0, "recovery_efficiency": 0.0},
+      "ventilation": {
+        "infiltration_ach": 0.5,
+        "mechanical_ach": 0.0,
+        "recovery_efficiency": 0.0
+      },
       "surfaces": [
-        {"id": "roof", "type": "roof", "boundary": "exterior", "area_m2": 20.0, "u_value_w_m2k": 1.5, "azimuth_deg": 180, "tilt_deg": 25, "albedo": 0.2, "solar_to_room_factor": 0.08, "mask_factor": 1.0},
-        {"id": "south_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 10.0, "u_value_w_m2k": 1.0, "azimuth_deg": 180, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0}
+        {
+          "id": "roof",
+          "type": "roof",
+          "boundary": "exterior",
+          "area_m2": 20.0,
+          "u_value_w_m2k": 1.5,
+          "azimuth_deg": 180,
+          "tilt_deg": 25,
+          "albedo": 0.2,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "south_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 10.0,
+          "u_value_w_m2k": 1.0,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        }
       ],
       "windows": [
-        {"id": "roof_window", "area_m2": 2.0, "u_value_w_m2k": 2.8, "g_value": 0.7, "azimuth_deg": 180, "tilt_deg": 45, "mask_factor": 1.0, "shutter": {"type": "roller_shutter", "solar_factor_closed": 0.15, "solar_factor_open": 1.0, "u_factor_closed": 0.8}}
+        {
+          "id": "roof_window",
+          "area_m2": 2.0,
+          "u_value_w_m2k": 2.8,
+          "g_value": 0.7,
+          "azimuth_deg": 180,
+          "tilt_deg": 45,
+          "mask_factor": 1.0,
+          "shutter": {
+            "type": "roller_shutter",
+            "solar_factor_closed": 0.15,
+            "solar_factor_open": 1.0,
+            "u_factor_closed": 0.8
+          }
+        }
       ],
-      "systems": {"heating": null, "cooling": null},
-      "scenario": {"weather_ref": "weather_heatwave_24h.json", "heating_c": 0.0, "cooling_c": 26.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
+      "systems": {
+        "heating": null,
+        "cooling": null
+      },
+      "scenario": {
+        "weather_ref": "weather_heatwave_24h.json",
+        "heating_c": 0.0,
+        "cooling_c": 26.0,
+        "shutter_opening_ratio": 1.0,
+        "natural_ventilation_default_ach": 0.0
+      },
       "scenario_variants": {
-        "canicule_sans_protection": {"shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
-        "canicule_occupant_raisonnable": {"shutter_opening_ratio": 1.0, "shutter_hourly": [{"start_hour": 8, "end_hour": 19, "opening_ratio": 0.1}], "natural_ventilation_default_ach": 0.0, "smart_night_cooling": true, "smart_ach": 4.0}
+        "canicule_sans_protection": {
+          "shutter_opening_ratio": 1.0,
+          "natural_ventilation_default_ach": 0.0
+        },
+        "canicule_occupant_raisonnable": {
+          "shutter_opening_ratio": 1.0,
+          "shutter_hourly": [
+            {
+              "start_hour": 8,
+              "end_hour": 19,
+              "opening_ratio": 0.1
+            }
+          ],
+          "natural_ventilation_default_ach": 0.0,
+          "smart_night_cooling": true,
+          "smart_ach": 4.0
+        }
       },
       "expected_metrics": {
-        "max_temperature_c": {"min": 49.4, "max": 50.4},
-        "final_temperature_c": {"min": 41.7, "max": 42.7},
-        "hot_degree_hours": {"min": 284.0, "max": 290.0},
-        "solar_gain_kwh": {"min": 16.9, "max": 17.9},
-        "transmission_exchange_kwh": {"min": -7.5, "max": -6.4}
+        "max_temperature_c": {
+          "min": 56.53,
+          "max": 57.53
+        },
+        "final_temperature_c": {
+          "min": 45.83,
+          "max": 46.83
+        },
+        "hot_degree_hours": {
+          "min": 362.92,
+          "max": 377.73
+        },
+        "solar_gain_kwh": {
+          "min": 24.35,
+          "max": 25.35
+        },
+        "transmission_exchange_kwh": {
+          "min": -11.23,
+          "max": -10.79
+        }
       }
     },
     {
@@ -195,26 +658,105 @@
       "equivalent_capacity_j_m2k": 160000,
       "internal_gain_w_m2": 4.0,
       "thermal_bridge_factor": 0.1,
-      "ventilation": {"infiltration_ach": 0.3, "mechanical_ach": 0.2, "recovery_efficiency": 0.0},
+      "ventilation": {
+        "infiltration_ach": 0.3,
+        "mechanical_ach": 0.2,
+        "recovery_efficiency": 0.0
+      },
       "surfaces": [
-        {"id": "south_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 18.0, "u_value_w_m2k": 0.45, "azimuth_deg": 180, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0},
-        {"id": "roof", "type": "roof", "boundary": "exterior", "area_m2": 35.0, "u_value_w_m2k": 0.28, "azimuth_deg": 180, "tilt_deg": 25, "albedo": 0.3, "solar_to_room_factor": 0.02, "mask_factor": 1.0}
+        {
+          "id": "south_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 18.0,
+          "u_value_w_m2k": 0.45,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "roof",
+          "type": "roof",
+          "boundary": "exterior",
+          "area_m2": 35.0,
+          "u_value_w_m2k": 0.28,
+          "azimuth_deg": 180,
+          "tilt_deg": 25,
+          "albedo": 0.3,
+          "solar_to_room_factor": 0.02,
+          "mask_factor": 1.0
+        }
       ],
       "windows": [
-        {"id": "south_bay", "area_m2": 12.0, "u_value_w_m2k": 1.6, "g_value": 0.55, "azimuth_deg": 180, "tilt_deg": 90, "mask_factor": 1.0, "shutter": {"type": "roller_shutter", "solar_factor_closed": 0.15, "solar_factor_open": 1.0, "u_factor_closed": 0.8}}
+        {
+          "id": "south_bay",
+          "area_m2": 12.0,
+          "u_value_w_m2k": 1.6,
+          "g_value": 0.55,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "mask_factor": 1.0,
+          "shutter": {
+            "type": "roller_shutter",
+            "solar_factor_closed": 0.15,
+            "solar_factor_open": 1.0,
+            "u_factor_closed": 0.8
+          }
+        }
       ],
-      "systems": {"heating": null, "cooling": null},
-      "scenario": {"weather_ref": "weather_heatwave_24h.json", "heating_c": 0.0, "cooling_c": 26.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
+      "systems": {
+        "heating": null,
+        "cooling": null
+      },
+      "scenario": {
+        "weather_ref": "weather_heatwave_24h.json",
+        "heating_c": 0.0,
+        "cooling_c": 26.0,
+        "shutter_opening_ratio": 1.0,
+        "natural_ventilation_default_ach": 0.0
+      },
       "scenario_variants": {
-        "canicule_sans_protection": {"shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
-        "canicule_occupant_raisonnable": {"shutter_opening_ratio": 1.0, "shutter_hourly": [{"start_hour": 8, "end_hour": 19, "opening_ratio": 0.1}], "natural_ventilation_default_ach": 0.0, "smart_night_cooling": true, "smart_ach": 4.0}
+        "canicule_sans_protection": {
+          "shutter_opening_ratio": 1.0,
+          "natural_ventilation_default_ach": 0.0
+        },
+        "canicule_occupant_raisonnable": {
+          "shutter_opening_ratio": 1.0,
+          "shutter_hourly": [
+            {
+              "start_hour": 8,
+              "end_hour": 19,
+              "opening_ratio": 0.1
+            }
+          ],
+          "natural_ventilation_default_ach": 0.0,
+          "smart_night_cooling": true,
+          "smart_ach": 4.0
+        }
       },
       "expected_metrics": {
-        "max_temperature_c": {"min": 47.7, "max": 48.8},
-        "final_temperature_c": {"min": 45.0, "max": 46.0},
-        "hot_degree_hours": {"min": 269.0, "max": 276.0},
-        "solar_gain_kwh": {"min": 32.9, "max": 34.3},
-        "ventilation_exchange_kwh": {"min": -2.2, "max": -1.3}
+        "max_temperature_c": {
+          "min": 55.33,
+          "max": 56.33
+        },
+        "final_temperature_c": {
+          "min": 51.27,
+          "max": 52.27
+        },
+        "hot_degree_hours": {
+          "min": 356.26,
+          "max": 370.8
+        },
+        "solar_gain_kwh": {
+          "min": 47.04,
+          "max": 48.96
+        },
+        "ventilation_exchange_kwh": {
+          "min": -3.04,
+          "max": -2.92
+        }
       }
     },
     {
@@ -227,26 +769,105 @@
       "equivalent_capacity_j_m2k": 160000,
       "internal_gain_w_m2": 4.0,
       "thermal_bridge_factor": 0.1,
-      "ventilation": {"infiltration_ach": 0.3, "mechanical_ach": 0.2, "recovery_efficiency": 0.0},
+      "ventilation": {
+        "infiltration_ach": 0.3,
+        "mechanical_ach": 0.2,
+        "recovery_efficiency": 0.0
+      },
       "surfaces": [
-        {"id": "south_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 18.0, "u_value_w_m2k": 0.45, "azimuth_deg": 180, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0},
-        {"id": "roof", "type": "roof", "boundary": "exterior", "area_m2": 35.0, "u_value_w_m2k": 0.28, "azimuth_deg": 180, "tilt_deg": 25, "albedo": 0.3, "solar_to_room_factor": 0.02, "mask_factor": 1.0}
+        {
+          "id": "south_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 18.0,
+          "u_value_w_m2k": 0.45,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "roof",
+          "type": "roof",
+          "boundary": "exterior",
+          "area_m2": 35.0,
+          "u_value_w_m2k": 0.28,
+          "azimuth_deg": 180,
+          "tilt_deg": 25,
+          "albedo": 0.3,
+          "solar_to_room_factor": 0.02,
+          "mask_factor": 1.0
+        }
       ],
       "windows": [
-        {"id": "south_bay", "area_m2": 12.0, "u_value_w_m2k": 1.6, "g_value": 0.55, "azimuth_deg": 180, "tilt_deg": 90, "mask_factor": 1.0, "shutter": {"type": "roller_shutter", "solar_factor_closed": 0.15, "solar_factor_open": 1.0, "u_factor_closed": 0.8}}
+        {
+          "id": "south_bay",
+          "area_m2": 12.0,
+          "u_value_w_m2k": 1.6,
+          "g_value": 0.55,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "mask_factor": 1.0,
+          "shutter": {
+            "type": "roller_shutter",
+            "solar_factor_closed": 0.15,
+            "solar_factor_open": 1.0,
+            "u_factor_closed": 0.8
+          }
+        }
       ],
-      "systems": {"heating": null, "cooling": null},
-      "scenario": {"weather_ref": "weather_heatwave_24h.json", "heating_c": 0.0, "cooling_c": 26.0, "shutter_opening_ratio": 0.0, "natural_ventilation_default_ach": 0.0},
+      "systems": {
+        "heating": null,
+        "cooling": null
+      },
+      "scenario": {
+        "weather_ref": "weather_heatwave_24h.json",
+        "heating_c": 0.0,
+        "cooling_c": 26.0,
+        "shutter_opening_ratio": 0.0,
+        "natural_ventilation_default_ach": 0.0
+      },
       "scenario_variants": {
-        "canicule_sans_protection": {"shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
-        "canicule_occupant_raisonnable": {"shutter_opening_ratio": 1.0, "shutter_hourly": [{"start_hour": 8, "end_hour": 19, "opening_ratio": 0.1}], "natural_ventilation_default_ach": 0.0, "smart_night_cooling": true, "smart_ach": 4.0}
+        "canicule_sans_protection": {
+          "shutter_opening_ratio": 1.0,
+          "natural_ventilation_default_ach": 0.0
+        },
+        "canicule_occupant_raisonnable": {
+          "shutter_opening_ratio": 1.0,
+          "shutter_hourly": [
+            {
+              "start_hour": 8,
+              "end_hour": 19,
+              "opening_ratio": 0.1
+            }
+          ],
+          "natural_ventilation_default_ach": 0.0,
+          "smart_night_cooling": true,
+          "smart_ach": 4.0
+        }
       },
       "expected_metrics": {
-        "max_temperature_c": {"min": 35.8, "max": 36.5},
-        "final_temperature_c": {"min": 35.2, "max": 36.0},
-        "hot_degree_hours": {"min": 124.0, "max": 130.0},
-        "solar_gain_kwh": {"min": 10.3, "max": 11.0},
-        "transmission_exchange_kwh": {"min": 0.2, "max": 1.1}
+        "max_temperature_c": {
+          "min": 38.07,
+          "max": 39.07
+        },
+        "final_temperature_c": {
+          "min": 37.13,
+          "max": 38.13
+        },
+        "hot_degree_hours": {
+          "min": 152.93,
+          "max": 159.18
+        },
+        "solar_gain_kwh": {
+          "min": 14.93,
+          "max": 15.54
+        },
+        "transmission_exchange_kwh": {
+          "min": -0.41,
+          "max": -0.31
+        }
       }
     },
     {
@@ -259,22 +880,84 @@
       "equivalent_capacity_j_m2k": 160000,
       "internal_gain_w_m2": 4.0,
       "thermal_bridge_factor": 0.1,
-      "ventilation": {"infiltration_ach": 0.25, "mechanical_ach": 0.25, "recovery_efficiency": 0.0},
+      "ventilation": {
+        "infiltration_ach": 0.25,
+        "mechanical_ach": 0.25,
+        "recovery_efficiency": 0.0
+      },
       "surfaces": [
-        {"id": "south_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 30.0, "u_value_w_m2k": 0.45, "azimuth_deg": 180, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0},
-        {"id": "roof", "type": "roof", "boundary": "exterior", "area_m2": 70.0, "u_value_w_m2k": 0.28, "azimuth_deg": 180, "tilt_deg": 25, "albedo": 0.3, "solar_to_room_factor": 0.02, "mask_factor": 1.0}
+        {
+          "id": "south_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 30.0,
+          "u_value_w_m2k": 0.45,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "roof",
+          "type": "roof",
+          "boundary": "exterior",
+          "area_m2": 70.0,
+          "u_value_w_m2k": 0.28,
+          "azimuth_deg": 180,
+          "tilt_deg": 25,
+          "albedo": 0.3,
+          "solar_to_room_factor": 0.02,
+          "mask_factor": 1.0
+        }
       ],
       "windows": [
-        {"id": "south_window", "area_m2": 6.0, "u_value_w_m2k": 1.6, "g_value": 0.55, "azimuth_deg": 180, "tilt_deg": 90, "mask_factor": 1.0}
+        {
+          "id": "south_window",
+          "area_m2": 6.0,
+          "u_value_w_m2k": 1.6,
+          "g_value": 0.55,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "mask_factor": 1.0
+        }
       ],
-      "systems": {"heating": {"type": "heat_pump", "max_power_w": 8000, "cop": 3.2}, "cooling": null},
-      "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
+      "systems": {
+        "heating": {
+          "type": "heat_pump",
+          "max_power_w": 8000,
+          "cop": 3.2
+        },
+        "cooling": null
+      },
+      "scenario": {
+        "weather_ref": "weather_winter_24h.json",
+        "heating_c": 19.0,
+        "cooling_c": 30.0,
+        "shutter_opening_ratio": 1.0,
+        "natural_ventilation_default_ach": 0.0
+      },
       "expected_metrics": {
-        "heating_thermal_kwh": {"min": 18.5, "max": 19.5},
-        "heating_electric_kwh": {"min": 5.7, "max": 6.2},
-        "max_temperature_c": {"min": 19.1, "max": 19.7},
-        "solar_gain_kwh": {"min": 7.0, "max": 7.7},
-        "ventilation_exchange_kwh": {"min": -13.2, "max": -12.2}
+        "heating_thermal_kwh": {
+          "min": 9.24,
+          "max": 9.62
+        },
+        "heating_electric_kwh": {
+          "min": 2.89,
+          "max": 3.01
+        },
+        "max_temperature_c": {
+          "min": 22.19,
+          "max": 23.19
+        },
+        "solar_gain_kwh": {
+          "min": 20.53,
+          "max": 21.37
+        },
+        "ventilation_exchange_kwh": {
+          "min": -13.85,
+          "max": -13.31
+        }
       }
     },
     {
@@ -287,22 +970,84 @@
       "equivalent_capacity_j_m2k": 165000,
       "internal_gain_w_m2": 4.0,
       "thermal_bridge_factor": 0.1,
-      "ventilation": {"infiltration_ach": 0.35, "mechanical_ach": 0.2, "recovery_efficiency": 0.0},
+      "ventilation": {
+        "infiltration_ach": 0.35,
+        "mechanical_ach": 0.2,
+        "recovery_efficiency": 0.0
+      },
       "surfaces": [
-        {"id": "south_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 35.0, "u_value_w_m2k": 0.65, "azimuth_deg": 180, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0},
-        {"id": "roof", "type": "roof", "boundary": "exterior", "area_m2": 80.0, "u_value_w_m2k": 0.18, "azimuth_deg": 180, "tilt_deg": 25, "albedo": 0.3, "solar_to_room_factor": 0.02, "mask_factor": 1.0}
+        {
+          "id": "south_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 35.0,
+          "u_value_w_m2k": 0.65,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "roof",
+          "type": "roof",
+          "boundary": "exterior",
+          "area_m2": 80.0,
+          "u_value_w_m2k": 0.18,
+          "azimuth_deg": 180,
+          "tilt_deg": 25,
+          "albedo": 0.3,
+          "solar_to_room_factor": 0.02,
+          "mask_factor": 1.0
+        }
       ],
       "windows": [
-        {"id": "south_window", "area_m2": 7.0, "u_value_w_m2k": 1.6, "g_value": 0.55, "azimuth_deg": 180, "tilt_deg": 90, "mask_factor": 1.0}
+        {
+          "id": "south_window",
+          "area_m2": 7.0,
+          "u_value_w_m2k": 1.6,
+          "g_value": 0.55,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "mask_factor": 1.0
+        }
       ],
-      "systems": {"heating": {"type": "electric_radiator", "max_power_w": 9000, "cop": 1.0}, "cooling": null},
-      "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
+      "systems": {
+        "heating": {
+          "type": "electric_radiator",
+          "max_power_w": 9000,
+          "cop": 1.0
+        },
+        "cooling": null
+      },
+      "scenario": {
+        "weather_ref": "weather_winter_24h.json",
+        "heating_c": 19.0,
+        "cooling_c": 30.0,
+        "shutter_opening_ratio": 1.0,
+        "natural_ventilation_default_ach": 0.0
+      },
       "expected_metrics": {
-        "heating_electric_kwh": {"min": 22.2, "max": 23.3},
-        "max_temperature_c": {"min": 19.1, "max": 19.7},
-        "solar_gain_kwh": {"min": 8.2, "max": 8.9},
-        "transmission_exchange_kwh": {"min": -23.6, "max": -22.4},
-        "ventilation_exchange_kwh": {"min": -16.5, "max": -15.4}
+        "heating_electric_kwh": {
+          "min": 11.0,
+          "max": 11.45
+        },
+        "max_temperature_c": {
+          "min": 22.09,
+          "max": 23.09
+        },
+        "solar_gain_kwh": {
+          "min": 23.86,
+          "max": 24.84
+        },
+        "transmission_exchange_kwh": {
+          "min": -25.07,
+          "max": -24.09
+        },
+        "ventilation_exchange_kwh": {
+          "min": -17.37,
+          "max": -16.69
+        }
       }
     },
     {
@@ -315,22 +1060,84 @@
       "equivalent_capacity_j_m2k": 165000,
       "internal_gain_w_m2": 4.0,
       "thermal_bridge_factor": 0.1,
-      "ventilation": {"infiltration_ach": 0.4, "mechanical_ach": 0.2, "recovery_efficiency": 0.0},
+      "ventilation": {
+        "infiltration_ach": 0.4,
+        "mechanical_ach": 0.2,
+        "recovery_efficiency": 0.0
+      },
       "surfaces": [
-        {"id": "south_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 30.0, "u_value_w_m2k": 0.65, "azimuth_deg": 180, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0},
-        {"id": "north_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 25.0, "u_value_w_m2k": 0.65, "azimuth_deg": 0, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0}
+        {
+          "id": "south_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 30.0,
+          "u_value_w_m2k": 0.65,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        },
+        {
+          "id": "north_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 25.0,
+          "u_value_w_m2k": 0.65,
+          "azimuth_deg": 0,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        }
       ],
       "windows": [
-        {"id": "south_window", "area_m2": 9.0, "u_value_w_m2k": 1.2, "g_value": 0.5, "azimuth_deg": 180, "tilt_deg": 90, "mask_factor": 1.0}
+        {
+          "id": "south_window",
+          "area_m2": 9.0,
+          "u_value_w_m2k": 1.2,
+          "g_value": 0.5,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "mask_factor": 1.0
+        }
       ],
-      "systems": {"heating": {"type": "electric_radiator", "max_power_w": 8000, "cop": 1.0}, "cooling": null},
-      "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
+      "systems": {
+        "heating": {
+          "type": "electric_radiator",
+          "max_power_w": 8000,
+          "cop": 1.0
+        },
+        "cooling": null
+      },
+      "scenario": {
+        "weather_ref": "weather_winter_24h.json",
+        "heating_c": 19.0,
+        "cooling_c": 30.0,
+        "shutter_opening_ratio": 1.0,
+        "natural_ventilation_default_ach": 0.0
+      },
       "expected_metrics": {
-        "heating_electric_kwh": {"min": 21.8, "max": 22.9},
-        "max_temperature_c": {"min": 19.0, "max": 19.6},
-        "final_temperature_c": {"min": 18.9, "max": 19.2},
-        "solar_gain_kwh": {"min": 7.4, "max": 8.0},
-        "transmission_exchange_kwh": {"min": -22.8, "max": -21.6}
+        "heating_electric_kwh": {
+          "min": 10.6,
+          "max": 11.03
+        },
+        "max_temperature_c": {
+          "min": 22.29,
+          "max": 23.29
+        },
+        "final_temperature_c": {
+          "min": 18.57,
+          "max": 19.57
+        },
+        "solar_gain_kwh": {
+          "min": 21.49,
+          "max": 22.37
+        },
+        "transmission_exchange_kwh": {
+          "min": -24.15,
+          "max": -23.21
+        }
       }
     },
     {
@@ -343,21 +1150,72 @@
       "equivalent_capacity_j_m2k": 165000,
       "internal_gain_w_m2": 4.0,
       "thermal_bridge_factor": 0.1,
-      "ventilation": {"infiltration_ach": 1.2, "mechanical_ach": 0.0, "recovery_efficiency": 0.0},
+      "ventilation": {
+        "infiltration_ach": 1.2,
+        "mechanical_ach": 0.0,
+        "recovery_efficiency": 0.0
+      },
       "surfaces": [
-        {"id": "south_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 28.0, "u_value_w_m2k": 0.65, "azimuth_deg": 180, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0}
+        {
+          "id": "south_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 28.0,
+          "u_value_w_m2k": 0.65,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        }
       ],
       "windows": [
-        {"id": "south_window", "area_m2": 5.0, "u_value_w_m2k": 1.6, "g_value": 0.55, "azimuth_deg": 180, "tilt_deg": 90, "mask_factor": 1.0}
+        {
+          "id": "south_window",
+          "area_m2": 5.0,
+          "u_value_w_m2k": 1.6,
+          "g_value": 0.55,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "mask_factor": 1.0
+        }
       ],
-      "systems": {"heating": {"type": "electric_radiator", "max_power_w": 8000, "cop": 1.0}, "cooling": null},
-      "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
+      "systems": {
+        "heating": {
+          "type": "electric_radiator",
+          "max_power_w": 8000,
+          "cop": 1.0
+        },
+        "cooling": null
+      },
+      "scenario": {
+        "weather_ref": "weather_winter_24h.json",
+        "heating_c": 19.0,
+        "cooling_c": 30.0,
+        "shutter_opening_ratio": 1.0,
+        "natural_ventilation_default_ach": 0.0
+      },
       "expected_metrics": {
-        "heating_electric_kwh": {"min": 27.0, "max": 28.1},
-        "max_temperature_c": {"min": 18.9, "max": 19.1},
-        "solar_gain_kwh": {"min": 4.9, "max": 5.5},
-        "transmission_exchange_kwh": {"min": -13.1, "max": -12.3},
-        "ventilation_exchange_kwh": {"min": -27.2, "max": -25.8}
+        "heating_electric_kwh": {
+          "min": 18.5,
+          "max": 19.25
+        },
+        "max_temperature_c": {
+          "min": 20.37,
+          "max": 21.37
+        },
+        "solar_gain_kwh": {
+          "min": 14.51,
+          "max": 15.1
+        },
+        "transmission_exchange_kwh": {
+          "min": -13.01,
+          "max": -12.5
+        },
+        "ventilation_exchange_kwh": {
+          "min": -27.22,
+          "max": -26.15
+        }
       }
     },
     {
@@ -370,21 +1228,72 @@
       "equivalent_capacity_j_m2k": 165000,
       "internal_gain_w_m2": 4.0,
       "thermal_bridge_factor": 0.1,
-      "ventilation": {"infiltration_ach": 0.15, "mechanical_ach": 0.05, "recovery_efficiency": 0.0},
+      "ventilation": {
+        "infiltration_ach": 0.15,
+        "mechanical_ach": 0.05,
+        "recovery_efficiency": 0.0
+      },
       "surfaces": [
-        {"id": "south_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 28.0, "u_value_w_m2k": 0.65, "azimuth_deg": 180, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0}
+        {
+          "id": "south_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 28.0,
+          "u_value_w_m2k": 0.65,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        }
       ],
       "windows": [
-        {"id": "south_window", "area_m2": 5.0, "u_value_w_m2k": 1.6, "g_value": 0.55, "azimuth_deg": 180, "tilt_deg": 90, "mask_factor": 1.0}
+        {
+          "id": "south_window",
+          "area_m2": 5.0,
+          "u_value_w_m2k": 1.6,
+          "g_value": 0.55,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "mask_factor": 1.0
+        }
       ],
-      "systems": {"heating": {"type": "electric_radiator", "max_power_w": 8000, "cop": 1.0}, "cooling": null},
-      "scenario": {"weather_ref": "weather_winter_24h.json", "heating_c": 19.0, "cooling_c": 30.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
+      "systems": {
+        "heating": {
+          "type": "electric_radiator",
+          "max_power_w": 8000,
+          "cop": 1.0
+        },
+        "cooling": null
+      },
+      "scenario": {
+        "weather_ref": "weather_winter_24h.json",
+        "heating_c": 19.0,
+        "cooling_c": 30.0,
+        "shutter_opening_ratio": 1.0,
+        "natural_ventilation_default_ach": 0.0
+      },
       "expected_metrics": {
-        "heating_electric_kwh": {"min": 5.7, "max": 6.4},
-        "max_temperature_c": {"min": 19.5, "max": 20.1},
-        "final_temperature_c": {"min": 18.9, "max": 19.2},
-        "solar_gain_kwh": {"min": 4.9, "max": 5.5},
-        "ventilation_exchange_kwh": {"min": -4.7, "max": -4.1}
+        "heating_electric_kwh": {
+          "min": 3.84,
+          "max": 4.0
+        },
+        "max_temperature_c": {
+          "min": 22.34,
+          "max": 23.34
+        },
+        "final_temperature_c": {
+          "min": 20.76,
+          "max": 21.76
+        },
+        "solar_gain_kwh": {
+          "min": 14.51,
+          "max": 15.1
+        },
+        "ventilation_exchange_kwh": {
+          "min": -4.82,
+          "max": -4.63
+        }
       }
     },
     {
@@ -397,25 +1306,93 @@
       "equivalent_capacity_j_m2k": 80000,
       "internal_gain_w_m2": 4.0,
       "thermal_bridge_factor": 0.1,
-      "ventilation": {"infiltration_ach": 0.35, "mechanical_ach": 0.15, "recovery_efficiency": 0.0},
+      "ventilation": {
+        "infiltration_ach": 0.35,
+        "mechanical_ach": 0.15,
+        "recovery_efficiency": 0.0
+      },
       "surfaces": [
-        {"id": "south_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 20.0, "u_value_w_m2k": 0.45, "azimuth_deg": 180, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0}
+        {
+          "id": "south_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 20.0,
+          "u_value_w_m2k": 0.45,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        }
       ],
       "windows": [
-        {"id": "south_window", "area_m2": 6.0, "u_value_w_m2k": 1.6, "g_value": 0.55, "azimuth_deg": 180, "tilt_deg": 90, "mask_factor": 1.0, "shutter": {"type": "roller_shutter", "solar_factor_closed": 0.15, "solar_factor_open": 1.0, "u_factor_closed": 0.8}}
+        {
+          "id": "south_window",
+          "area_m2": 6.0,
+          "u_value_w_m2k": 1.6,
+          "g_value": 0.55,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "mask_factor": 1.0,
+          "shutter": {
+            "type": "roller_shutter",
+            "solar_factor_closed": 0.15,
+            "solar_factor_open": 1.0,
+            "u_factor_closed": 0.8
+          }
+        }
       ],
-      "systems": {"heating": null, "cooling": null},
-      "scenario": {"weather_ref": "weather_heatwave_24h.json", "heating_c": 0.0, "cooling_c": 26.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
+      "systems": {
+        "heating": null,
+        "cooling": null
+      },
+      "scenario": {
+        "weather_ref": "weather_heatwave_24h.json",
+        "heating_c": 0.0,
+        "cooling_c": 26.0,
+        "shutter_opening_ratio": 1.0,
+        "natural_ventilation_default_ach": 0.0
+      },
       "scenario_variants": {
-        "canicule_sans_protection": {"shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
-        "canicule_occupant_raisonnable": {"shutter_opening_ratio": 1.0, "shutter_hourly": [{"start_hour": 8, "end_hour": 19, "opening_ratio": 0.1}], "natural_ventilation_default_ach": 0.0, "smart_night_cooling": true, "smart_ach": 4.0}
+        "canicule_sans_protection": {
+          "shutter_opening_ratio": 1.0,
+          "natural_ventilation_default_ach": 0.0
+        },
+        "canicule_occupant_raisonnable": {
+          "shutter_opening_ratio": 1.0,
+          "shutter_hourly": [
+            {
+              "start_hour": 8,
+              "end_hour": 19,
+              "opening_ratio": 0.1
+            }
+          ],
+          "natural_ventilation_default_ach": 0.0,
+          "smart_night_cooling": true,
+          "smart_ach": 4.0
+        }
       },
       "expected_metrics": {
-        "max_temperature_c": {"min": 47.5, "max": 48.5},
-        "final_temperature_c": {"min": 44.7, "max": 45.8},
-        "hot_degree_hours": {"min": 270.0, "max": 279.0},
-        "solar_gain_kwh": {"min": 17.2, "max": 18.3},
-        "ventilation_exchange_kwh": {"min": -2.5, "max": -1.6}
+        "max_temperature_c": {
+          "min": 54.3,
+          "max": 55.3
+        },
+        "final_temperature_c": {
+          "min": 50.09,
+          "max": 51.09
+        },
+        "hot_degree_hours": {
+          "min": 348.79,
+          "max": 363.03
+        },
+        "solar_gain_kwh": {
+          "min": 24.84,
+          "max": 25.85
+        },
+        "ventilation_exchange_kwh": {
+          "min": -3.36,
+          "max": -3.23
+        }
       }
     },
     {
@@ -428,25 +1405,93 @@
       "equivalent_capacity_j_m2k": 300000,
       "internal_gain_w_m2": 4.0,
       "thermal_bridge_factor": 0.1,
-      "ventilation": {"infiltration_ach": 0.35, "mechanical_ach": 0.15, "recovery_efficiency": 0.0},
+      "ventilation": {
+        "infiltration_ach": 0.35,
+        "mechanical_ach": 0.15,
+        "recovery_efficiency": 0.0
+      },
       "surfaces": [
-        {"id": "south_wall", "type": "external_wall", "boundary": "exterior", "area_m2": 20.0, "u_value_w_m2k": 0.45, "azimuth_deg": 180, "tilt_deg": 90, "albedo": 0.35, "solar_to_room_factor": 0.08, "mask_factor": 1.0}
+        {
+          "id": "south_wall",
+          "type": "external_wall",
+          "boundary": "exterior",
+          "area_m2": 20.0,
+          "u_value_w_m2k": 0.45,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "albedo": 0.35,
+          "solar_to_room_factor": 0.08,
+          "mask_factor": 1.0
+        }
       ],
       "windows": [
-        {"id": "south_window", "area_m2": 6.0, "u_value_w_m2k": 1.6, "g_value": 0.55, "azimuth_deg": 180, "tilt_deg": 90, "mask_factor": 1.0, "shutter": {"type": "roller_shutter", "solar_factor_closed": 0.15, "solar_factor_open": 1.0, "u_factor_closed": 0.8}}
+        {
+          "id": "south_window",
+          "area_m2": 6.0,
+          "u_value_w_m2k": 1.6,
+          "g_value": 0.55,
+          "azimuth_deg": 180,
+          "tilt_deg": 90,
+          "mask_factor": 1.0,
+          "shutter": {
+            "type": "roller_shutter",
+            "solar_factor_closed": 0.15,
+            "solar_factor_open": 1.0,
+            "u_factor_closed": 0.8
+          }
+        }
       ],
-      "systems": {"heating": null, "cooling": null},
-      "scenario": {"weather_ref": "weather_heatwave_24h.json", "heating_c": 0.0, "cooling_c": 26.0, "shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
+      "systems": {
+        "heating": null,
+        "cooling": null
+      },
+      "scenario": {
+        "weather_ref": "weather_heatwave_24h.json",
+        "heating_c": 0.0,
+        "cooling_c": 26.0,
+        "shutter_opening_ratio": 1.0,
+        "natural_ventilation_default_ach": 0.0
+      },
       "scenario_variants": {
-        "canicule_sans_protection": {"shutter_opening_ratio": 1.0, "natural_ventilation_default_ach": 0.0},
-        "canicule_occupant_raisonnable": {"shutter_opening_ratio": 1.0, "shutter_hourly": [{"start_hour": 8, "end_hour": 19, "opening_ratio": 0.1}], "natural_ventilation_default_ach": 0.0, "smart_night_cooling": true, "smart_ach": 4.0}
+        "canicule_sans_protection": {
+          "shutter_opening_ratio": 1.0,
+          "natural_ventilation_default_ach": 0.0
+        },
+        "canicule_occupant_raisonnable": {
+          "shutter_opening_ratio": 1.0,
+          "shutter_hourly": [
+            {
+              "start_hour": 8,
+              "end_hour": 19,
+              "opening_ratio": 0.1
+            }
+          ],
+          "natural_ventilation_default_ach": 0.0,
+          "smart_night_cooling": true,
+          "smart_ach": 4.0
+        }
       },
       "expected_metrics": {
-        "max_temperature_c": {"min": 32.8, "max": 33.4},
-        "final_temperature_c": {"min": 32.8, "max": 33.4},
-        "hot_degree_hours": {"min": 85.0, "max": 90.0},
-        "solar_gain_kwh": {"min": 17.2, "max": 18.3},
-        "ventilation_exchange_kwh": {"min": 0.6, "max": 1.2}
+        "max_temperature_c": {
+          "min": 34.68,
+          "max": 35.68
+        },
+        "final_temperature_c": {
+          "min": 34.6,
+          "max": 35.6
+        },
+        "hot_degree_hours": {
+          "min": 110.57,
+          "max": 115.09
+        },
+        "solar_gain_kwh": {
+          "min": 24.84,
+          "max": 25.85
+        },
+        "ventilation_exchange_kwh": {
+          "min": 0.47,
+          "max": 0.57
+        }
       }
     }
   ]

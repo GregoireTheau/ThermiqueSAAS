@@ -8,7 +8,7 @@ from typing import Any
 from .dwelling_loader import validate_dwelling
 from .reference_loader import (
     ReferenceCatalog,
-    get_climate_zone_for_department,
+    get_climate_zone_for_county,
     get_cooling_system_reference,
     get_envelope_default_reference,
     get_heating_system_reference,
@@ -45,12 +45,17 @@ def resolve_dwelling_references(
 def _resolve_location(dwelling: Dwelling, catalog: ReferenceCatalog) -> None:
     location = dwelling["location"]
     if "climate_zone_id" not in location:
-        department_code = location.get("postal_code", "")[:2]
-        if department_code:
-            location["climate_zone_id"] = get_climate_zone_for_department(
+        county_fips = location.get("county_fips", "")
+        if county_fips:
+            climate_zone_id = get_climate_zone_for_county(
                 catalog,
-                department_code,
+                county_fips,
             )
+            location["climate_zone_id"] = climate_zone_id
+            location["climate_zone_code"] = catalog["climate_zones"][climate_zone_id][
+                "code"
+            ]
+            location["climate_zone_standard"] = "2021 IECC / ASHRAE 169-2013"
 
 
 def _resolve_defaults(

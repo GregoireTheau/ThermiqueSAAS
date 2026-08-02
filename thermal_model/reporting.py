@@ -153,6 +153,15 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
             "weather_match_mode": experiment.get("weather_match_mode", ""),
             "weather_year": experiment.get("weather_year"),
             "weather_reference": experiment.get("weather_reference", ""),
+            "climate_zone_code": comparison.get("location", {}).get(
+                "climate_zone_code",
+                "",
+            ),
+            "climate_zone_standard": comparison.get("location", {}).get(
+                "climate_zone_standard",
+                "",
+            ),
+            "county": comparison.get("location", {}).get("county", ""),
             "reason": experiment.get("reason", ""),
             "context_text": context_text,
             "purpose_text": purpose_text,
@@ -1992,6 +2001,10 @@ def _render_context_params(
         ("Weather model", escape(str(trace.get("model", "Not recorded")))),
         ("Weather station/grid", escape(str(trace.get("station", "Not recorded")))),
         (
+            "Building-code climate zone",
+            escape(_climate_zone_label(experiment)),
+        ),
+        (
             "Reproducibility",
             escape(
                 f"Engine {trace.get('engine_version', '1r1c-mvp-0.1')} · "
@@ -2041,6 +2054,16 @@ def _weather_location_label(trace: dict[str, Any]) -> str:
     if latitude is None or longitude is None:
         return "Not recorded"
     return f"{latitude:.1f}, {longitude:.1f} (shared 0.1° cell)"
+
+
+def _climate_zone_label(experiment: dict[str, Any]) -> str:
+    code = experiment.get("climate_zone_code")
+    standard = experiment.get("climate_zone_standard")
+    county = experiment.get("county")
+    if not code:
+        return "Not recorded"
+    context = _join_non_empty(f"Zone {code}", standard, county)
+    return f"{context} — building-code metadata only; local weather is used separately"
 
 
 def _build_presentation_notes(

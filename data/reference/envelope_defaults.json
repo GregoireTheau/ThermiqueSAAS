@@ -80,8 +80,8 @@
       }
     },
     {
-      "id": "rt2012_or_later",
-      "name": "RT2012 or more recent",
+      "id": "2013_or_later_high_efficiency",
+      "name": "2013 or later / high-efficiency construction",
       "thermal_bridge_factor": 0.06,
       "equivalent_capacity_j_m2k": 155000,
       "u_values": {

@@ -127,6 +127,13 @@
         "state": {
           "type": "string"
         },
+        "county": {
+          "type": "string"
+        },
+        "county_fips": {
+          "type": "string",
+          "pattern": "^[0-9]{5}$"
+        },
         "address": {
           "type": "string"
         },
@@ -153,7 +160,15 @@
           "type": "string"
         },
         "climate_zone_id": {
-          "$ref": "#/$defs/id"
+          "type": "string",
+          "pattern": "^US_IECC_2021_(?:[1-6](?:A|B|C)?|7|8)$"
+        },
+        "climate_zone_code": {
+          "type": "string",
+          "pattern": "^(?:[1-6](?:A|B|C)?|7|8)$"
+        },
+        "climate_zone_standard": {
+          "type": "string"
         },
         "ground_albedo": {
           "$ref": "#/$defs/factor_0_1"

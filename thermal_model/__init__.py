@@ -15,7 +15,7 @@ from .physical_validation import collect_model_warnings
 from .location import LocationResolutionError, resolve_us_location
 from .reference_loader import (
     ReferenceDataError,
-    get_climate_zone_for_department,
+    get_climate_zone_for_county,
     get_climate_zone_reference,
     get_cooling_system_reference,
     get_envelope_default_reference,
@@ -82,7 +82,7 @@ __all__ = [
     "fetch_nsrdb_tmy",
     "fetch_open_meteo_coordinates",
     "fetch_open_meteo_year",
-    "get_climate_zone_for_department",
+    "get_climate_zone_for_county",
     "get_climate_zone_reference",
     "get_cooling_system_reference",
     "get_envelope_default_reference",

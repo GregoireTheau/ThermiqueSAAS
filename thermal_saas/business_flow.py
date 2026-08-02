@@ -19,6 +19,7 @@ from thermal_model import (
     compare_scenarios,
     ensure_openmeteo_thermal_weather,
     ensure_us_thermal_weather,
+    get_climate_zone_for_county,
     load_reference_catalog,
     read_parquet,
     render_report_html,
@@ -185,7 +186,21 @@ def build_customer(
         )
     except ValueError as exc:
         raise BusinessFlowError(str(exc)) from exc
-    climate_zone_id = answers.get("climate_zone_id") or "FR_H2b"
+    try:
+        climate_zone_id = get_climate_zone_for_county(
+            catalog,
+            location["county_fips"],
+        )
+    except ValueError as exc:
+        raise BusinessFlowError(str(exc)) from exc
+    climate_zone = catalog["climate_zones"][climate_zone_id]
+    location.update(
+        {
+            "climate_zone_id": climate_zone_id,
+            "climate_zone_code": climate_zone["code"],
+            "climate_zone_standard": "2021 IECC / ASHRAE 169-2013",
+        },
+    )
     annual_weather_type = str(answers.get("annual_weather_type", "typical"))
     if annual_weather_type not in {"typical", "historical"}:
         raise BusinessFlowError("annual_weather_type must be 'typical' or 'historical'.")

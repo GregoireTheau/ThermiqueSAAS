@@ -7,7 +7,7 @@ from jsonschema import Draft202012Validator
 from thermal_model import (
     DwellingValidationError,
     ScenarioValidationError,
-    get_climate_zone_for_department,
+    get_climate_zone_for_county,
     get_window_reference,
     load_dwelling,
     load_reference_catalog,
@@ -31,26 +31,15 @@ def test_reference_catalog_loads_expected_refs():
     catalog = load_reference_catalog()
 
     assert get_window_reference(catalog, "double_glazing_standard")["u_value_w_m2k"] == 1.6
-    assert get_climate_zone_for_department(catalog, "33") == "FR_H2c"
-    assert get_climate_zone_for_department(catalog, "83") == "FR_H3"
+    assert get_climate_zone_for_county(catalog, "13121") == "US_IECC_2021_3A"
+    assert get_climate_zone_for_county(catalog, "08031") == "US_IECC_2021_5B"
 
 
-def test_reference_catalog_maps_all_metropolitan_departments():
+def test_reference_catalog_contains_official_us_county_mapping():
     catalog = load_reference_catalog()
-    department_codes = [
-        *(f"{department:02d}" for department in range(1, 20)),
-        "2A",
-        "2B",
-        *(str(department) for department in range(21, 96)),
-    ]
 
-    missing = [
-        department
-        for department in department_codes
-        if department not in catalog["department_zone_map"]
-    ]
-
-    assert missing == []
+    assert len(catalog["county_zone_map"]) == 3141
+    assert catalog["climate_zones"]["US_IECC_2021_3A"]["code"] == "3A"
 
 
 def test_resolve_dwelling_references_keeps_explicit_values():

@@ -59,7 +59,7 @@ def _base_dwelling(
             "country": "FR",
             "postal_code": "33000",
             "city": "Reference",
-            "climate_zone_id": "FR_H2c",
+            "climate_zone_id": "US_IECC_2021_3A",
             "ground_albedo": 0.2,
         },
         "defaults": {
@@ -362,7 +362,7 @@ def test_warmer_weather_reduces_heating_needs():
     )
 
 
-def test_cloudiness_factor_requires_month_and_climate_zone():
+def test_climate_zone_and_month_do_not_modify_local_weather_solar_gains():
     dwelling = _base_dwelling()
     scenario_without_month = _scenario(
         temperatures=[30.0] * 24,
@@ -370,7 +370,7 @@ def test_cloudiness_factor_requires_month_and_climate_zone():
         heating_c=0.0,
         cooling_c=80.0,
     )
-    scenario_without_month["climate_zone_id"] = "FR_H2c"
+    scenario_without_month["climate_zone_id"] = "US_IECC_2021_3A"
     scenario_with_month = deepcopy(scenario_without_month)
     for point in scenario_with_month["weather"]["hourly"]:
         point["month"] = 7
@@ -396,11 +396,8 @@ def test_cloudiness_factor_requires_month_and_climate_zone():
         air_heat_capacity_j_kgk=AIR_HEAT_CAPACITY_J_KGK,
     )
 
-    assert (
-        with_month_results["rooms_summary"]["main_room"]["solar_gain_kwh"]
-        < without_month_results["rooms_summary"]["main_room"]["solar_gain_kwh"]
-    )
-    assert (
-        without_zone_results["rooms_summary"]["main_room"]["solar_gain_kwh"]
-        == without_month_results["rooms_summary"]["main_room"]["solar_gain_kwh"]
-    )
+    solar_gains = {
+        results["rooms_summary"]["main_room"]["solar_gain_kwh"]
+        for results in (without_month_results, with_month_results, without_zone_results)
+    }
+    assert len(solar_gains) == 1

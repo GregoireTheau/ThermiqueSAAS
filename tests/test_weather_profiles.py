@@ -15,38 +15,14 @@ def daily_min_max(profile: dict) -> tuple[float, float]:
     return min(values), max(values)
 
 
-def test_weather_reference_catalog_contains_9_profiles():
+def test_weather_reference_catalog_contains_location_independent_profiles():
     catalog = load_reference_catalog()
 
-    assert len(catalog["weather_profiles"]) == 9
-
-
-def test_heatwave_base_temperature_increases_from_h1_to_h3():
-    catalog = load_reference_catalog()
-
-    h1 = catalog["weather_profiles"]["H1_heatwave_reference"]
-    h2 = catalog["weather_profiles"]["H2_heatwave_reference"]
-    h3 = catalog["weather_profiles"]["H3_heatwave_reference"]
-
-    assert (
-        h3["temperature_profile"]["base_temp_c"]
-        > h2["temperature_profile"]["base_temp_c"]
-        > h1["temperature_profile"]["base_temp_c"]
-    )
-
-
-def test_winter_base_temperature_increases_from_h1_to_h3():
-    catalog = load_reference_catalog()
-
-    h1 = catalog["weather_profiles"]["H1_winter_design"]
-    h2 = catalog["weather_profiles"]["H2_winter_design"]
-    h3 = catalog["weather_profiles"]["H3_winter_design"]
-
-    assert (
-        h1["temperature_profile"]["base_temp_c"]
-        < h2["temperature_profile"]["base_temp_c"]
-        < h3["temperature_profile"]["base_temp_c"]
-    )
+    assert set(catalog["weather_profiles"]) == {
+        "generic_winter_design",
+        "generic_summer_typical",
+        "generic_heatwave_reference",
+    }
 
 
 def test_weather_profiles_have_daily_temperature_range():
@@ -61,4 +37,4 @@ def test_weather_profiles_have_client_descriptions():
     catalog = load_reference_catalog()
 
     for profile in catalog["weather_profiles"].values():
-        assert profile["client_description_fr"].strip()
+        assert profile["client_description"].strip()

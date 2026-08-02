@@ -9,6 +9,14 @@ def test_zip_resolution_returns_us_coordinates_timezone_and_uses_cache(tmp_path,
 
     def fake_request(url, params):
         calls.append((url, params))
+        if "geographies/coordinates" in url:
+            return {
+                "result": {
+                    "geographies": {
+                        "Counties": [{"GEOID": "08031", "BASENAME": "Denver"}],
+                    },
+                },
+            }
         return {
             "results": [
                 {
@@ -32,13 +40,23 @@ def test_zip_resolution_returns_us_coordinates_timezone_and_uses_cache(tmp_path,
     assert first == second
     assert first["city"] == "Denver"
     assert first["timezone"] == "America/Denver"
+    assert first["county"] == "Denver"
+    assert first["county_fips"] == "08031"
     assert first["geocoding_precision"] == "postal_code"
-    assert len(calls) == 1
+    assert len(calls) == 2
 
 
 def test_optional_address_uses_census_coordinates_and_coordinate_timezone(tmp_path, monkeypatch):
     def fake_request(url, params):
-        if "census" in url:
+        if "geographies/coordinates" in url:
+            return {
+                "result": {
+                    "geographies": {
+                        "Counties": [{"GEOID": "08031", "BASENAME": "Denver"}],
+                    },
+                },
+            }
+        if "locations/onelineaddress" in url:
             return {
                 "result": {
                     "addressMatches": [
@@ -66,6 +84,7 @@ def test_optional_address_uses_census_coordinates_and_coordinate_timezone(tmp_pa
     assert location["latitude"] == 39.740
     assert location["longitude"] == -104.991
     assert location["timezone"] == "America/Denver"
+    assert location["county_fips"] == "08031"
     assert location["geocoding_provider"] == "US Census Geocoder"
     assert location["geocoding_precision"] == "street_address"
 

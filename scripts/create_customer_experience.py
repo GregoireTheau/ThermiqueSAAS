@@ -20,20 +20,19 @@ from thermal_model import (  # noqa: E402
     build_report_model,
     compare_scenarios,
     ensure_openmeteo_thermal_weather,
+    get_climate_zone_for_county,
     get_weather_profile_reference,
     load_reference_catalog,
     render_report_html,
     resolve_scenario_weather_reference,
     resolve_dwelling_references,
+    resolve_us_location,
     resolve_weather_city,
     thermal_weather_ref,
     us_weather_ref,
     validate_dwelling,
     validate_scenario,
 )
-from thermal_model.reference_loader import ReferenceDataError  # noqa: E402
-
-
 ORIENTATIONS = {
     "N": ("north", 0, "North"),
     "NE": ("northeast", 45, "North-East"),
@@ -314,13 +313,6 @@ EXPERIMENT_SPECS = {
     },
 }
 
-CLIMATE_ZONES = [
-    {"id": "FR_H1a", "label": "North / cold East"},
-    {"id": "FR_H2b", "label": "West / temperate climate"},
-    {"id": "FR_H2c", "label": "South-West / warm temperate climate"},
-    {"id": "FR_H3", "label": "Mediterranean / warm climate"},
-]
-
 ROOF_TYPES = [
     {"id": "attic", "label": "Attic above the home"},
     {"id": "sloped_ceiling", "label": "Sloped roof above the home"},
@@ -485,11 +477,18 @@ def collect_customer_input(catalog: dict[str, Any]) -> dict[str, Any]:
     print()
 
     project_name = ask_text("Dwelling/project name", "my_dwelling")
-    city = ask_text("City", "Bordeaux")
-    postal_code = ask_text("Postal code", "33000")
-    climate_zone_id = infer_climate_zone(catalog, postal_code)
-    if not climate_zone_id:
-        climate_zone_id = choose_one("Approximate climate zone", CLIMATE_ZONES)["id"]
+    postal_code = ask_text("US ZIP code", "80202")
+    location = resolve_us_location(postal_code)
+    city = location["city"]
+    climate_zone_id = get_climate_zone_for_county(catalog, location["county_fips"])
+    climate_zone = catalog["climate_zones"][climate_zone_id]
+    location.update(
+        {
+            "climate_zone_id": climate_zone_id,
+            "climate_zone_code": climate_zone["code"],
+            "climate_zone_standard": "2021 IECC / ASHRAE 169-2013",
+        },
+    )
 
     dwelling_type = choose_one("Dwelling type", DWELLING_TYPES)
     position = choose_dwelling_position(dwelling_type["id"])
@@ -533,6 +532,7 @@ def collect_customer_input(catalog: dict[str, Any]) -> dict[str, Any]:
         "adjacency": adjacency,
         "city": city,
         "postal_code": postal_code,
+        "location": location,
         "climate_zone_id": climate_zone_id,
         "period_id": period["id"],
         "wall_insulation": wall_insulation,
@@ -620,14 +620,6 @@ def collect_floor_insulation(dwelling_type: str, dwelling_position: str) -> dict
 
 def option_by_id(options: list[dict[str, Any]], option_id: str) -> dict[str, Any]:
     return next(option for option in options if option["id"] == option_id)
-
-
-def infer_climate_zone(catalog: dict[str, Any], postal_code: str) -> str | None:
-    department_code = postal_code[:2]
-    try:
-        return catalog["department_zone_map"][department_code]["climate_zone_id"]
-    except (KeyError, ReferenceDataError):
-        return None
 
 
 def envelope_period_options(catalog: dict[str, Any]) -> list[dict[str, str]]:
@@ -1551,24 +1543,23 @@ def build_scenario_weather(
                 output_dir=annual_weather_dir,
             ),
         }
-    return build_weather(experiment_spec, dwelling["location"]["climate_zone_id"], catalog)
+    return build_weather(experiment_spec, catalog)
 
 
 def build_weather(
     experiment_spec: dict[str, Any],
-    climate_zone_id: str,
     catalog: dict[str, Any],
 ) -> dict[str, Any]:
     weather_variant = experiment_spec["weather_variant"]
     duration_days = experiment_spec["duration_days"]
-    default_profile = weather_profile_for_variant(climate_zone_id, weather_variant)
+    default_profile = weather_profile_for_variant(weather_variant)
 
     hourly = []
     for hour in range(duration_days * 24):
         day = hour // 24
         hour_in_day = hour % 24
         if weather_variant == "summer_long_with_heatwave" and 27 <= day <= 29:
-            profile_id = weather_profile_for_variant(climate_zone_id, "summer_heatwave")
+            profile_id = weather_profile_for_variant("summer_heatwave")
         else:
             profile_id = default_profile
         weather_profile = get_weather_profile_reference(catalog, profile_id)
@@ -1586,26 +1577,15 @@ def build_weather(
             "solar_irradiance_w_m2": solar_profile(weather_profile, hour_in_day),
         }
         hourly.append(weather_point)
-    return {"source": f"generated_{default_profile}_{climate_zone_id}", "hourly": hourly}
+    return {"source": f"generated_{default_profile}", "hourly": hourly}
 
 
-def weather_profile_for_variant(climate_zone_id: str, weather_variant: str) -> str:
-    climate_family = climate_family_for_zone(climate_zone_id)
+def weather_profile_for_variant(weather_variant: str) -> str:
     if weather_variant == "summer_heatwave":
-        profile_type = "heatwave_reference"
+        return "generic_heatwave_reference"
     elif weather_variant == "summer_long_with_heatwave":
-        profile_type = "summer_typical"
-    else:
-        profile_type = "winter_design"
-    return f"{climate_family}_{profile_type}"
-
-
-def climate_family_for_zone(climate_zone_id: str) -> str:
-    if climate_zone_id == "FR_H3":
-        return "H3"
-    if climate_zone_id.startswith("FR_H1"):
-        return "H1"
-    return "H2"
+        return "generic_summer_typical"
+    return "generic_winter_design"
 
 
 def month_for_weather_profile(weather_profile: dict[str, Any]) -> int:

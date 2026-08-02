@@ -25,7 +25,7 @@ REFERENCE_COLLECTIONS = {
     "ventilation": ("ventilation.json", "ventilation_types"),
     "heating_systems": ("heating_systems.json", "systems"),
     "cooling_systems": ("cooling_systems.json", "systems"),
-    "climate_zones": ("climate_zones_france.json", "climate_zones"),
+    "climate_zones": ("climate_zones_us.json", "climate_zones"),
     "weather_profiles": ("weather_profiles.json", "profiles"),
 }
 
@@ -54,7 +54,7 @@ def load_reference_catalog(
             )
         catalog[collection_name] = _index_by_id(items, f"{filename}.{list_key}")
 
-    _add_department_zone_map(catalog, loaded_files["climate_zones_france.json"])
+    _add_county_zone_map(catalog, loaded_files["climate_zones_us.json"])
     return catalog
 
 
@@ -148,17 +148,17 @@ def get_weather_profile_reference(
     return get_reference(catalog, "weather_profiles", profile_id)
 
 
-def get_climate_zone_for_department(
+def get_climate_zone_for_county(
     catalog: ReferenceCatalog,
-    department_code: str,
+    county_fips: str,
 ) -> str:
-    """Return the climate zone ID for a French department when available."""
-    department_map = catalog.get("department_zone_map", {})
-    if department_code not in department_map:
+    """Return the 2021 IECC climate zone ID for a US county FIPS code."""
+    county_map = catalog.get("county_zone_map", {})
+    if county_fips not in county_map:
         raise ReferenceDataError(
-            f"unknown climate zone for department {department_code}"
+            f"unknown 2021 IECC climate zone for county FIPS {county_fips}"
         )
-    return department_map[department_code]["climate_zone_id"]
+    return county_map[county_fips]["climate_zone_id"]
 
 
 def _load_reference_file(path: Path) -> dict[str, Any]:
@@ -186,22 +186,23 @@ def _index_by_id(items: list[dict[str, Any]], context: str) -> dict[str, Referen
     return indexed
 
 
-def _add_department_zone_map(
+def _add_county_zone_map(
     catalog: ReferenceCatalog,
     climate_data: dict[str, Any],
 ) -> None:
-    department_zone_map = climate_data.get("department_zone_map", {})
+    county_zone_map = climate_data.get("county_zone_map", {})
     indexed_map: dict[str, ReferenceItem] = {}
     climate_zones = catalog["climate_zones"]
 
-    for department_code, climate_zone_id in department_zone_map.items():
+    for county_fips, zone_code in county_zone_map.items():
+        climate_zone_id = f"US_IECC_2021_{zone_code}"
         if climate_zone_id not in climate_zones:
             raise ReferenceDataError(
-                f"department {department_code} references unknown zone {climate_zone_id}"
+                f"county {county_fips} references unknown zone {climate_zone_id}"
             )
-        indexed_map[department_code] = {
-            "id": department_code,
+        indexed_map[county_fips] = {
+            "id": county_fips,
             "climate_zone_id": climate_zone_id,
         }
 
-    catalog["department_zone_map"] = indexed_map
+    catalog["county_zone_map"] = indexed_map

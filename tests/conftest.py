@@ -13,6 +13,8 @@ def _offline_us_services(monkeypatch, tmp_path):
         "address": "",
         "city": "Denver",
         "state": "Colorado",
+        "county": "Denver",
+        "county_fips": "08031",
         "latitude": 39.7392,
         "longitude": -104.9903,
         "elevation_m": 1609.0,

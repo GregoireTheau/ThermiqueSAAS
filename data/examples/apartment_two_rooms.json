@@ -11,6 +11,8 @@
     "postal_code": "80202",
     "city": "Denver",
     "state": "Colorado",
+    "county": "Denver",
+    "county_fips": "08031",
     "address": "",
     "latitude": 39.7392,
     "longitude": -104.9903,
@@ -18,7 +20,9 @@
     "timezone": "America/Denver",
     "geocoding_provider": "example fixture",
     "geocoding_precision": "postal_code",
-    "climate_zone_id": "FR_H2c",
+    "climate_zone_id": "US_IECC_2021_5B",
+    "climate_zone_code": "5B",
+    "climate_zone_standard": "2021 IECC / ASHRAE 169-2013",
     "ground_albedo": 0.2
   },
   "defaults": {

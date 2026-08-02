@@ -111,7 +111,6 @@ def simulate_1r1c(
                 dwelling["defaults"]["internal_gain_w_m2"],
             ) * room["floor_area_m2"]
             solar_gain_w = _compute_room_solar_gain(
-                dwelling,
                 room,
                 weather_point,
                 scenario,
@@ -473,7 +472,6 @@ def _compute_coupling_powers(
 
 
 def _compute_room_solar_gain(
-    dwelling: dict[str, Any],
     room: dict[str, Any],
     weather_point: dict[str, Any],
     scenario: dict[str, Any],
@@ -483,14 +481,11 @@ def _compute_room_solar_gain(
         return 0.0
 
     shutter_opening_ratio = _shutter_opening_ratio(scenario, weather_point["hour"])
-    cloudiness_factor = _monthly_cloudiness_factor(dwelling, scenario, weather_point)
     solar_gain_w = 0.0
 
     for window in room["windows"]:
         orientation = _surface_orientation_key(window)
-        irradiance_w_m2 = (
-            irradiance_by_orientation.get(orientation, 0.0) * cloudiness_factor
-        )
+        irradiance_w_m2 = irradiance_by_orientation.get(orientation, 0.0)
         shutter_reduction_factor = 1.0
         if "shutter" in window:
             shutter_reduction_factor = shutter_factor(
@@ -512,9 +507,7 @@ def _compute_room_solar_gain(
         if "albedo" not in surface or "solar_to_room_factor" not in surface:
             continue
         orientation = _surface_orientation_key(surface)
-        irradiance_w_m2 = (
-            irradiance_by_orientation.get(orientation, 0.0) * cloudiness_factor
-        )
+        irradiance_w_m2 = irradiance_by_orientation.get(orientation, 0.0)
         solar_gain_w += opaque_solar_power_to_room(
             surface["area_m2"],
             irradiance_w_m2,
@@ -524,39 +517,6 @@ def _compute_room_solar_gain(
         )
 
     return solar_gain_w
-
-
-def _monthly_cloudiness_factor(
-    dwelling: dict[str, Any],
-    scenario: dict[str, Any],
-    weather_point: dict[str, Any],
-) -> float:
-    climate_zone_id = scenario.get("climate_zone_id")
-    month = weather_point.get("month")
-    if not climate_zone_id or not month:
-        return 1.0
-
-    climate_family = _climate_family(climate_zone_id)
-    if climate_family is None:
-        return 1.0
-
-    if month in {12, 1, 2}:
-        return {"H1": 0.25, "H2": 0.35, "H3": 0.45}[climate_family]
-    if month in {3, 4, 5, 9, 10, 11}:
-        return {"H1": 0.45, "H2": 0.55, "H3": 0.60}[climate_family]
-    if month in {6, 7, 8}:
-        return {"H1": 0.65, "H2": 0.70, "H3": 0.80}[climate_family]
-    return 1.0
-
-
-def _climate_family(climate_zone_id: str) -> str | None:
-    if climate_zone_id == "FR_H3":
-        return "H3"
-    if climate_zone_id.startswith("FR_H1"):
-        return "H1"
-    if climate_zone_id.startswith("FR_H2"):
-        return "H2"
-    return None
 
 
 def _surface_orientation_key(surface: dict[str, Any]) -> str:

@@ -94,15 +94,24 @@ Informations de localisation et orientation generale :
 
 ```json
 {
-  "country": "FR",
-  "postal_code": "33000",
-  "city": "Bordeaux",
-  "climate_zone_id": "FR_H2c",
+  "country": "US",
+  "postal_code": "80202",
+  "city": "Denver",
+  "state": "Colorado",
+  "county": "Denver",
+  "county_fips": "08031",
+  "latitude": 39.7392,
+  "longitude": -104.9903,
+  "timezone": "America/Denver",
+  "climate_zone_id": "US_IECC_2021_5B",
+  "climate_zone_code": "5B",
+  "climate_zone_standard": "2021 IECC / ASHRAE 169-2013",
   "ground_albedo": 0.2
 }
 ```
 
-`climate_zone_id` referencera plus tard une base `climate_zones_france.json`.
+La zone est résolue par comté depuis `climate_zones_us.json`. Elle décrit le
+contexte du code bâtiment et ne sélectionne ni ne corrige la météo locale.
 
 ### 3.5 `defaults`
 

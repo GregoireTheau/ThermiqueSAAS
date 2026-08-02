@@ -1,38 +1,10 @@
 {
   "schema_version": "0.1",
-  "data_quality": "synthetic_profiles_current_model_values_documented",
-  "description": "Synthetic fixed weather profiles used for repeatable commercial scenarios. Temperature values preserve the current model calibration; solar values preserve the current orientation irradiance profiles.",
+  "data_quality": "synthetic_profiles_for_repeatable_tests_only",
+  "description": "Location-independent synthetic stress profiles. Production annual simulations use local historical or TMY weather; IECC climate zones never select these profiles.",
   "profiles": [
     {
-      "id": "H1_winter_design",
-      "climate_family": "H1",
-      "profile_type": "winter_design",
-      "season": "winter",
-      "temperature_profile": {
-        "base_temp_c": 0.0,
-        "amplitude_c": 4.0,
-        "phase_hour": 8
-      },
-      "solar_profile": {
-        "mode": "winter_reference",
-        "north_peak_w_m2": 0.0,
-        "east_morning_peak_w_m2": 120.0,
-        "east_afternoon_peak_w_m2": 30.0,
-        "south_peak_w_m2": 280.0,
-        "west_morning_peak_w_m2": 30.0,
-        "west_afternoon_peak_w_m2": 120.0,
-        "roof_peak_w_m2": 240.0
-      },
-      "physical_rationale": "Dry cold week for H1 zones: daily average close to 0 C, -4/+4 C oscillation to test heat losses and heating power.",
-      "client_description_fr": "Reference cold weather for H1 zones, representative of a demanding winter week. It compares heating needs and comfort on a stable basis, identical for every file.",
-      "sources": [
-        "Values preserved from scripts/create_customer_experience.py before Phase 5 externalization",
-        "RT2012 H1 climate zoning defined by the order of October 26, 2010, appendix I"
-      ]
-    },
-    {
-      "id": "H2_winter_design",
-      "climate_family": "H2",
+      "id": "generic_winter_design",
       "profile_type": "winter_design",
       "season": "winter",
       "temperature_profile": {
@@ -50,70 +22,14 @@
         "west_afternoon_peak_w_m2": 120.0,
         "roof_peak_w_m2": 240.0
       },
-      "physical_rationale": "Temperate cold week for H2 zones: daily average at 3 C, keeping the same daily cycle as H1 to isolate the climate zone effect.",
-      "client_description_fr": "Reference winter weather for H2 zones, with moderate but lasting cold. It quantifies heating savings on a scenario comparable across projects.",
+      "physical_rationale": "Fixed winter stress profile retained only for deterministic tests and demonstrations.",
+      "client_description": "Synthetic winter stress scenario; it is not selected from a climate zone and is not used for the annual local-weather estimate.",
       "sources": [
-        "Values preserved from scripts/create_customer_experience.py before Phase 5 externalization",
-        "RT2012 H2 climate zoning defined by the order of October 26, 2010, appendix I"
+        "Values preserved from the former generic temperate test profile"
       ]
     },
     {
-      "id": "H3_winter_design",
-      "climate_family": "H3",
-      "profile_type": "winter_design",
-      "season": "winter",
-      "temperature_profile": {
-        "base_temp_c": 7.0,
-        "amplitude_c": 4.0,
-        "phase_hour": 8
-      },
-      "solar_profile": {
-        "mode": "winter_reference",
-        "north_peak_w_m2": 0.0,
-        "east_morning_peak_w_m2": 120.0,
-        "east_afternoon_peak_w_m2": 30.0,
-        "south_peak_w_m2": 280.0,
-        "west_morning_peak_w_m2": 30.0,
-        "west_afternoon_peak_w_m2": 120.0,
-        "roof_peak_w_m2": 240.0
-      },
-      "physical_rationale": "Mediterranean winter week for H3 zones: 7 C base, enough to test heating without overstating continental cold.",
-      "client_description_fr": "Reference winter weather for H3 zones, suited to Mediterranean climates. It gives a cautious basis for estimating heating needs without using an extreme cold spell.",
-      "sources": [
-        "Values preserved from scripts/create_customer_experience.py before Phase 5 externalization",
-        "RT2012 H3 climate zoning defined by the order of October 26, 2010, appendix I"
-      ]
-    },
-    {
-      "id": "H1_summer_typical",
-      "climate_family": "H1",
-      "profile_type": "summer_typical",
-      "season": "summer",
-      "temperature_profile": {
-        "base_temp_c": 22.5,
-        "amplitude_c": 5.0,
-        "phase_hour": 8
-      },
-      "solar_profile": {
-        "mode": "summer_reference",
-        "north_peak_w_m2": 80.0,
-        "east_morning_peak_w_m2": 520.0,
-        "east_afternoon_peak_w_m2": 160.0,
-        "south_peak_w_m2": 620.0,
-        "west_morning_peak_w_m2": 160.0,
-        "west_afternoon_peak_w_m2": 520.0,
-        "roof_peak_w_m2": 760.0
-      },
-      "physical_rationale": "Common summer day for H1 zones: 22.5 C average, 5 C amplitude, useful for separating normal summer comfort from a heatwave episode.",
-      "client_description_fr": "Typical summer weather for H1 zones. It shows expected comfort outside heatwaves and highlights the everyday effect of glazing, shutters, and inertia.",
-      "sources": [
-        "Values preserved from scripts/create_customer_experience.py before Phase 5 externalization",
-        "Synthetic solar profile by orientation preserved from the existing model"
-      ]
-    },
-    {
-      "id": "H2_summer_typical",
-      "climate_family": "H2",
+      "id": "generic_summer_typical",
       "profile_type": "summer_typical",
       "season": "summer",
       "temperature_profile": {
@@ -131,70 +47,14 @@
         "west_afternoon_peak_w_m2": 520.0,
         "roof_peak_w_m2": 760.0
       },
-      "physical_rationale": "Warm temperate summer day for H2 zones: 24.5 C average and 5.5 C amplitude, between H1 and H3 as in the existing profile.",
-      "client_description_fr": "Typical summer weather for H2 zones. It provides a common basis for comparing summer comfort solutions on a warm but non-exceptional scenario.",
+      "physical_rationale": "Fixed warm-day profile retained only for deterministic tests and demonstrations.",
+      "client_description": "Synthetic summer scenario; it is not selected from a climate zone and is not used for the annual local-weather estimate.",
       "sources": [
-        "Values preserved from scripts/create_customer_experience.py before Phase 5 externalization",
-        "Synthetic solar profile by orientation preserved from the existing model"
+        "Values preserved from the former generic temperate test profile"
       ]
     },
     {
-      "id": "H3_summer_typical",
-      "climate_family": "H3",
-      "profile_type": "summer_typical",
-      "season": "summer",
-      "temperature_profile": {
-        "base_temp_c": 26.0,
-        "amplitude_c": 6.0,
-        "phase_hour": 8
-      },
-      "solar_profile": {
-        "mode": "summer_reference",
-        "north_peak_w_m2": 80.0,
-        "east_morning_peak_w_m2": 520.0,
-        "east_afternoon_peak_w_m2": 160.0,
-        "south_peak_w_m2": 620.0,
-        "west_morning_peak_w_m2": 160.0,
-        "west_afternoon_peak_w_m2": 520.0,
-        "roof_peak_w_m2": 760.0
-      },
-      "physical_rationale": "Mediterranean summer day for H3 zones: 26 C average and 6 C amplitude to represent a hot summer outside an extreme episode.",
-      "client_description_fr": "Typical summer weather for H3 zones. It represents a hot Mediterranean summer and measures comfort gains before testing the heatwave.",
-      "sources": [
-        "Values preserved from scripts/create_customer_experience.py before Phase 5 externalization",
-        "Synthetic solar profile by orientation preserved from the existing model"
-      ]
-    },
-    {
-      "id": "H1_heatwave_reference",
-      "climate_family": "H1",
-      "profile_type": "heatwave_reference",
-      "season": "summer",
-      "temperature_profile": {
-        "base_temp_c": 26.5,
-        "amplitude_c": 6.0,
-        "phase_hour": 8
-      },
-      "solar_profile": {
-        "mode": "summer_reference",
-        "north_peak_w_m2": 80.0,
-        "east_morning_peak_w_m2": 520.0,
-        "east_afternoon_peak_w_m2": 160.0,
-        "south_peak_w_m2": 620.0,
-        "west_morning_peak_w_m2": 160.0,
-        "west_afternoon_peak_w_m2": 520.0,
-        "roof_peak_w_m2": 760.0
-      },
-      "physical_rationale": "Reference H1 heatwave: 26.5 C average, peaks around 32.5 C, consistent with a significant hot episode in northern/eastern zones.",
-      "client_description_fr": "Reference heatwave for H1 zones. This scenario tests the dwelling's ability to limit overheating during an unusual but plausible hot episode.",
-      "sources": [
-        "Values preserved from scripts/create_customer_experience.py before Phase 5 externalization",
-        "Profile calibrated as a commercial heatwave scenario, not as a local historical weather file"
-      ]
-    },
-    {
-      "id": "H2_heatwave_reference",
-      "climate_family": "H2",
+      "id": "generic_heatwave_reference",
       "profile_type": "heatwave_reference",
       "season": "summer",
       "temperature_profile": {
@@ -212,38 +72,10 @@
         "west_afternoon_peak_w_m2": 520.0,
         "roof_peak_w_m2": 760.0
       },
-      "physical_rationale": "Reference H2 heatwave: 29 C average, peaks around 36 C, representing a marked hot episode in temperate zones.",
-      "client_description_fr": "Reference heatwave for H2 zones. It objectively compares solar protection, insulation, and cooling solutions under severe summer stress.",
+      "physical_rationale": "Fixed severe heat profile retained only for deterministic stress tests and demonstrations.",
+      "client_description": "Synthetic heatwave stress scenario; it is not selected from a climate zone and is not used for the annual local-weather estimate.",
       "sources": [
-        "Values preserved from scripts/create_customer_experience.py before Phase 5 externalization",
-        "Profile calibrated as a commercial heatwave scenario, not as a local historical weather file"
-      ]
-    },
-    {
-      "id": "H3_heatwave_reference",
-      "climate_family": "H3",
-      "profile_type": "heatwave_reference",
-      "season": "summer",
-      "temperature_profile": {
-        "base_temp_c": 31.0,
-        "amplitude_c": 8.0,
-        "phase_hour": 8
-      },
-      "solar_profile": {
-        "mode": "summer_reference",
-        "north_peak_w_m2": 80.0,
-        "east_morning_peak_w_m2": 520.0,
-        "east_afternoon_peak_w_m2": 160.0,
-        "south_peak_w_m2": 620.0,
-        "west_morning_peak_w_m2": 160.0,
-        "west_afternoon_peak_w_m2": 520.0,
-        "roof_peak_w_m2": 760.0
-      },
-      "physical_rationale": "Reference Mediterranean heatwave: 31 C average, 8 C amplitude, with peaks close to 39 C to test summer comfort limits.",
-      "client_description_fr": "Reference heatwave for H3 zones. This is the most demanding scenario: it highlights overheating risks and the concrete impact of shutters, blinds, roofing, and air conditioning.",
-      "sources": [
-        "Values preserved from scripts/create_customer_experience.py before Phase 5 externalization",
-        "Profile calibrated as a commercial Mediterranean heatwave scenario, close to the orders of magnitude observed during episodes like summer 2003"
+        "Values preserved from the former generic temperate test profile"
       ]
     }
   ]

@@ -95,7 +95,7 @@ Valeurs par période de construction :
 | `1975_1988_basic_insulation` | 175000 |
 | `1989_2000_improved_insulation` | 165000 |
 | `2001_2012_good_insulation` | 160000 |
-| `rt2012_or_later` | 155000 |
+| `2013_or_later_high_efficiency` | 155000 |
 
 Remarque : cette capacité est une inertie équivalente globale par m2. Le modèle ne distingue pas explicitement air, murs internes, mobilier et structure.
 
@@ -172,7 +172,7 @@ Valeurs U de base, avant correction par niveau d’isolation :
 | `1975_1988_basic_insulation` | 1.00 | 0.70 | 0.80 | 0.15 |
 | `1989_2000_improved_insulation` | 0.65 | 0.40 | 0.55 | 0.12 |
 | `2001_2012_good_insulation` | 0.45 | 0.28 | 0.40 | 0.10 |
-| `rt2012_or_later` | 0.28 | 0.18 | 0.25 | 0.06 |
+| `2013_or_later_high_efficiency` | 0.28 | 0.18 | 0.25 | 0.06 |
 
 Unités U : W/m2.K.
 
@@ -273,21 +273,14 @@ shutter_factor = closed_factor + opening_ratio * (open_factor - closed_factor)
 Le gain solaire par fenêtre est :
 
 ```text
-Phi_solar_window = A_window * Irradiance_orientation * cloudiness_factor * g_value * shutter_factor * mask_factor
+Phi_solar_window = A_window * Irradiance_orientation * g_value * shutter_factor * mask_factor
 ```
 
 avec `mask_factor` borné entre 0 et 1 dans les fonctions solaires.
 
-Le facteur de nébulosité est appliqué dans le moteur au moment du calcul des
-apports solaires. Les fichiers météo conservent donc les irradiances brutes.
-Si la météo horaire ne fournit pas le mois, ou si le scénario ne fournit pas
-`climate_zone_id`, le facteur vaut `1.0`.
-
-| Mois | H1 | H2 | H3 |
-|---|---:|---:|---:|
-| Décembre, janvier, février | 0.25 | 0.35 | 0.45 |
-| Mars, avril, mai, septembre, octobre, novembre | 0.45 | 0.55 | 0.60 |
-| Juin, juillet, août | 0.65 | 0.70 | 0.80 |
+Le moteur applique directement l'irradiance du fichier météo local. La zone
+IECC/ASHRAE est une métadonnée de contexte bâtiment et ne modifie ni la
+température ni le rayonnement météo.
 
 ## 8. Apports Solaires Opaques
 
@@ -297,7 +290,7 @@ Formules :
 
 ```text
 absorptivity = 1 - albedo
-Phi_absorbed = A_surface * Irradiance_orientation * cloudiness_factor * mask_factor * absorptivity
+Phi_absorbed = A_surface * Irradiance_orientation * mask_factor * absorptivity
 Phi_opaque_to_room = solar_to_room_factor * Phi_absorbed
 ```
 
@@ -662,29 +655,13 @@ Température extérieure :
 T_out = base_temp + amplitude * sin(2*pi*(hour_in_day - 8)/24)
 ```
 
-Profils été canicule :
+Les trois profils synthétiques fixes sont indépendants de la zone climatique :
 
-| Zone | Base | Amplitude |
+| Profil | Base | Amplitude |
 |---|---:|---:|
-| `FR_H3` | 31.0 | 8.0 |
-| `FR_H1*` | 26.5 | 6.0 |
-| autres | 29.0 | 7.0 |
-
-Profils été typique :
-
-| Zone | Base | Amplitude |
-|---|---:|---:|
-| `FR_H3` | 26.0 | 6.0 |
-| `FR_H1*` | 22.5 | 5.0 |
-| autres | 24.5 | 5.5 |
-
-Profils hiver :
-
-| Zone | Base | Amplitude |
-|---|---:|---:|
-| `FR_H1*` | 0.0 | 4.0 |
-| `FR_H3` | 7.0 | 4.0 |
-| autres | 3.0 | 4.0 |
+| `generic_heatwave_reference` | 29.0 | 7.0 |
+| `generic_summer_typical` | 24.5 | 5.5 |
+| `generic_winter_design` | 3.0 | 4.0 |
 
 Irradiance synthétique hiver :
 

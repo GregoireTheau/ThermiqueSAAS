@@ -10,6 +10,7 @@ The product is intentionally positioned as a sales-support tool. It is not an EP
 - Guides the user through a roof-insulation questionnaire: home type, heating system, heating setpoint, existing wall and roof insulation, roof/attic type, roof color, ventilation, airtightness, and rooms under the roof.
 - Runs before/after simulations for roof insulation, with the annual real-weather report as the primary commercial output.
 - Resolves US ZIP codes or optional street addresses to coordinates and an IANA timezone, without a default fallback location.
+- Resolves the 2021 IECC / ASHRAE 169-2013 building-code climate zone from the Census county FIPS; this metadata never selects or adjusts local weather.
 - Uses a pinned NSRDB typical meteorological year for the primary annual estimate, or an explicitly selected Open-Meteo historical year.
 - Estimates annual heating demand reduction, final heating energy impact, cost savings, and supporting comfort indicators.
 - Generates HTML reports and server-side PDF exports.

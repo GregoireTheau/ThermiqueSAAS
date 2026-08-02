@@ -42,7 +42,8 @@
       }
     },
     "climate_zone_id": {
-      "$ref": "#/$defs/id"
+      "type": "string",
+      "pattern": "^US_IECC_2021_(?:[1-6](?:A|B|C)?|7|8)$"
     },
     "setpoints": {
       "$ref": "#/$defs/setpoints"

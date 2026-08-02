@@ -73,7 +73,7 @@ def _build_dwelling(case):
             "country": "FR",
             "postal_code": "33000",
             "city": "Reference",
-            "climate_zone_id": "FR_H2c",
+            "climate_zone_id": "US_IECC_2021_3A",
             "ground_albedo": 0.2,
         },
         "defaults": {
@@ -136,7 +136,10 @@ def _build_scenario(case):
         "description": case["physical_comment"],
         "timestep_h": 1.0,
         "initial_temperatures_c": {"main_room": case["initial_temperature_c"]},
-        "climate_zone_id": scenario_data.get("climate_zone_id", "FR_H2c"),
+        "climate_zone_id": scenario_data.get(
+            "climate_zone_id",
+            "US_IECC_2021_3A",
+        ),
         "setpoints": {
             "heating_c": scenario_data["heating_c"],
             "cooling_c": scenario_data["cooling_c"],
@@ -213,7 +216,9 @@ def test_reference_cases_keep_expected_physical_ordering():
         )
 
     assert (
-        results_by_case["rt2012_house_winter"]["totals"]["heating_electric_kwh"]
+        results_by_case["modern_high_efficiency_house_winter"]["totals"][
+            "heating_electric_kwh"
+        ]
         < results_by_case["seventies_house_winter"]["totals"]["heating_electric_kwh"]
     )
     assert (

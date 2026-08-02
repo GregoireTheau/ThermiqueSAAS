@@ -177,18 +177,6 @@ DEPARTMENT_WEATHER_CITY = {
     "95": "Paris",
 }
 
-CLIMATE_ZONE_WEATHER_CITY = {
-    "FR_H1a": "Lille",
-    "FR_H1b": "Strasbourg",
-    "FR_H1c": "Lyon",
-    "FR_H2a": "Rennes",
-    "FR_H2b": "Nantes",
-    "FR_H2c": "Bordeaux",
-    "FR_H2d": "Toulouse",
-    "FR_H3": "Marseille",
-}
-
-
 def city_coordinates(city: str) -> tuple[float, float]:
     """Return coordinates for a supported French key city."""
     try:
@@ -206,9 +194,8 @@ def city_slug(city: str) -> str:
 def resolve_weather_city(
     city: str | None,
     postal_code: str | None = None,
-    climate_zone_id: str | None = None,
 ) -> dict[str, str]:
-    """Map a user city/postal code/zone to the closest supported weather city."""
+    """Map legacy French input to a supported city without climate-zone fallback."""
     normalized_city = _normalize_city(city or "")
     supported_by_normalized = {
         _normalize_city(supported_city): supported_city
@@ -230,18 +217,9 @@ def resolve_weather_city(
             "match_mode": "department",
         }
 
-    if climate_zone_id in CLIMATE_ZONE_WEATHER_CITY:
-        return {
-            "requested_city": city or "",
-            "weather_city": CLIMATE_ZONE_WEATHER_CITY[climate_zone_id],
-            "match_mode": "climate_zone",
-        }
-
-    return {
-        "requested_city": city or "",
-        "weather_city": "Paris",
-        "match_mode": "default",
-    }
+    raise ValueError(
+        "A supported city or postal-code mapping is required; climate zones do not select weather.",
+    )
 
 
 def thermal_weather_ref(

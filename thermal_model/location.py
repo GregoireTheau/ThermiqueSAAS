@@ -16,6 +16,9 @@ OPEN_METEO_GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 CENSUS_GEOCODING_URL = (
     "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
 )
+CENSUS_GEOGRAPHIES_URL = (
+    "https://geocoding.geo.census.gov/geocoder/geographies/coordinates"
+)
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 US_ZIP_RE = re.compile(r"^\d{5}(?:-\d{4})?$")
 
@@ -50,6 +53,13 @@ def resolve_us_location(
         )
     else:
         location = _resolve_zip_with_open_meteo(normalized_zip)
+
+    location.update(
+        _county_for_coordinates(
+            location["latitude"],
+            location["longitude"],
+        ),
+    )
 
     location.update(
         {
@@ -156,6 +166,34 @@ def _timezone_for_coordinates(latitude: float, longitude: float) -> str:
     return str(timezone)
 
 
+def _county_for_coordinates(latitude: float, longitude: float) -> dict[str, str]:
+    payload = _request_json(
+        CENSUS_GEOGRAPHIES_URL,
+        {
+            "x": longitude,
+            "y": latitude,
+            "benchmark": "Public_AR_Current",
+            "vintage": "Current_Current",
+            "format": "json",
+        },
+    )
+    counties = payload.get("result", {}).get("geographies", {}).get("Counties", [])
+    if not counties:
+        raise LocationResolutionError(
+            "A US county could not be resolved for this location.",
+        )
+    county = counties[0]
+    county_fips = str(county.get("GEOID", ""))
+    if len(county_fips) != 5 or not county_fips.isdigit():
+        raise LocationResolutionError(
+            "A valid US county FIPS code could not be resolved for this location.",
+        )
+    return {
+        "county": str(county.get("BASENAME") or county.get("NAME") or ""),
+        "county_fips": county_fips,
+    }
+
+
 def _request_json(url: str, params: dict[str, Any]) -> dict[str, Any]:
     request_url = f"{url}?{urlencode(params)}"
     try:
@@ -171,7 +209,7 @@ def _location_cache_path(
     cache_dir: str | Path,
 ) -> Path:
     cache_key = sha256(f"{postal_code}|{address.lower()}".encode()).hexdigest()[:20]
-    return Path(cache_dir) / f"us_{postal_code[:5]}_{cache_key}.json"
+    return Path(cache_dir) / f"us_v2_{postal_code[:5]}_{cache_key}.json"
 
 
 def _optional_float(value: Any) -> float | None:

@@ -146,6 +146,8 @@ def test_historical_weather_choice_is_dated_and_traced_in_report():
     assert annual["report"]["methodology"]["engine_version"] == "1r1c-mvp-0.1"
     assert "Historical weather year 2022" in annual["report_html"]
     assert "39.7, -105.0 (shared 0.1° cell)" in annual["report_html"]
+    assert "Zone 5B" in annual["report_html"]
+    assert "building-code metadata only" in annual["report_html"]
     assert "test-weather-sha" in annual["report_html"]
 
 

@@ -22,7 +22,7 @@ def _dwelling(
             "country": "FR",
             "postal_code": "33000",
             "city": "Reference",
-            "climate_zone_id": "FR_H2c",
+            "climate_zone_id": "US_IECC_2021_3A",
             "ground_albedo": 0.2,
         },
         "defaults": {

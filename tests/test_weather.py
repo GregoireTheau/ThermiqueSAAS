@@ -1,6 +1,7 @@
 import json
 
 import pandas as pd
+import pytest
 
 from thermal_model.weather import (
     _parse_nsrdb_csv,
@@ -43,22 +44,23 @@ def test_city_coordinates_accept_supported_city():
     assert city_coordinates("Biarritz") == (43.4832, -1.5586)
 
 
-def test_resolve_weather_city_uses_exact_department_then_climate_zone():
-    assert resolve_weather_city("Bordeaux", "33000", "FR_H2c") == {
+def test_resolve_weather_city_never_uses_climate_zone_as_weather_fallback():
+    assert resolve_weather_city("Bordeaux", "33000") == {
         "requested_city": "Bordeaux",
         "weather_city": "Bordeaux",
         "match_mode": "exact_city",
     }
-    assert resolve_weather_city("Toulon", "83000", "FR_H3") == {
+    assert resolve_weather_city("Toulon", "83000") == {
         "requested_city": "Toulon",
         "weather_city": "Toulon",
         "match_mode": "exact_city",
     }
-    assert resolve_weather_city("Ville inconnue", "83000", "FR_H3")["weather_city"] == "Toulon"
-    assert resolve_weather_city("Ville inconnue", "29000", "FR_H2a")["weather_city"] == "Brest"
-    assert resolve_weather_city("Ville inconnue", "2A000", "FR_H3")["weather_city"] == "Ajaccio"
-    assert resolve_weather_city("Angers", "49000", "FR_H2b")["weather_city"] == "Nantes"
-    assert resolve_weather_city("Ville inconnue", "", "FR_H2b")["weather_city"] == "Nantes"
+    assert resolve_weather_city("Ville inconnue", "83000")["weather_city"] == "Toulon"
+    assert resolve_weather_city("Ville inconnue", "29000")["weather_city"] == "Brest"
+    assert resolve_weather_city("Ville inconnue", "2A000")["weather_city"] == "Ajaccio"
+    assert resolve_weather_city("Angers", "49000")["weather_city"] == "Nantes"
+    with pytest.raises(ValueError, match="climate zones do not select weather"):
+        resolve_weather_city("Unknown", "")
 
 
 def test_resolve_weather_city_maps_all_metropolitan_departments():
@@ -72,11 +74,10 @@ def test_resolve_weather_city_maps_all_metropolitan_departments():
     unresolved = [
         department
         for department in department_codes
-        if resolve_weather_city(
-            "Ville inconnue",
-            f"{department}000",
-            None,
-        )["match_mode"] != "department"
+            if resolve_weather_city(
+                "Ville inconnue",
+                f"{department}000",
+            )["match_mode"] != "department"
     ]
 
     assert unresolved == []
