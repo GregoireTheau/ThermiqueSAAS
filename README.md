@@ -223,6 +223,9 @@ upload fails, so the failed execution remains visible in Railway. Configure an
 object lifecycle rule on the S3 provider to delete backups after the chosen
 retention period; 30 days is appropriate for the private beta.
 
+The manual backup, R2 retention, restore-verification procedure, and latest test
+record are documented in [docs/BackupRestore.md](docs/BackupRestore.md).
+
 See `.env.example` for placeholders. Real secrets, local `.env` files, generated SQLite databases, weather caches, and outputs are intentionally ignored by Git.
 
 ## Deployment Notes
