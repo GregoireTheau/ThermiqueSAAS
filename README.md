@@ -206,6 +206,23 @@ THERMAL_BACKUP_S3_ACCESS_KEY_ID
 THERMAL_BACKUP_S3_SECRET_ACCESS_KEY
 ```
 
+### Automated Railway backups
+
+Keep the S3 credentials on the web service and create a separate Railway cron
+service from the same repository. Configure it with:
+
+```text
+Start Command: python scripts/run_scheduled_backup.py
+Cron Schedule: 0 3 * * *
+THERMAL_BACKUP_TRIGGER_URL=https://${{thermal-saas-beta.RAILWAY_PUBLIC_DOMAIN}}/admin/backups
+THERMAL_SAAS_ADMIN_TOKEN=${{thermal-saas-beta.THERMAL_SAAS_ADMIN_TOKEN}}
+```
+
+Railway cron schedules use UTC. The process exits non-zero when the endpoint or
+upload fails, so the failed execution remains visible in Railway. Configure an
+object lifecycle rule on the S3 provider to delete backups after the chosen
+retention period; 30 days is appropriate for the private beta.
+
 See `.env.example` for placeholders. Real secrets, local `.env` files, generated SQLite databases, weather caches, and outputs are intentionally ignored by Git.
 
 ## Deployment Notes
