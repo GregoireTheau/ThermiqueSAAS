@@ -689,10 +689,10 @@
     ]
   },
   "energy_prices": {
-    "electricity_eur_kwh": 0.25
+    "electricity_usd_kwh": 0.18
   },
   "co2_factors": {
-    "electricity_kg_kwh": 0.06
+    "electricity_kg_kwh": 0.0
   },
   "scenario_id": "commercial_winter_7d_electric_heating_before",
   "description": "Experience commerciale hiver 7 jours avant PAC: chauffage electrique direct.",
@@ -701,7 +701,7 @@
       {
         "category": "heating",
         "system_id": "living_heat_pump_unit",
-        "type": "electric_radiator",
+        "type": "electric_resistance",
         "energy_vector": "electricity",
         "max_power_w": 3500,
         "performance_ref": {

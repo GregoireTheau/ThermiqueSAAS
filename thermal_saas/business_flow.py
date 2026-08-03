@@ -217,12 +217,24 @@ def build_customer(
             "Historical weather year must be a complete year from 1940 onward.",
         )
 
-    heating_setpoint_c = float(answers.get("heating_setpoint_c", 19.0))
-    cooling_setpoint_day_c = float(
-        answers.get("cooling_setpoint_day_c", answers.get("cooling_setpoint_c", 26.0)),
+    heating_setpoint_c = _temperature_answer_c(
+        answers,
+        "heating_setpoint_f",
+        "heating_setpoint_c",
+        68.0,
     )
-    cooling_setpoint_night_c = float(
-        answers.get("cooling_setpoint_night_c", cooling_setpoint_day_c),
+    cooling_setpoint_day_c = _temperature_answer_c(
+        answers,
+        "cooling_setpoint_day_f",
+        "cooling_setpoint_day_c",
+        float(answers.get("cooling_setpoint_f", 78.0)),
+        legacy_fallback_key="cooling_setpoint_c",
+    )
+    cooling_setpoint_night_c = _temperature_answer_c(
+        answers,
+        "cooling_setpoint_night_f",
+        "cooling_setpoint_night_c",
+        (cooling_setpoint_day_c * 9.0 / 5.0) + 32.0,
     )
     cooling_setpoint_c = cooling_setpoint_day_c
     _validate_setpoint(heating_setpoint_c, "heating_setpoint_c")
@@ -446,16 +458,9 @@ def _change_details(adaptation_id: str, answers: dict[str, Any]) -> dict[str, An
             ),
         }
     if adaptation_id == "heat_pump":
-        _require_fields(answers, ["current_energy_id", "heat_emitters_id"])
+        _require_fields(answers, ["current_heating_ref"])
         return {
-            "current_energy": _option_by_id(
-                customer_experience.HEAT_PUMP_CURRENT_ENERGIES,
-                answers["current_energy_id"],
-            ),
-            "heat_emitters": _option_by_id(
-                customer_experience.HEAT_EMITTERS,
-                answers["heat_emitters_id"],
-            ),
+            "current_heating_ref": answers["current_heating_ref"],
         }
     return {}
 
@@ -498,6 +503,8 @@ def _building_characteristics(
         )
     if profile_id == "roof_insulation_seller":
         _require_fields(answers, ["proposed_roof_r_value"])
+    if profile_id == "heat_pump_seller":
+        _require_fields(answers, ["hvac_duct_location_id"])
     roof_assembly = _option_by_id(
         customer_experience.ROOF_ASSEMBLIES,
         answers.get("roof_assembly_id", "vented_attic_ceiling"),
@@ -551,50 +558,60 @@ def _r_value(value: Any, field_name: str) -> float:
 
 def _initial_heating_ref(profile_id: str, answers: dict[str, Any]) -> str:
     if profile_id != "heat_pump_seller":
-        return answers.get("heating_ref", "electric_radiator")
+        return answers.get("heating_ref", "electric_resistance")
 
-    _require_fields(answers, ["current_energy_id", "heat_emitters_id"])
-    current_energy_id = answers["current_energy_id"]
-    heat_emitters_id = answers["heat_emitters_id"]
-    if current_energy_id == "gas":
-        return "gas_boiler_standard"
-    if current_energy_id == "fuel_oil":
-        return "fuel_oil_boiler_standard"
-    if current_energy_id == "wood":
-        return "wood_stove_standard"
-    if current_energy_id == "electricity" and heat_emitters_id == "air_units":
-        return "air_air_heat_pump_standard"
-    return "electric_radiator"
+    _require_fields(answers, ["current_heating_ref"])
+    return answers["current_heating_ref"]
 
 
 def _energy_prices(answers: dict[str, Any]) -> dict[str, float]:
-    heating_ref = answers.get("heating_ref", "electric_radiator")
-    energy = _heating_energy_vector(heating_ref)
     default_prices = {
-        "electricity": 0.25,
-        "gas": 0.11,
-        "fuel_oil": 0.13,
-        "wood": 0.07,
+        "electricity_usd_kwh": 0.18,
+        "natural_gas_usd_therm": 1.50,
+        "propane_usd_gallon": 2.50,
     }
-    price = answers.get("heating_energy_price_eur_kwh")
-    if price in (None, ""):
-        price = default_prices[energy]
-    price = float(price)
-    if price <= 0:
-        raise BusinessFlowError("The heating energy price must be strictly positive.")
-    prices = {"electricity_eur_kwh": default_prices["electricity"]}
-    prices[f"{energy}_eur_kwh"] = price
-    return prices
+    prices = {
+        "electricity_usd_kwh": answers.get(
+            "electricity_price_usd_kwh",
+            default_prices["electricity_usd_kwh"],
+        ),
+        "natural_gas_usd_therm": answers.get(
+            "natural_gas_price_usd_therm",
+            default_prices["natural_gas_usd_therm"],
+        ),
+        "propane_usd_gallon": answers.get(
+            "propane_price_usd_gallon",
+            default_prices["propane_usd_gallon"],
+        ),
+    }
+    normalized = {key: float(value) for key, value in prices.items()}
+    if any(value <= 0 for value in normalized.values()):
+        raise BusinessFlowError("Energy prices must be strictly positive.")
+    return normalized
 
 
 def _heating_energy_vector(heating_ref: str) -> str:
-    if heating_ref.startswith("gas_"):
-        return "gas"
-    if heating_ref.startswith("fuel_oil_"):
-        return "fuel_oil"
-    if heating_ref.startswith("wood_"):
-        return "wood"
+    if heating_ref.startswith("natural_gas_"):
+        return "natural_gas"
+    if heating_ref.startswith("propane_"):
+        return "propane"
     return "electricity"
+
+
+def _temperature_answer_c(
+    answers: dict[str, Any],
+    fahrenheit_key: str,
+    celsius_key: str,
+    default_f: float,
+    legacy_fallback_key: str | None = None,
+) -> float:
+    if fahrenheit_key in answers and answers[fahrenheit_key] not in (None, ""):
+        return (float(answers[fahrenheit_key]) - 32.0) * 5.0 / 9.0
+    if legacy_fallback_key and legacy_fallback_key in answers:
+        return float(answers[legacy_fallback_key])
+    if celsius_key in answers and answers[celsius_key] not in (None, ""):
+        return float(answers[celsius_key])
+    return (default_f - 32.0) * 5.0 / 9.0
 
 
 def _normalize_room(
@@ -609,7 +626,9 @@ def _normalize_room(
     if floor_area_m2 <= 0:
         raise BusinessFlowError(f"rooms[{index}].floor_area_m2 must be > 0.")
     if height_m < 1.8 or height_m > 5.0:
-        raise BusinessFlowError(f"rooms[{index}].height_m must be between 1.8 m and 5.0 m.")
+        raise BusinessFlowError(
+            f"rooms[{index}].height_m: ceiling height must be between 5.9 ft and 16.4 ft."
+        )
 
     room_id = room.get("id") or customer_experience.slugify(room["name"], f"room_{index}")
     exterior_contact = room.get("exterior_contact", "exterior")
@@ -714,7 +733,8 @@ def _normalize_facade(
     gross_facade_area = wall_length_m * room_height_m
     if window_area > gross_facade_area:
         raise BusinessFlowError(
-            f"rooms[{room_index}].facades[{facade_index}].window_area_m2 cannot exceed the facade area ({gross_facade_area:.2f} m²)."
+            f"rooms[{room_index}].facades[{facade_index}].window_area_m2: "
+            "glazing area cannot exceed its facade area."
         )
     return {
         "orientation": orientation,
@@ -793,7 +813,7 @@ def _option_by_id(options: list[dict[str, Any]], option_id: str) -> dict[str, An
 
 def _validate_setpoint(value: float, field_name: str) -> None:
     if value < 10 or value > 35:
-        raise BusinessFlowError(f"{field_name} must be between 10 °C and 35 °C.")
+        raise BusinessFlowError(f"{field_name} must be between 50 °F and 95 °F.")
 
 
 def _float_field(value: Any, field_name: str) -> float:

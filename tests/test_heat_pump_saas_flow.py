@@ -8,10 +8,9 @@ def _answers():
         "dwelling_type": "house",
         "position_id": "single_storey_house",
         "construction_era_id": "us_2000_2009",
-        "current_energy_id": "electricity",
-        "heating_ref": "electric_radiator",
-        "heat_emitters_id": "electric_radiators",
-        "heating_setpoint_c": 19.0,
+        "current_heating_ref": "natural_gas_furnace_standard",
+        "hvac_duct_location_id": "vented_attic",
+        "heating_setpoint_f": 68.0,
         "rooms": [
             {
                 "name": "Salon",
@@ -38,8 +37,8 @@ def test_heat_pump_questionnaire_only_exposes_heat_pump_adaptation():
         for question in section["questions"]
     ]
 
-    assert "current_energy_id" in question_ids
-    assert "heat_emitters_id" in question_ids
+    assert "current_heating_ref" in question_ids
+    assert "hvac_duct_location_id" in question_ids
     assert "rooms" in question_ids
 
 

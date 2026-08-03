@@ -145,7 +145,7 @@ def test_customer_facade_dimensions_masks_and_roof_details_feed_dwelling():
         "ventilation_id": "simple_flow",
         "window_ref": "double_glazing_standard",
         "shutter_ref": "roller_shutter_standard",
-        "heating_ref": "electric_radiator",
+        "heating_ref": "electric_resistance",
         "has_cooling": False,
         "thermal_layout": {"type": "single_room", "connections": []},
         "change_details": {

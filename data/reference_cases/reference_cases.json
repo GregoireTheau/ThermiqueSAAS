@@ -70,7 +70,7 @@
       ],
       "systems": {
         "heating": {
-          "type": "electric_radiator",
+          "type": "electric_resistance",
           "max_power_w": 6000,
           "cop": 1.0
         },
@@ -155,7 +155,7 @@
       ],
       "systems": {
         "heating": {
-          "type": "electric_radiator",
+          "type": "electric_resistance",
           "max_power_w": 6000,
           "cop": 1.0
         },
@@ -1014,7 +1014,7 @@
       ],
       "systems": {
         "heating": {
-          "type": "electric_radiator",
+          "type": "electric_resistance",
           "max_power_w": 9000,
           "cop": 1.0
         },
@@ -1104,7 +1104,7 @@
       ],
       "systems": {
         "heating": {
-          "type": "electric_radiator",
+          "type": "electric_resistance",
           "max_power_w": 8000,
           "cop": 1.0
         },
@@ -1182,7 +1182,7 @@
       ],
       "systems": {
         "heating": {
-          "type": "electric_radiator",
+          "type": "electric_resistance",
           "max_power_w": 8000,
           "cop": 1.0
         },
@@ -1260,7 +1260,7 @@
       ],
       "systems": {
         "heating": {
-          "type": "electric_radiator",
+          "type": "electric_resistance",
           "max_power_w": 8000,
           "cop": 1.0
         },

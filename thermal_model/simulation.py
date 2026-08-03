@@ -27,6 +27,8 @@ from .static_losses import compute_room_static_losses
 
 DISCOMFORT_COLD_THRESHOLD_C = 19.0
 DISCOMFORT_HOT_THRESHOLD_C = 26.0
+KWH_PER_NATURAL_GAS_THERM = 29.308324
+KWH_PER_PROPANE_GALLON = 26.803048
 
 
 def simulate_1r1c(
@@ -231,9 +233,9 @@ def simulate_1r1c(
     )
     totals["final_energy_kwh_by_energy"] = final_energy_kwh_by_energy
     totals["final_energy_kwh"] = sum(final_energy_kwh_by_energy.values())
-    totals["energy_cost_eur"] = _energy_cost(final_energy_kwh_by_energy, scenario)
+    totals["energy_cost_usd"] = _energy_cost(final_energy_kwh_by_energy, scenario)
     totals["energy_co2_kg"] = _energy_co2(final_energy_kwh_by_energy, scenario)
-    totals["electricity_cost_eur"] = (
+    totals["electricity_cost_usd"] = (
         electricity_kwh * _energy_price(scenario, "electricity")
     )
     totals["electricity_co2_kg"] = (
@@ -637,6 +639,10 @@ def _heating_energy_vector(system: dict[str, Any]) -> str:
     if "energy_vector" in system:
         return system["energy_vector"]
     system_ref = system.get("system_ref", "")
+    if "natural_gas" in system_ref:
+        return "natural_gas"
+    if "propane" in system_ref:
+        return "propane"
     if "gas" in system_ref:
         return "gas"
     if "fuel_oil" in system_ref:
@@ -674,22 +680,31 @@ def _energy_co2(energy_kwh_by_energy: dict[str, float], scenario: dict[str, Any]
 
 def _energy_price(scenario: dict[str, Any], energy: str) -> float:
     defaults = {
-        "electricity": 0.25,
-        "gas": 0.11,
-        "fuel_oil": 0.13,
-        "wood": 0.07,
+        "electricity_usd_kwh": 0.18,
+        "natural_gas_usd_therm": 1.50,
+        "propane_usd_gallon": 2.50,
     }
-    return scenario["energy_prices"].get(f"{energy}_eur_kwh", defaults[energy])
+    prices = scenario["energy_prices"]
+    if energy == "natural_gas":
+        return prices.get(
+            "natural_gas_usd_therm",
+            defaults["natural_gas_usd_therm"],
+        ) / KWH_PER_NATURAL_GAS_THERM
+    if energy == "propane":
+        return prices.get(
+            "propane_usd_gallon",
+            defaults["propane_usd_gallon"],
+        ) / KWH_PER_PROPANE_GALLON
+    return prices.get("electricity_usd_kwh", defaults["electricity_usd_kwh"])
 
 
 def _co2_factor(scenario: dict[str, Any], energy: str) -> float:
     defaults = {
-        "electricity": 0.06,
-        "gas": 0.227,
-        "fuel_oil": 0.324,
-        "wood": 0.03,
+        "electricity": 0.0,
+        "natural_gas": 0.0,
+        "propane": 0.0,
     }
-    return scenario["co2_factors"].get(f"{energy}_kg_kwh", defaults[energy])
+    return scenario["co2_factors"].get(f"{energy}_kg_kwh", defaults.get(energy, 0.0))
 
 
 def _compute_cooling(

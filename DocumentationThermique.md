@@ -5,7 +5,7 @@ Ce document definit le modele thermique de depart pour ThermalTwin. L'objectif n
 - calculer les deperditions par piece et par type de paroi ;
 - estimer les temperatures interieures, notamment en canicule ;
 - comparer des scenarios avant/apres : isolation, vitrage, volets, PAC, climatisation, peinture reflective ;
-- produire des resultats commerciaux comprehensibles : kWh, euros, CO2, zones de pertes.
+- produire des resultats commerciaux comprehensibles : kWh, dollars US et zones de pertes.
 
 Les valeurs numeriques ne sont pas definies ici. Elles devront venir de la base materiaux, de la meteo, des scenarios et des hypotheses produit.
 
@@ -711,7 +711,7 @@ DH_froid_i = somme_t(max(0, T_seuil_froid - T_i(t)) * dt)
 
 ---
 
-## 15. Energie, facture et CO2
+## 15. Energie et facture US
 
 ### 15.1 Energie thermique et finale
 
@@ -739,19 +739,16 @@ Avec abonnement :
 Cout_total = Cout_variable + Cout_fixe
 ```
 
-### 15.3 Emissions CO2
-
-```text
-CO2 = somme_energies(E_finale_energie * facteur_emission_energie)
-```
-
 Comparaison scenario :
 
 ```text
 Delta_E = E_avant - E_apres
 Delta_Cout = Cout_avant - Cout_apres
-Delta_CO2 = CO2_avant - CO2_apres
 ```
+
+Le rapport commercial US ne publie aucun KPI CO2 au lancement. Une future
+réintégration exigera un facteur électrique régional, une source explicite et
+une version datée.
 
 ---
 
@@ -879,7 +876,7 @@ E_clim = somme_t(Phi_clim_t / EER_t * dt)
 - planning d'occupation simplifie ;
 - planning volets/stores ;
 - scenario travaux avant/apres ;
-- prix energie et facteurs CO2.
+- prix energie en $/kWh, $/therm et $/gallon de propane.
 
 ---
 

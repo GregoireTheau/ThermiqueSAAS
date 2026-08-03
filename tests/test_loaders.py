@@ -33,6 +33,12 @@ def test_reference_catalog_loads_expected_refs():
     assert get_window_reference(catalog, "double_glazing_standard")["u_value_w_m2k"] == 1.6
     assert get_climate_zone_for_county(catalog, "13121") == "US_IECC_2021_3A"
     assert get_climate_zone_for_county(catalog, "08031") == "US_IECC_2021_5B"
+    assert set(catalog["heating_systems"]) == {
+        "electric_resistance",
+        "air_source_heat_pump_standard",
+        "natural_gas_furnace_standard",
+        "propane_furnace_standard",
+    }
 
 
 def test_reference_catalog_contains_official_us_county_mapping():
@@ -107,10 +113,10 @@ def test_load_scenario_resolves_relative_weather_ref(tmp_path):
                     "weather_ref": "weather/bordeaux_2023.weather.json",
                 },
                 "energy_prices": {
-                    "electricity_eur_kwh": 0.25,
+                    "electricity_usd_kwh": 0.18,
                 },
                 "co2_factors": {
-                    "electricity_kg_kwh": 0.06,
+                    "electricity_kg_kwh": 0.0,
                 },
             },
         ),
@@ -185,7 +191,7 @@ def test_validate_scenario_against_dwelling_rejects_added_system_unknown_room():
             {
                 "category": "heating",
                 "id": "extra_heater",
-                "type": "electric_radiator",
+                "type": "electric_resistance",
                 "served_rooms": ["missing_room"],
                 "max_power_w": 1200,
                 "performance_ref": {"mode": "constant", "cop": 1.0},

@@ -75,15 +75,8 @@ const els = {
 };
 
 const hiddenQuestionIds = new Set(["project_name", "rooms"]);
-const defaultHeatingEnergyPrices = {
-  electric_radiator: 0.25,
-  gas_boiler_standard: 0.11,
-  gas_boiler_condensing: 0.11,
-  fuel_oil_boiler_standard: 0.13,
-  wood_stove_standard: 0.07,
-  air_air_heat_pump_standard: 0.25,
-  air_water_heat_pump_standard: 0.25,
-};
+const FT2_TO_M2 = 0.09290304;
+const FT_TO_M = 0.3048;
 
 async function api(path, options = {}) {
   const headers = {"Content-Type": "application/json", ...(options.headers || {})};
@@ -526,9 +519,11 @@ function applyDefaults() {
   setField("dwelling_type", "house");
   setField("position_id", "single_storey_house");
   setField("construction_era_id", "us_2000_2009");
-  setField("heating_ref", "electric_radiator");
-  setField("heating_setpoint_c", 19);
-  setField("heating_energy_price_eur_kwh", 0.25);
+  setField("heating_ref", "natural_gas_furnace_standard");
+  setField("heating_setpoint_f", 68);
+  setField("electricity_price_usd_kwh", 0.18);
+  setField("natural_gas_price_usd_therm", 1.5);
+  setField("propane_price_usd_gallon", 2.5);
 }
 
 function markUnsaved() {
@@ -561,16 +556,16 @@ function defaultRoom() {
 
 function roomPreset(kind) {
   const presets = {
-    living: ["Living room", "living", 24, 4.0, 5.0, 2.5, "exterior"],
-    bedroom: ["Bedroom", "bedroom", 12, 1.5, 3.5, 2.5, "exterior"],
-    kitchen: ["Kitchen", "kitchen", 10, 1.2, 3.2, 2.5, "exterior"],
-    bathroom: ["Bathroom", "bathroom", 6, 0.6, 2.5, 2.5, "exterior"],
-    toilet: ["Toilet", "utility", 2, 0.3, 1.4, 2.5, "exterior"],
-    office: ["Office", "office", 9, 1.2, 3.0, 2.5, "exterior"],
-    corridor: ["Hallway", "corridor", 6, 0.0, 2.5, 2.5, "interior"],
-    staircase: ["Staircase", "staircase", 6, 0.0, 2.5, 4.5, "interior"],
-    utility: ["Utility room", "utility", 5, 0.4, 2.2, 2.5, "exterior"],
-    other: ["Room", "other", 15, 1.2, 4.0, 2.5, "exterior"],
+    living: ["Living room", "living", 260, 43, 16, 8, "exterior"],
+    bedroom: ["Bedroom", "bedroom", 130, 16, 12, 8, "exterior"],
+    kitchen: ["Kitchen", "kitchen", 110, 13, 11, 8, "exterior"],
+    bathroom: ["Bathroom", "bathroom", 65, 6, 8, 8, "exterior"],
+    toilet: ["Toilet", "utility", 25, 3, 5, 8, "exterior"],
+    office: ["Office", "office", 100, 13, 10, 8, "exterior"],
+    corridor: ["Hallway", "corridor", 65, 0, 8, 8, "interior"],
+    staircase: ["Staircase", "staircase", 65, 0, 8, 15, "interior"],
+    utility: ["Utility room", "utility", 55, 4, 7, 8, "exterior"],
+    other: ["Room", "other", 160, 13, 13, 8, "exterior"],
   };
   const [name, type, area, windowArea, wallLength, height, exteriorContact] = presets[kind] || presets.other;
   return {
@@ -628,8 +623,8 @@ function renderRooms() {
           ${option("other", "Other", room.type)}
         </select>
       </label>`, room)}
-      ${renderRoomField("floor_area_m2", `<label>Area m²<input data-room-field="floor_area_m2" type="number" value="${room.floor_area_m2}"></label>`, room)}
-      ${renderRoomField("height_m", `<label>Height m<input data-room-field="height_m" type="number" value="${room.height_m}"></label>`, room)}
+      ${renderRoomField("floor_area_m2", `<label>Area ft²<input data-room-field="floor_area_m2" type="number" value="${room.floor_area_m2}"></label>`, room)}
+      ${renderRoomField("height_m", `<label>Height ft<input data-room-field="height_m" type="number" value="${room.height_m}"></label>`, room)}
       ${renderRoomField("exterior_contact", `<label>Main boundary type
         <select data-room-field="exterior_contact">
           ${option("exterior", "Facade(s) facing outside", room.exterior_contact || "exterior")}
@@ -643,8 +638,8 @@ function renderRooms() {
           ${["N", "E", "S", "W", "SE", "SW"].map((value) => option(value, value, room.orientation || room.facades?.[0]?.orientation || "S")).join("")}
         </select>
       </label>`, room)}
-      ${renderRoomField("window_area_m2", `<label>Glazing m²<input data-room-field="window_area_m2" type="number" value="${room.window_area_m2 ?? room.facades?.[0]?.window_area_m2 ?? 0}"></label>`, room)}
-      ${renderRoomField("wall_length_m", `<label>Facade length m<input data-room-field="wall_length_m" type="number" value="${room.wall_length_m ?? room.facades?.[0]?.wall_length_m ?? 4}"></label>`, room)}
+      ${renderRoomField("window_area_m2", `<label>Glazing ft²<input data-room-field="window_area_m2" type="number" value="${room.window_area_m2 ?? room.facades?.[0]?.window_area_m2 ?? 0}"></label>`, room)}
+      ${renderRoomField("wall_length_m", `<label>Facade length ft<input data-room-field="wall_length_m" type="number" value="${room.wall_length_m ?? room.facades?.[0]?.wall_length_m ?? 13}"></label>`, room)}
       ${renderRoomField("mask_factor", `<label>Solar shading
         <select data-room-field="mask_factor">
           ${option("1", "No shading", String(room.mask_factor ?? room.facades?.[0]?.mask_factor ?? 1))}
@@ -781,7 +776,7 @@ function renderConnectionParams(link, rooms, roomId) {
   return `
     <div class="connectionParams" data-link-key="${key}">
       <h4>Connection to ${roomLabel(other || {name: otherId}, otherIndex)}</h4>
-      <label>Shared area m²<input data-link-field="area_m2" type="number" min="0.1" step="0.1" value="${link.area_m2 ?? 4}"></label>
+      <label>Shared area ft²<input data-link-field="area_m2" type="number" min="1" step="1" value="${link.area_m2 ?? 43}"></label>
     </div>
   `;
 }
@@ -805,14 +800,14 @@ function syncRoomsFromDom(connectionChange = null) {
     const exteriorContact = value("exterior_contact", "exterior");
     const orientation = value("orientation", "S");
     const windowArea = Number(value("window_area_m2", 0));
-    const wallLength = Number(value("wall_length_m", 4));
+    const wallLength = Number(value("wall_length_m", 13));
     const maskFactor = Number(value("mask_factor", 1));
     return {
       id: roomElement.dataset.roomId || `room_${index + 1}`,
       name: value("name", "Room"),
       type: value("type", "living"),
-      floor_area_m2: Number(value("floor_area_m2", 20)),
-      height_m: Number(value("height_m", 2.5)),
+      floor_area_m2: Number(value("floor_area_m2", 215)),
+      height_m: Number(value("height_m", 8)),
       has_cooling: hasGlobalCooling() && value("has_cooling", "false") === "true",
       has_roof: value("has_roof", "true") === "true",
       has_ground_floor: true,
@@ -853,7 +848,7 @@ function syncRoomsFromDom(connectionChange = null) {
       activeLinks.set(key, {
         room_a: roomA,
         room_b: roomB,
-        area_m2: Number(existing.area_m2 ?? 4),
+        area_m2: Number(existing.area_m2 ?? 43),
         owner_room_id: connectionChange?.roomId || existing.owner_room_id || roomA,
       });
     });
@@ -872,22 +867,39 @@ function collectAnswers() {
   const formData = new FormData(els.questionnaireForm);
   const answers = Object.fromEntries(formData.entries());
   answers.project_name = els.projectName.value;
-  answers.rooms = state.rooms;
+  answers.rooms = state.rooms.map(roomToSi);
   answers.thermal_layout = {
     type: state.rooms.length < 2 ? "single_room" : "manual",
     connections: state.thermalLinks.map((link) => ({
       room_a: link.room_a,
       room_b: link.room_b,
-      area_m2: link.area_m2,
+      area_m2: link.area_m2 * FT2_TO_M2,
     })),
   };
-  for (const key of ["heating_setpoint_c", "cooling_setpoint_c", "cooling_setpoint_day_c", "cooling_setpoint_night_c", "annual_weather_year"]) {
+  for (const key of ["heating_setpoint_f", "cooling_setpoint_f", "cooling_setpoint_day_f", "cooling_setpoint_night_f", "annual_weather_year"]) {
     if (answers[key] !== undefined && answers[key] !== "") answers[key] = Number(answers[key]);
   }
-  if (answers.heating_energy_price_eur_kwh !== undefined && answers.heating_energy_price_eur_kwh !== "") {
-    answers.heating_energy_price_eur_kwh = Number(answers.heating_energy_price_eur_kwh);
+  for (const key of ["electricity_price_usd_kwh", "natural_gas_price_usd_therm", "propane_price_usd_gallon"]) {
+    if (answers[key] !== undefined && answers[key] !== "") answers[key] = Number(answers[key]);
   }
   return answers;
+}
+
+function roomToSi(room) {
+  const windowAreaM2 = Number(room.window_area_m2 || 0) * FT2_TO_M2;
+  const wallLengthM = Number(room.wall_length_m || 0) * FT_TO_M;
+  return {
+    ...room,
+    floor_area_m2: Number(room.floor_area_m2) * FT2_TO_M2,
+    height_m: Number(room.height_m) * FT_TO_M,
+    window_area_m2: windowAreaM2,
+    wall_length_m: wallLengthM,
+    facades: (room.facades || []).map((facade) => ({
+      ...facade,
+      window_area_m2: Number(facade.window_area_m2 || 0) * FT2_TO_M2,
+      wall_length_m: Number(facade.wall_length_m || 0) * FT_TO_M,
+    })),
+  };
 }
 
 function selectedProfile() {
@@ -1087,7 +1099,7 @@ function applyAnswers(answers) {
     state.thermalLinks = (answers.thermal_layout?.connections || []).map((connection) => ({
       room_a: connection.room_a,
       room_b: connection.room_b,
-      area_m2: Number(connection.area_m2 ?? 4),
+      area_m2: Number(connection.area_m2 ?? 4) / FT2_TO_M2,
     }));
     renderRooms();
   }
@@ -1099,11 +1111,11 @@ function roomFromAnswer(room) {
     id: room.id,
     name: room.name,
     type: room.type,
-    floor_area_m2: room.floor_area_m2,
-    height_m: room.height_m,
+    floor_area_m2: Math.round(Number(room.floor_area_m2) / FT2_TO_M2),
+    height_m: Number((Number(room.height_m) / FT_TO_M).toFixed(1)),
     orientation: room.facades?.[0]?.orientation || "S",
-    window_area_m2: room.facades?.[0]?.window_area_m2 || 0,
-    wall_length_m: room.facades?.[0]?.wall_length_m || 4,
+    window_area_m2: Math.round(Number(room.facades?.[0]?.window_area_m2 || 0) / FT2_TO_M2),
+    wall_length_m: Number((Number(room.facades?.[0]?.wall_length_m || 4) / FT_TO_M).toFixed(1)),
     exterior_contact: room.exterior_contact || "exterior",
     mask_factor: room.facades?.[0]?.mask_factor ?? 1,
     has_roof: Boolean(room.has_roof),
@@ -1313,15 +1325,15 @@ async function renderLatestSummary() {
   const afterTotals = payload.result.comparison.after.totals;
   if (summaryRun.adaptation_id === "reflective_roof") {
     els.resultSummary.innerHTML = `
-      <div class="metric accent"><span>Max temperature reduction</span><strong>${formatNumber(headline.max_temperature_reduction_c)} °C</strong></div>
-      <div class="metric accent"><span>Hot discomfort avoided</span><strong>${formatInteger(headline.hot_degree_hours_reduced)} °C·h</strong></div>
+      <div class="metric accent"><span>Max temperature reduction</span><strong>${formatNumber(headline.max_temperature_reduction_c * 1.8)} °F</strong></div>
+      <div class="metric accent"><span>Hot discomfort avoided</span><strong>${formatInteger(headline.hot_degree_hours_reduced * 1.8)} °F·h</strong></div>
     `;
     return;
   }
   if (summaryRun.adaptation_id === "roof_insulation") {
     const weatherYear = payload.result.comparison.experiment.weather_year || "real weather";
     els.resultSummary.innerHTML = `
-      <div class="metric accent"><span>Estimated savings over a real-weather year</span><strong>${formatNumber(energy.cost_saved_eur)} €</strong></div>
+      <div class="metric accent"><span>Estimated savings over a real-weather year</span><strong>$${formatNumber(energy.cost_saved_usd)}</strong></div>
       <div class="metric accent"><span>Heating demand reduced</span><strong>${formatNumber(beforeTotals.heating_thermal_kwh - afterTotals.heating_thermal_kwh)} kWh_th</strong></div>
       <div class="metric"><span>Period</span><strong>Real-weather year ${weatherYear}</strong></div>
     `;
@@ -1329,11 +1341,10 @@ async function renderLatestSummary() {
   }
   els.resultSummary.innerHTML = `
     <div class="metric"><span>Electricity saved</span><strong>${formatNumber(energy.electricity_saved_kwh)} kWh</strong></div>
-    <div class="metric"><span>Estimated savings</span><strong>${formatNumber(energy.cost_saved_eur)} €</strong></div>
-    <div class="metric"><span>CO₂ avoided</span><strong>${formatNumber(energy.co2_saved_kg)} kg</strong></div>
-    <div class="metric"><span>Max temperature reduction</span><strong>${formatNumber(headline.max_temperature_reduction_c)} °C</strong></div>
-    <div class="metric"><span>Hot discomfort avoided</span><strong>${formatNumber(headline.hot_degree_hours_reduced)} °C·h</strong></div>
-    <div class="metric"><span>Cold discomfort avoided</span><strong>${formatNumber(headline.cold_degree_hours_reduced)} °C·h</strong></div>
+    <div class="metric"><span>Estimated savings</span><strong>$${formatNumber(energy.cost_saved_usd)}</strong></div>
+    <div class="metric"><span>Max temperature reduction</span><strong>${formatNumber(headline.max_temperature_reduction_c * 1.8)} °F</strong></div>
+    <div class="metric"><span>Hot discomfort avoided</span><strong>${formatNumber(headline.hot_degree_hours_reduced * 1.8)} °F·h</strong></div>
+    <div class="metric"><span>Cold discomfort avoided</span><strong>${formatNumber(headline.cold_degree_hours_reduced * 1.8)} °F·h</strong></div>
   `;
 }
 
@@ -1500,7 +1511,7 @@ function applyDemo(demoId) {
     state.thermalLinks = (answers.thermal_layout?.connections || []).map((connection) => ({
       room_a: connection.room_a,
       room_b: connection.room_b,
-      area_m2: Number(connection.area_m2 ?? 4),
+      area_m2: Number(connection.area_m2 ?? 4) / FT2_TO_M2,
     }));
     renderRooms();
     state.answersSaved = false;
@@ -1540,10 +1551,12 @@ function demoAnswers(demoId) {
   if (demoId === "heat_pump_seller") {
     return {
       ...common,
-      current_energy_id: "electricity",
-      heating_ref: "electric_radiator",
-      heat_emitters_id: "electric_radiators",
-      heating_setpoint_c: 19,
+      current_heating_ref: "natural_gas_furnace_standard",
+      hvac_duct_location_id: "vented_attic",
+      heating_setpoint_f: 68,
+      electricity_price_usd_kwh: 0.18,
+      natural_gas_price_usd_therm: 1.5,
+      propane_price_usd_gallon: 2.5,
     };
   }
   if (demoId === "solar_protection_seller") {
@@ -1551,7 +1564,7 @@ function demoAnswers(demoId) {
       ...common,
       window_ref: "double_glazing_standard",
       shutter_ref: "none",
-      cooling_setpoint_c: 26,
+      cooling_setpoint_f: 78,
     };
   }
   if (demoId === "window_seller") {
@@ -1571,9 +1584,11 @@ function demoAnswers(demoId) {
       hvac_duct_location_id: "vented_attic",
       roof_color_id: "medium",
       wall_insulation_id: "standard",
-      heating_ref: "electric_radiator",
-      heating_setpoint_c: 19,
-      heating_energy_price_eur_kwh: 0.25,
+      heating_ref: "natural_gas_furnace_standard",
+      heating_setpoint_f: 68,
+      electricity_price_usd_kwh: 0.18,
+      natural_gas_price_usd_therm: 1.5,
+      propane_price_usd_gallon: 2.5,
     };
   }
   return {
@@ -1619,10 +1634,6 @@ els.questionnaireForm.addEventListener("change", (event) => {
   if (event.target.name === "dwelling_type") syncPositionOptions();
   if (event.target.name === "has_cooling") updateCoolingVisibility();
   if (event.target.name === "annual_weather_type") updateWeatherVisibility();
-  if (event.target.name === "heating_ref") {
-    const defaultPrice = defaultHeatingEnergyPrices[event.target.value];
-    if (defaultPrice !== undefined) setField("heating_energy_price_eur_kwh", defaultPrice);
-  }
   markUnsaved();
 });
 els.rooms.addEventListener("input", markUnsaved);

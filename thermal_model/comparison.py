@@ -129,15 +129,15 @@ def compare_scenarios(
         ),
         "electricity_kwh": _delta_total(before_results, after_results, "electricity_kwh"),
         "final_energy_kwh": _delta_total(before_results, after_results, "final_energy_kwh"),
-        "electricity_cost_eur": _delta_total(
+        "electricity_cost_usd": _delta_total(
             before_results,
             after_results,
-            "electricity_cost_eur",
+            "electricity_cost_usd",
         ),
-        "energy_cost_eur": _delta_total(
+        "energy_cost_usd": _delta_total(
             before_results,
             after_results,
-            "energy_cost_eur",
+            "energy_cost_usd",
         ),
         "electricity_co2_kg": _delta_total(
             before_results,
@@ -225,6 +225,8 @@ def _build_experiment_context(
             "outdoor_temperature_max_c": max(outdoor_temperatures),
         },
         "setpoints": before_scenario["setpoints"],
+        "energy_prices": before_scenario["energy_prices"],
+        "energy_price_conversion_source": "U.S. EIA energy units, accessed 2026-08-03",
         "has_cooling": bool(before_dwelling and before_dwelling["systems"]["cooling"]),
         "initial_temperature_mode": "scenario_initial_temperatures",
         "intervention": _summarize_retrofit(after_scenario.get("retrofit", {})),
@@ -320,8 +322,7 @@ def _build_summary(
         "headline_metrics": {
             "electricity_saved_kwh": deltas["electricity_kwh"],
             "final_energy_saved_kwh": deltas["final_energy_kwh"],
-            "cost_saved_eur": deltas["energy_cost_eur"],
-            "co2_saved_kg": deltas["energy_co2_kg"],
+            "cost_saved_usd": deltas["energy_cost_usd"],
             "max_temperature_reduction_c": max(
                 room["delta_max_temperature_c"] for room in room_deltas.values()
             ),
@@ -347,8 +348,7 @@ def _build_summary(
             "final_energy_before_kwh": before_results["totals"]["final_energy_kwh"],
             "final_energy_after_kwh": after_results["totals"]["final_energy_kwh"],
             "final_energy_saved_kwh": deltas["final_energy_kwh"],
-            "cost_saved_eur": deltas["energy_cost_eur"],
-            "co2_saved_kg": deltas["energy_co2_kg"],
+            "cost_saved_usd": deltas["energy_cost_usd"],
         },
         "main_gain_driver": _main_gain_driver(deltas),
         "room_cards": [
@@ -389,8 +389,7 @@ def _energy_savings_label(deltas: dict[str, Any]) -> str:
     if deltas["final_energy_kwh"] > 0:
         return (
             f"{deltas['final_energy_kwh']:.2f} final kWh, "
-            f"{deltas['energy_cost_eur']:.2f} EUR and "
-            f"{deltas['energy_co2_kg']:.2f} kg CO2 saved"
+            f"${deltas['energy_cost_usd']:.2f} saved"
         )
     if deltas["final_energy_kwh"] < 0:
         return f"{abs(deltas['final_energy_kwh']):.2f} additional final kWh"

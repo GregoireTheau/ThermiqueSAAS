@@ -85,41 +85,53 @@
             "label": "Current main heating system",
             "required": true,
             "options": [
-              {"id": "electric_radiator", "label": "Electric radiators"},
-              {"id": "gas_boiler_standard", "label": "Gas boiler"},
-              {"id": "fuel_oil_boiler_standard", "label": "Oil boiler"},
-              {"id": "wood_stove_standard", "label": "Wood heating"},
-              {"id": "air_air_heat_pump_standard", "label": "Air-to-air heat pump"},
-              {"id": "air_water_heat_pump_standard", "label": "Air-to-water heat pump"}
+              {"id": "natural_gas_furnace_standard", "label": "Natural gas forced-air furnace"},
+              {"id": "propane_furnace_standard", "label": "Propane forced-air furnace"},
+              {"id": "air_source_heat_pump_standard", "label": "Central air-source heat pump"},
+              {"id": "electric_resistance", "label": "Electric resistance heat"}
             ]
           },
           {
-            "id": "heating_setpoint_c",
+            "id": "heating_setpoint_f",
             "type": "number",
-            "label": "Usual heating setpoint (°C)",
+            "label": "Usual heating setpoint (°F)",
             "required": false,
-            "default": 19.0
+            "default": 68
           },
           {
-            "id": "heating_energy_price_eur_kwh",
+            "id": "electricity_price_usd_kwh",
             "type": "number",
-            "label": "Heating energy price (€/final kWh)",
+            "label": "Electricity price ($/kWh)",
             "required": false,
-            "default": 0.25
+            "default": 0.18
           },
           {
-            "id": "cooling_setpoint_day_c",
+            "id": "natural_gas_price_usd_therm",
             "type": "number",
-            "label": "Daytime cooling setpoint (°C)",
+            "label": "Natural gas price ($/therm)",
             "required": false,
-            "default": 26.0
+            "default": 1.5
           },
           {
-            "id": "cooling_setpoint_night_c",
+            "id": "propane_price_usd_gallon",
             "type": "number",
-            "label": "Night cooling setpoint (°C)",
+            "label": "Propane price ($/gallon)",
             "required": false,
-            "default": 26.0
+            "default": 2.5
+          },
+          {
+            "id": "cooling_setpoint_day_f",
+            "type": "number",
+            "label": "Daytime cooling setpoint (°F)",
+            "required": false,
+            "default": 78
+          },
+          {
+            "id": "cooling_setpoint_night_f",
+            "type": "number",
+            "label": "Night cooling setpoint (°F)",
+            "required": false,
+            "default": 78
           },
           {
             "id": "airtightness_id",

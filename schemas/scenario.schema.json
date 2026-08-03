@@ -474,6 +474,8 @@
       "enum": [
         "electricity",
         "gas",
+        "natural_gas",
+        "propane",
         "fuel_oil",
         "wood"
       ]
@@ -634,19 +636,16 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "electricity_eur_kwh"
+        "electricity_usd_kwh"
       ],
       "properties": {
-        "electricity_eur_kwh": {
+        "electricity_usd_kwh": {
           "$ref": "#/$defs/non_negative_number"
         },
-        "gas_eur_kwh": {
+        "natural_gas_usd_therm": {
           "$ref": "#/$defs/non_negative_number"
         },
-        "fuel_oil_eur_kwh": {
-          "$ref": "#/$defs/non_negative_number"
-        },
-        "wood_eur_kwh": {
+        "propane_usd_gallon": {
           "$ref": "#/$defs/non_negative_number"
         }
       }
@@ -661,13 +660,10 @@
         "electricity_kg_kwh": {
           "$ref": "#/$defs/non_negative_number"
         },
-        "gas_kg_kwh": {
+        "natural_gas_kg_kwh": {
           "$ref": "#/$defs/non_negative_number"
         },
-        "fuel_oil_kg_kwh": {
-          "$ref": "#/$defs/non_negative_number"
-        },
-        "wood_kg_kwh": {
+        "propane_kg_kwh": {
           "$ref": "#/$defs/non_negative_number"
         }
       }

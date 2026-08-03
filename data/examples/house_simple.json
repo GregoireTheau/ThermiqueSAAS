@@ -297,7 +297,7 @@
     "heating": [
       {
         "id": "living_heat_pump_unit",
-        "system_ref": "air_air_heat_pump_standard",
+        "system_ref": "air_source_heat_pump_standard",
         "type": "heat_pump",
         "energy_vector": "electricity",
         "served_rooms": [
@@ -325,8 +325,8 @@
       },
       {
         "id": "bedroom_radiator",
-        "system_ref": "electric_radiator",
-        "type": "electric_radiator",
+        "system_ref": "electric_resistance",
+        "type": "electric_resistance",
         "energy_vector": "electricity",
         "served_rooms": [
           "bedroom"
@@ -339,8 +339,8 @@
       },
       {
         "id": "bathroom_radiator",
-        "system_ref": "electric_radiator",
-        "type": "electric_radiator",
+        "system_ref": "electric_resistance",
+        "type": "electric_resistance",
         "energy_vector": "electricity",
         "served_rooms": [
           "bathroom"

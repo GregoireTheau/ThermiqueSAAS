@@ -53,7 +53,7 @@ def print_comparison(comparison: dict[str, Any]) -> None:
         f"{summary['main_gain_driver']['unit']})"
     )
     print()
-    print("Energy / cost / CO2")
+    print("Energy / cost")
     print(
         "Electricity kWh: "
         f"{before_totals['electricity_kwh']:.2f} -> "
@@ -61,16 +61,10 @@ def print_comparison(comparison: dict[str, Any]) -> None:
         f"(gain {deltas['electricity_kwh']:.2f})"
     )
     print(
-        "Cost EUR: "
-        f"{before_totals['electricity_cost_eur']:.2f} -> "
-        f"{after_totals['electricity_cost_eur']:.2f} "
-        f"(gain {deltas['electricity_cost_eur']:.2f})"
-    )
-    print(
-        "CO2 kg: "
-        f"{before_totals['electricity_co2_kg']:.2f} -> "
-        f"{after_totals['electricity_co2_kg']:.2f} "
-        f"(gain {deltas['electricity_co2_kg']:.2f})"
+        "Cost USD: "
+        f"{before_totals['electricity_cost_usd']:.2f} -> "
+        f"{after_totals['electricity_cost_usd']:.2f} "
+        f"(gain {deltas['electricity_cost_usd']:.2f})"
     )
     print()
     print("Comfort by room")

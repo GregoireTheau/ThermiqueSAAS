@@ -689,10 +689,10 @@
     ]
   },
   "energy_prices": {
-    "electricity_eur_kwh": 0.25
+    "electricity_usd_kwh": 0.18
   },
   "co2_factors": {
-    "electricity_kg_kwh": 0.06
+    "electricity_kg_kwh": 0.0
   },
   "scenario_id": "commercial_winter_7d_heat_pump_after",
   "description": "Experience commerciale hiver 7 jours apres ajout PAC air/air en appoint principal.",
@@ -701,7 +701,7 @@
       {
         "category": "heating",
         "id": "bedroom_heat_pump_unit",
-        "system_ref": "air_air_heat_pump_standard",
+        "system_ref": "air_source_heat_pump_standard",
         "type": "heat_pump",
         "energy_vector": "electricity",
         "served_rooms": [
@@ -730,7 +730,7 @@
       {
         "category": "heating",
         "id": "bathroom_heat_pump_unit",
-        "system_ref": "air_air_heat_pump_standard",
+        "system_ref": "air_source_heat_pump_standard",
         "type": "heat_pump",
         "energy_vector": "electricity",
         "served_rooms": [

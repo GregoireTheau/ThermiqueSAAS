@@ -28,7 +28,7 @@ def _base_dwelling(
         heating_systems.append(
             {
                 "id": "heating_system",
-                "type": "electric_radiator",
+                "type": "electric_resistance",
                 "served_rooms": ["main_room"],
                 "max_power_w": heating_power_w,
                 "performance_ref": {"mode": "constant", "cop": 1.0},
@@ -169,8 +169,8 @@ def _scenario(
                 for hour, temperature in enumerate(temperatures)
             ],
         },
-        "energy_prices": {"electricity_eur_kwh": 0.25},
-        "co2_factors": {"electricity_kg_kwh": 0.06},
+        "energy_prices": {"electricity_usd_kwh": 0.18},
+        "co2_factors": {"electricity_kg_kwh": 0.0},
     }
     validate_scenario(scenario)
     return scenario

@@ -128,7 +128,7 @@ def validate_scenario(scenario: Mapping[str, Any]) -> None:
 
     _require_keys(
         scenario["energy_prices"],
-        ("electricity_eur_kwh",),
+        ("electricity_usd_kwh",),
         "scenario.energy_prices",
     )
     _require_keys(

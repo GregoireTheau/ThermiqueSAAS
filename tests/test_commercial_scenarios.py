@@ -63,5 +63,5 @@ def test_commercial_heat_pump_winter_7d():
     assert len(before["weather"]["hourly"]) == 168
     assert len(after["weather"]["hourly"]) == 168
     assert round(comparison["deltas"]["electricity_kwh"], 2) == 129.21
-    assert round(comparison["deltas"]["electricity_cost_eur"], 2) == 32.30
+    assert round(comparison["deltas"]["electricity_cost_usd"], 2) == 23.26
     assert comparison["summary"]["main_gain_driver"]["key"] == "system_efficiency"

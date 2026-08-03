@@ -168,8 +168,8 @@ def test_smart_night_cooling_adds_natural_ventilation_only_when_outdoor_is_coole
                 {"hour": 1, "outdoor_temperature_c": 40.0},
             ],
         },
-        "energy_prices": {"electricity_eur_kwh": 0.25},
-        "co2_factors": {"electricity_kg_kwh": 0.06},
+        "energy_prices": {"electricity_usd_kwh": 0.18},
+        "co2_factors": {"electricity_kg_kwh": 0.0},
     }
 
     results = simulate_1r1c(

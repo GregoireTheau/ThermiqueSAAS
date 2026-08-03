@@ -323,7 +323,7 @@ Le bloc `systems` liste les equipements disponibles dans le logement.
 ```json
 {
   "id": "living_heat_pump_unit",
-  "system_ref": "air_air_heat_pump_standard",
+  "system_ref": "air_source_heat_pump_standard",
   "type": "heat_pump",
   "served_rooms": ["living_room"],
   "max_power_w": 3500,
@@ -334,12 +334,12 @@ Le bloc `systems` liste les equipements disponibles dans le logement.
 }
 ```
 
-Pour un radiateur electrique :
+Pour un chauffage électrique résistif :
 
 ```json
 {
-  "id": "bedroom_radiator",
-  "type": "electric_radiator",
+  "id": "bedroom_resistance_heat",
+  "type": "electric_resistance",
   "served_rooms": ["bedroom"],
   "max_power_w": 1500,
   "performance_ref": {
@@ -376,7 +376,7 @@ Le scenario ne sera pas cree dans cette etape, mais il devra contenir :
 - meteo ou reference meteo ;
 - modifications avant/apres travaux ;
 - prix energie ;
-- facteurs CO2.
+- aucun facteur CO2 commercial au lancement US ; une future version devra référencer une source électrique régionale datée.
 
 Exemple de direction :
 

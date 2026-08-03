@@ -9,7 +9,7 @@ def _base_answers():
         "dwelling_type": "house",
         "position_id": "single_storey_house",
         "construction_era_id": "us_1940_1979",
-        "heating_ref": "electric_radiator",
+        "heating_ref": "electric_resistance",
         "window_ref": "double_glazing_old",
         "roof_assembly_id": "vented_attic_ceiling",
         "existing_roof_r_value": 11,
@@ -47,8 +47,8 @@ def test_heat_pump_commercial_path_reduces_winter_electricity():
         for key, value in _base_answers().items()
         if key != "heating_ref"
     } | {
-        "current_energy_id": "electricity",
-        "heat_emitters_id": "electric_radiators",
+        "current_heating_ref": "electric_resistance",
+        "hvac_duct_location_id": "no_ducts",
     }
 
     run = _primary_run(

@@ -20,7 +20,7 @@ PROFILE_BY_ADAPTATION = {
 
 REPORT_PRESENTATION_CONFIG = {
     ("heat_pump_seller", "all"): {
-        "hero_kpis": ["final_energy", "cost", "co2"],
+        "hero_kpis": ["final_energy", "cost"],
         "secondary_kpis": ["heating_thermal", "heating_final"],
         "hidden_summary_kpis": ["hot_discomfort"],
         "reading_template": "heat_pump",
@@ -122,7 +122,7 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
         key=lambda room: (
             max(0.0, room["comfort"]["hot_degree_hours"]["delta"])
             + max(0.0, room["comfort"]["cold_degree_hours"]["delta"])
-            + max(0.0, room["comfort"]["max_temperature_c"]["delta"]) * 24.0
+            + max(0.0, room["comfort"]["max_temperature_f"]["delta"]) * 24.0
         ),
     )
 
@@ -185,6 +185,11 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
                 ),
             },
             "setpoints": experiment["setpoints"],
+            "energy_prices": experiment.get("energy_prices", {}),
+            "energy_price_conversion_source": experiment.get(
+                "energy_price_conversion_source",
+                "Not recorded",
+            ),
             "has_cooling": experiment.get("has_cooling", False),
             "intervention": experiment["intervention"],
             "building_characteristics": comparison.get("building_characteristics", {}),
@@ -222,27 +227,21 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
                 "kWh_final",
             ),
             "cost": _metric(
-                before_totals["energy_cost_eur"],
-                after_totals["energy_cost_eur"],
-                deltas["energy_cost_eur"],
-                "EUR",
+                before_totals["energy_cost_usd"],
+                after_totals["energy_cost_usd"],
+                deltas["energy_cost_usd"],
+                "USD",
             ),
-            "co2": _metric(
-                before_totals["energy_co2_kg"],
-                after_totals["energy_co2_kg"],
-                deltas["energy_co2_kg"],
-                "kgCO2",
-            ),
-            "max_temperature_reduction_c": round(
-                headline["max_temperature_reduction_c"],
+            "max_temperature_reduction_f": round(
+                headline["max_temperature_reduction_c"] * 1.8,
                 2,
             ),
-            "hot_degree_hours_reduced": round(
-                headline["hot_degree_hours_reduced"],
+            "hot_degree_hours_reduced_f_h": round(
+                headline["hot_degree_hours_reduced"] * 1.8,
                 2,
             ),
-            "cold_degree_hours_reduced": round(
-                headline["cold_degree_hours_reduced"],
+            "cold_degree_hours_reduced_f_h": round(
+                headline["cold_degree_hours_reduced"] * 1.8,
                 2,
             ),
         },
@@ -930,29 +929,25 @@ def _build_room_report(room_id: str, room_delta: dict[str, Any]) -> dict[str, An
         "room_id": room_id,
         "room_name": room_delta["room_name"],
         "comfort": {
-            "max_temperature_c": _metric(
+            "max_temperature_f": _temperature_metric_c(
                 room_delta["before_max_temperature_c"],
                 room_delta["after_max_temperature_c"],
                 room_delta["delta_max_temperature_c"],
-                "C",
             ),
-            "final_temperature_c": _metric(
+            "final_temperature_f": _temperature_metric_c(
                 room_delta["before_final_temperature_c"],
                 room_delta["after_final_temperature_c"],
                 room_delta["delta_final_temperature_c"],
-                "C",
             ),
-            "hot_degree_hours": _metric(
+            "hot_degree_hours": _degree_hours_metric_c(
                 room_delta["before_hot_degree_hours"],
                 room_delta["after_hot_degree_hours"],
                 room_delta["delta_hot_degree_hours"],
-                "C.h",
             ),
-            "cold_degree_hours": _metric(
+            "cold_degree_hours": _degree_hours_metric_c(
                 room_delta["before_cold_degree_hours"],
                 room_delta["after_cold_degree_hours"],
                 room_delta["delta_cold_degree_hours"],
-                "C.h",
             ),
         },
         "thermal_balance_deltas": {
@@ -998,11 +993,11 @@ def _build_temperature_profiles(
         },
         "comfort_rule": (
             f"Colored zones indicate hours above "
-            f"{hot_threshold_c:.1f} °C, the threshold used to count hot discomfort "
+            f"{_format_temperature(hot_threshold_c)}, the threshold used to count hot discomfort "
             "hours."
             if threshold_key == "hot"
             else (
-                f"Colored zones indicate hours below {cold_threshold_c:.1f} °C, "
+                f"Colored zones indicate hours below {_format_temperature(cold_threshold_c)}, "
                 "the threshold used to count cold discomfort hours."
             )
         ),
@@ -1396,6 +1391,19 @@ def _metric(before: float, after: float, delta: float, unit: str) -> dict[str, A
     }
 
 
+def _temperature_metric_c(before: float, after: float, delta: float) -> dict[str, Any]:
+    return _metric(
+        before * 9.0 / 5.0 + 32.0,
+        after * 9.0 / 5.0 + 32.0,
+        delta * 9.0 / 5.0,
+        "F",
+    )
+
+
+def _degree_hours_metric_c(before: float, after: float, delta: float) -> dict[str, Any]:
+    return _metric(before * 1.8, after * 1.8, delta * 1.8, "F.h")
+
+
 def _delta_metric(delta: float, unit: str) -> dict[str, Any]:
     return {
         "delta": round(delta, 2),
@@ -1450,16 +1458,10 @@ def _build_energy_breakdown(
             "kWh_final",
         ),
         "cost": _metric(
-            before_totals["energy_cost_eur"],
-            after_totals["energy_cost_eur"],
-            deltas["energy_cost_eur"],
-            "EUR",
-        ),
-        "co2": _metric(
-            before_totals["energy_co2_kg"],
-            after_totals["energy_co2_kg"],
-            deltas["energy_co2_kg"],
-            "kgCO2",
+            before_totals["energy_cost_usd"],
+            after_totals["energy_cost_usd"],
+            deltas["energy_cost_usd"],
+            "USD",
         ),
         "final_energy_by_vector": {
             vector: _metric(
@@ -1515,7 +1517,6 @@ def _presentation_metrics(
         "cooling_electric": energy["cooling_electric"],
         "final_energy": energy["final_energy"],
         "cost": energy["cost"],
-        "co2": energy["co2"],
         "hot_discomfort": _aggregate_comfort_metric(rooms, "hot_degree_hours"),
         "cold_discomfort": _aggregate_comfort_metric(rooms, "cold_degree_hours"),
         "max_temperature": _aggregate_max_temperature_metric(rooms),
@@ -1530,7 +1531,6 @@ def _kpi_label(key: str) -> str:
         "cooling_electric": "Electric cooling",
         "final_energy": "Final energy saved",
         "cost": "Cost saved",
-        "co2": "CO₂ avoided",
         "hot_discomfort": "Hot discomfort avoided",
         "cold_discomfort": "Cold discomfort avoided",
         "max_temperature": "Maximum temperature reduced",
@@ -1548,13 +1548,13 @@ def _aggregate_comfort_metric(
 ) -> dict[str, Any]:
     before = sum(room["comfort"][summary_key]["before"] for room in rooms)
     after = sum(room["comfort"][summary_key]["after"] for room in rooms)
-    return _metric(before, after, before - after, "°C·h")
+    return _metric(before, after, before - after, "F.h")
 
 
 def _aggregate_max_temperature_metric(rooms: list[dict[str, Any]]) -> dict[str, Any]:
-    before = max(room["comfort"]["max_temperature_c"]["before"] for room in rooms)
-    after = max(room["comfort"]["max_temperature_c"]["after"] for room in rooms)
-    return _metric(before, after, before - after, "C")
+    before = max(room["comfort"]["max_temperature_f"]["before"] for room in rooms)
+    after = max(room["comfort"]["max_temperature_f"]["after"] for room in rooms)
+    return _metric(before, after, before - after, "F")
 
 
 def _aggregate_balance_delta(rooms: list[dict[str, Any]], summary_key: str) -> float:
@@ -1941,7 +1941,7 @@ def _primary_discomfort_metric(report: dict[str, Any]) -> dict[str, Any]:
         room["comfort"][summary_key]["after"]
         for room in report["rooms"]
     )
-    return _metric(before, after, before - after, "°C·h")
+    return _metric(before, after, before - after, "F.h")
 
 
 def _render_temperature_alert(
@@ -1963,7 +1963,7 @@ def get_alert_banner(rooms: list[dict], comfort_mode: str) -> str | None:
         return f"""
     <section class="alert alert-hot">
       <strong>Thermal comfort alert.</strong>
-      Room <strong>{escape(room['name'])}</strong> exceeds 35 °C in the simulation, with a maximum of {_format_temperature(room['temp_max_before'])}.
+      Room <strong>{escape(room['name'])}</strong> exceeds 95 °F in the simulation, with a maximum of {_format_temperature(room['temp_max_before'])}.
     </section>
 """
 
@@ -1973,7 +1973,7 @@ def get_alert_banner(rooms: list[dict], comfort_mode: str) -> str | None:
         return f"""
     <section class="alert alert-cold">
       <strong>Thermal comfort alert.</strong>
-      Room <strong>{escape(room['name'])}</strong> drops below 16 °C in the simulation, with a minimum of {_format_temperature(room['temp_min_before'])}.
+      Room <strong>{escape(room['name'])}</strong> drops below 61 °F in the simulation, with a minimum of {_format_temperature(room['temp_min_before'])}.
     </section>
 """
 
@@ -2016,6 +2016,11 @@ def _render_context_params(
         ("Roof framing", escape(str(framing.get("label", "Not recorded")))),
         ("Roof insulation", escape(_roof_insulation_label(building, experiment))),
         ("HVAC ducts", escape(str(ducts.get("label", "Not recorded")))),
+        ("Energy prices", escape(_energy_price_label(experiment.get("energy_prices", {})))),
+        (
+            "Fuel conversion source",
+            escape(str(experiment.get("energy_price_conversion_source", "Not recorded"))),
+        ),
         (
             "Reproducibility",
             escape(
@@ -2061,6 +2066,14 @@ def _roof_insulation_label(
         return f"Existing R-{existing}"
     proposed = building.get("proposed_roof_r_value", "not recorded")
     return f"Existing R-{existing} · proposed R-{proposed}"
+
+
+def _energy_price_label(prices: dict[str, Any]) -> str:
+    return _join_non_empty(
+        f"${prices['electricity_usd_kwh']}/kWh" if "electricity_usd_kwh" in prices else "",
+        f"${prices['natural_gas_usd_therm']}/therm" if "natural_gas_usd_therm" in prices else "",
+        f"${prices['propane_usd_gallon']}/gal propane" if "propane_usd_gallon" in prices else "",
+    ) or "Not recorded"
 
 
 def _weather_source_label(trace: dict[str, Any], experiment: dict[str, Any]) -> str:
@@ -2288,7 +2301,6 @@ def _render_energy_cost_result_block(report: dict[str, Any]) -> str:
             + [
                 ("Total final energy", energy["final_energy"]),
                 ("Estimated cost", energy["cost"]),
-                ("CO₂", energy["co2"]),
             ],
         ),
         (
@@ -2309,6 +2321,8 @@ def _render_comfort_result_block(report: dict[str, Any]) -> str:
 def _energy_vector_label(vector: str) -> str:
     labels = {
         "electricity": "electricity",
+        "natural_gas": "natural gas",
+        "propane": "propane",
         "gas": "gas",
         "fuel_oil": "oil",
         "wood": "wood",
@@ -2334,25 +2348,25 @@ def _render_comfort_result_table(report: dict[str, Any]) -> str:
         for room in report["rooms"]
     )
     max_before = max(
-        room["comfort"]["max_temperature_c"]["before"]
+        room["comfort"]["max_temperature_f"]["before"]
         for room in report["rooms"]
     )
     max_after = max(
-        room["comfort"]["max_temperature_c"]["after"]
+        room["comfort"]["max_temperature_f"]["after"]
         for room in report["rooms"]
     )
     return _render_metric_table([
         (
             "Maximum temperature",
-            _metric(max_before, max_after, max_before - max_after, "C"),
+            _metric(max_before, max_after, max_before - max_after, "F"),
         ),
         (
             "Cumulative discomfort hours (hot)",
-            _metric(hot_before, hot_after, hot_before - hot_after, "°C·h"),
+            _metric(hot_before, hot_after, hot_before - hot_after, "F.h"),
         ),
         (
             "Cumulative discomfort hours (cold)",
-            _metric(cold_before, cold_after, cold_before - cold_after, "°C·h"),
+            _metric(cold_before, cold_after, cold_before - cold_after, "F.h"),
         ),
     ])
 
@@ -2373,8 +2387,8 @@ def _render_room_html(
         </div>
         <div class="room-tables">
           {_render_metric_table([
-              ("Maximum temperature", comfort["max_temperature_c"]),
-              ("Final temperature", comfort["final_temperature_c"]),
+              ("Maximum temperature", comfort["max_temperature_f"]),
+              ("Final temperature", comfort["final_temperature_f"]),
               ("Cumulative discomfort hours (hot)", comfort["hot_degree_hours"]),
               ("Cumulative discomfort hours (cold)", comfort["cold_degree_hours"]),
           ])}
@@ -2409,7 +2423,7 @@ def _render_temperature_profile_html(profile: dict[str, Any], comfort_mode: str)
         after_value = summary["after_hot_degree_hours"]
         discomfort_note = (
             "Cumulative discomfort hours: "
-            f"{_format_value(before_value, '°C·h')} → {_format_value(after_value, '°C·h')} "
+            f"{_format_value(before_value, 'C.h')} → {_format_value(after_value, 'C.h')} "
             f"({_format_signed_pct(_reduction_pct(before_value, after_value))}). "
             "Colored area = discomfort present before and avoided after."
         )
@@ -2418,7 +2432,7 @@ def _render_temperature_profile_html(profile: dict[str, Any], comfort_mode: str)
         after_value = summary["after_cold_degree_hours"]
         discomfort_note = (
             "Cumulative discomfort hours: "
-            f"{_format_value(before_value, '°C·h')} → {_format_value(after_value, '°C·h')} "
+            f"{_format_value(before_value, 'C.h')} → {_format_value(after_value, 'C.h')} "
             f"({_format_signed_pct(_reduction_pct(before_value, after_value))}). "
             "Colored area = discomfort present before and avoided after."
         )
@@ -2777,7 +2791,7 @@ def _svg_grid_lines(
         )
         lines.append(
             f'<text x="{left - 10}" y="{y + 4:.1f}" text-anchor="end" '
-            f'font-size="11" fill="#64748b">{value:.0f} °C</text>'
+            f'font-size="11" fill="#64748b">{value * 9.0 / 5.0 + 32.0:.0f} °F</text>'
         )
     return "\n".join(lines)
 
@@ -2977,9 +2991,12 @@ def _format_variation(metric: dict[str, Any]) -> str:
 
 
 def _format_value(value: float, unit: str) -> str:
+    if unit in {"C.h", "°C·h"}:
+        value = float(value) * 1.8
+        unit = "F.h"
     display_unit = _display_unit(unit)
-    if display_unit == "€":
-        return f"{_format_number(value, 2)} €"
+    if display_unit == "$":
+        return f"${_format_number(value, 2)}"
     return f"{_format_number(value, 2)} {escape(display_unit)}"
 
 
@@ -3010,18 +3027,18 @@ def _format_pct_badge(metric: dict[str, Any]) -> str:
 
 def _display_unit(unit: str) -> str:
     units = {
-        "C": "°C",
-        "C.h": "°C·h",
-        "EUR": "€",
+        "F": "°F",
+        "F.h": "°F·h",
+        "USD": "$",
         "kWh_th": "kWh therm.",
         "kWh_final": "kWh final",
-        "kgCO2": "kg CO₂",
     }
     return units.get(unit, unit)
 
 
 def _format_temperature(value: float) -> str:
-    return f"{_format_number(value, 1)} °C"
+    fahrenheit = float(value) * 9.0 / 5.0 + 32.0
+    return f"{_format_number(fahrenheit, 1)} °F"
 
 
 def _format_duration(experiment: dict[str, Any]) -> str:

@@ -49,6 +49,13 @@ def test_frontend_app_is_served(tmp_path, monkeypatch):
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
 
+    script = client.get("/static/app.js").text
+    assert "Area ft²" in script
+    assert "Height ft" in script
+    assert "°F" in script
+    assert "cost_saved_usd" in script
+    assert "cost_saved_eur" not in script
+
 
 def test_legal_page_is_served(tmp_path, monkeypatch):
     monkeypatch.setenv("THERMAL_SAAS_DB_PATH", str(tmp_path / "thermal_saas.sqlite"))

@@ -103,12 +103,12 @@ def _winter_scenario(outdoor_temperature_c):
             ],
         },
         "energy_prices": {
-            "electricity_eur_kwh": 0.25,
-            "gas_eur_kwh": 0.11,
+            "electricity_usd_kwh": 0.18,
+            "natural_gas_usd_therm": 1.5,
         },
         "co2_factors": {
-            "electricity_kg_kwh": 0.06,
-            "gas_kg_kwh": 0.227,
+            "electricity_kg_kwh": 0.0,
+            "natural_gas_kg_kwh": 0.0,
         },
     }
 
@@ -151,15 +151,29 @@ def test_closed_shutters_reduce_window_transmission_losses():
 
 
 def test_heating_final_energy_is_split_by_energy_vector():
-    dwelling = _single_room_dwelling(_gas_boiler())
+    dwelling = _single_room_dwelling(_gas_furnace())
     validate_dwelling(dwelling)
 
     results = simulate_1r1c(dwelling, _winter_scenario(-5.0), 1.2, 1005.0)
 
     assert results["totals"]["heating_electric_kwh"] == 0.0
-    assert results["totals"]["heating_final_kwh_by_energy"]["gas"] > 0.0
-    assert results["totals"]["final_energy_kwh_by_energy"]["gas"] > 0.0
-    assert results["totals"]["energy_cost_eur"] > 0.0
+    assert results["totals"]["heating_final_kwh_by_energy"]["natural_gas"] > 0.0
+    assert results["totals"]["final_energy_kwh_by_energy"]["natural_gas"] > 0.0
+    assert results["totals"]["energy_cost_usd"] > 0.0
+    assert round(results["totals"]["energy_cost_usd"], 6) == round(
+        results["totals"]["heating_final_kwh"] / 29.308324 * 1.5,
+        6,
+    )
+
+
+def test_propane_cost_uses_gallons_not_currency_conversion():
+    dwelling = _single_room_dwelling(_propane_furnace())
+    results = simulate_1r1c(dwelling, _winter_scenario(-5.0), 1.2, 1005.0)
+
+    assert round(results["totals"]["energy_cost_usd"], 6) == round(
+        results["totals"]["heating_final_kwh"] / 26.803048 * 2.5,
+        6,
+    )
 
 
 def test_heat_pump_cop_curve_uses_outdoor_temperature():
@@ -186,7 +200,7 @@ def test_heat_pump_cop_curve_uses_outdoor_temperature():
 def _electric_heater():
     return {
         "id": "electric_heater",
-        "type": "electric_radiator",
+        "type": "electric_resistance",
         "energy_vector": "electricity",
         "served_rooms": ["main_room"],
         "max_power_w": 5000.0,
@@ -194,14 +208,25 @@ def _electric_heater():
     }
 
 
-def _gas_boiler():
+def _gas_furnace():
     return {
-        "id": "gas_boiler",
-        "type": "boiler",
-        "energy_vector": "gas",
+        "id": "gas_furnace",
+        "type": "furnace",
+        "energy_vector": "natural_gas",
         "served_rooms": ["main_room"],
         "max_power_w": 5000.0,
-        "performance_ref": {"mode": "constant", "cop": 0.9},
+        "performance_ref": {"mode": "constant", "cop": 0.8},
+    }
+
+
+def _propane_furnace():
+    return {
+        "id": "propane_furnace",
+        "type": "furnace",
+        "energy_vector": "propane",
+        "served_rooms": ["main_room"],
+        "max_power_w": 5000.0,
+        "performance_ref": {"mode": "constant", "cop": 0.8},
     }
 
 

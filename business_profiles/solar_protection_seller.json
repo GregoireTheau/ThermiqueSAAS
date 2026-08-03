@@ -136,7 +136,7 @@
               {"id": "rare", "label": "Rarely closed during the day"}
             ]
           },
-          {"id": "cooling_setpoint_c", "type": "number", "label": "Target summer comfort temperature", "required": true, "default": 26.0}
+          {"id": "cooling_setpoint_f", "type": "number", "label": "Target summer comfort temperature (°F)", "required": true, "default": 78}
         ]
       },
       {

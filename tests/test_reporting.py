@@ -65,7 +65,7 @@ def test_report_model_keeps_traceable_headline_metrics():
     assert report["headline"]["electricity"]["unit"] == "kWh"
     assert report["headline"]["final_energy"]["unit"] == "kWh_final"
     assert report["headline"]["cost"]["before"] == round(
-        comparison["before"]["totals"]["energy_cost_eur"],
+        comparison["before"]["totals"]["energy_cost_usd"],
         2,
     )
     assert 1 <= len(report["primary_kpis"]) <= 3
@@ -123,11 +123,13 @@ def test_render_report_html_contains_report_sections_without_hourly_traces():
     assert "Report generated automatically" in html
     assert "Simulation limits" not in html
     assert "24 h" in html
-    assert "°C" in html
+    assert "°F" in html
     assert '<svg class="chart" viewBox="0 0 1040 370"' in html
     assert 'y="12.0" width="746" height="26"' in html
     assert 'y1="70.0"' in html
-    assert "€" in html
+    assert "$" in html
+    assert "CO₂" not in html
+    assert "kg CO2" not in html
     assert ".00 °C" not in html
     assert comparison["dwelling_id"] in html
 
@@ -147,12 +149,12 @@ def test_report_context_only_mentions_cooling_setpoints_when_cooling_exists():
     comparison["experiment"]["has_cooling"] = False
     no_cooling_html = render_report_html(build_report_model(comparison))
     assert "Setpoints" in no_cooling_html
-    assert "Heating 19 °C" in no_cooling_html
-    assert "cooling 27 °C during the day, 24 °C at night" not in no_cooling_html
+    assert "Heating 66.2 °F" in no_cooling_html
+    assert "cooling 80.6 °F during the day, 75.2 °F at night" not in no_cooling_html
 
     comparison["experiment"]["has_cooling"] = True
     cooling_html = render_report_html(build_report_model(comparison))
-    assert "Heating 19 °C, cooling 27 °C during the day, 24 °C at night" in cooling_html
+    assert "Heating 66.2 °F, cooling 80.6 °F during the day, 75.2 °F at night" in cooling_html
 
 
 def test_comfort_mode_and_room_status_handle_cold_symmetrically():
@@ -206,9 +208,8 @@ def test_report_kpis_are_adapted_to_business_scenario_type():
             "dwelling_type": "house",
             "position_id": "single_storey_house",
             "construction_era_id": "us_1940_1979",
-            "heating_ref": "electric_radiator",
-            "current_energy_id": "electricity",
-            "heat_emitters_id": "electric_radiators",
+            "current_heating_ref": "electric_resistance",
+            "hvac_duct_location_id": "no_ducts",
             "rooms": [
                 {
                     "name": "Salon",
@@ -233,7 +234,6 @@ def test_report_kpis_are_adapted_to_business_scenario_type():
     assert [kpi["label"] for kpi in heat_pump_report["primary_kpis"]] == [
         "Final energy saved",
         "Cost saved",
-        "CO₂ avoided",
     ]
     assert "The heat pump provides the same heat demand" in heat_pump_report["narrative"]["conclusion"]
 
@@ -246,9 +246,8 @@ def test_business_report_presentation_is_profile_specific():
         "dwelling_type": "house",
         "position_id": "single_storey_house",
         "construction_era_id": "us_1940_1979",
-        "heating_ref": "electric_radiator",
-        "current_energy_id": "electricity",
-        "heat_emitters_id": "electric_radiators",
+        "heating_ref": "electric_resistance",
+        "current_heating_ref": "electric_resistance",
         "window_ref": "double_glazing_old",
         "window_air_leakage_id": "leaky",
         "roof_assembly_id": "vented_attic_ceiling",
@@ -281,7 +280,6 @@ def test_business_report_presentation_is_profile_specific():
     assert [kpi["label"] for kpi in heat_pump["primary_kpis"]] == [
         "Final energy saved",
         "Cost saved",
-        "CO₂ avoided",
     ]
     assert "Hot discomfort avoided" not in [
         kpi["label"] for kpi in heat_pump["primary_kpis"]

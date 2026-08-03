@@ -948,10 +948,10 @@
     ]
   },
   "energy_prices": {
-    "electricity_eur_kwh": 0.25
+    "electricity_usd_kwh": 0.18
   },
   "co2_factors": {
-    "electricity_kg_kwh": 0.06
+    "electricity_kg_kwh": 0.0
   },
   "scenario_id": "commercial_heatwave_3d_roof_retrofit_after",
   "description": "Experience commerciale canicule 3 jours apres toiture reflective et isolation toiture: albedo augmente et U toiture reduit.",

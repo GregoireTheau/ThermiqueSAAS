@@ -50,8 +50,8 @@ cp_air = 1005 J/kg.K
 dt = 1 h dans les scénarios générés
 seuil inconfort froid = 19 °C
 seuil inconfort chaud = 26 °C
-prix électricité = 0.25 €/kWh
-facteur CO2 électricité = 0.06 kgCO2/kWh
+prix électricité = 0.18 $/kWh
+facteurs CO2 = neutralisés ; aucun KPI CO2 n'est publié au lancement US
 albédo sol par défaut = 0.2
 température initiale dwelling = 20 °C
 gain interne défaut dwelling = 4 W/m2
@@ -534,28 +534,24 @@ Systèmes de chauffage :
 
 | Référence | Type | Énergie | Performance |
 |---|---|---|---:|
-| `electric_radiator` | `electric_radiator` | électricité | COP 1.00 |
-| `air_air_heat_pump_standard` | `heat_pump` | électricité | COP 2.0 à -7 °C, 3.2 à 7 °C, 4.0 à 15 °C |
-| `air_water_heat_pump_standard` | `heat_pump` | électricité | COP 1.9 à -7 °C, 3.0 à 7 °C, 3.6 à 15 °C |
-| `gas_boiler_standard` | `boiler` | gaz | rendement 0.90 |
-| `gas_boiler_condensing` | `boiler` | gaz | rendement 1.00 |
-| `fuel_oil_boiler_standard` | `boiler` | fioul | rendement 0.85 |
-| `wood_stove_standard` | `boiler` | bois | rendement 0.75 |
+| `electric_resistance` | `electric_resistance` | électricité | COP 1.00 |
+| `air_source_heat_pump_standard` | `heat_pump` | électricité | COP 2.0 à -7 °C, 3.2 à 7 °C, 4.0 à 15 °C |
+| `natural_gas_furnace_standard` | `furnace` | gaz naturel | rendement 0.80 |
+| `propane_furnace_standard` | `furnace` | propane | rendement 0.80 |
 
 Pour le profil `heat_pump_seller`, le dwelling initial utilise le chauffage existant :
 
 | Saisie actuelle | Système before |
 |---|---|
-| électricité + radiateurs | `electric_radiator` |
-| gaz | `gas_boiler_standard` |
-| fioul | `fuel_oil_boiler_standard` |
-| bois | `wood_stove_standard` |
-| électricité + unités murales air | `air_air_heat_pump_standard` |
+| résistance électrique | `electric_resistance` |
+| furnace gaz naturel | `natural_gas_furnace_standard` |
+| furnace propane | `propane_furnace_standard` |
+| pompe à chaleur air-source | `air_source_heat_pump_standard` |
 
 Le retrofit PAC remplace le système par :
 
 ```text
-air_air_heat_pump_standard, energy_vector = electricity, COP courbe temperature_curve
+air_source_heat_pump_standard, energy_vector = electricity, COP courbe temperature_curve
 ```
 
 ## 16. Climatisation
@@ -608,7 +604,7 @@ Phi_final = Phi_free + P_heat - P_cool
 T_next = T_room + dt / C_room * Phi_final
 ```
 
-## 17. Énergie, Coût Et CO2
+## 17. Énergie Et Coût US
 
 Conversion puissance vers énergie :
 
@@ -628,20 +624,23 @@ cooling_electric_kwh
 electricity_kwh = heating_electric_kwh + cooling_electric_kwh
 final_energy_kwh_by_energy = heating_final_kwh_by_energy + cooling_electricity
 final_energy_kwh
-electricity_cost_eur = electricity_kwh * 0.25
-electricity_co2_kg = electricity_kwh * 0.06
-energy_cost_eur = sum(final_energy_kwh_by_energy[energy] * price_energy)
-energy_co2_kg = sum(final_energy_kwh_by_energy[energy] * co2_factor_energy)
+electricity_cost_usd = electricity_kwh * electricity_usd_kwh
+natural_gas_cost_usd = natural_gas_kwh / 29.308324 * natural_gas_usd_therm
+propane_cost_usd = propane_kwh / 26.803048 * propane_usd_gallon
+energy_cost_usd = sum(cost_by_energy)
 ```
 
-Prix et facteurs CO2 par défaut utilisés si le scénario ne fournit pas le vecteur :
+Prix de travail utilisés si le scénario ne fournit pas le vecteur :
 
-| Énergie | Prix €/kWh | kgCO2/kWh |
-|---|---:|---:|
-| électricité | 0.25 | 0.060 |
-| gaz | 0.11 | 0.227 |
-| fioul | 0.13 | 0.324 |
-| bois | 0.07 | 0.030 |
+| Énergie | Prix | Unité commerciale |
+|---|---:|---|
+| électricité | 0.18 | $/kWh |
+| gaz naturel | 1.50 | $/therm |
+| propane | 2.50 | $/gallon |
+
+Les conversions énergétiques utilisent 100 000 Btu par therm et 91 452 Btu
+par gallon de propane (U.S. EIA). Aucun KPI CO2 n'est généré pour le lancement
+US tant qu'une source électrique régionale, datée et versionnée n'est pas intégrée.
 
 ## 18. Inconfort
 
@@ -770,7 +769,7 @@ solar_factor_open_after = 1.0
 ### Pompe à chaleur
 
 ```text
-system_ref_after = air_air_heat_pump_standard
+system_ref_after = air_source_heat_pump_standard
 type_after = heat_pump
 energy_vector_after = electricity
 performance_after = temperature_curve

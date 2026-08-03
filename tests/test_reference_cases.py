@@ -151,8 +151,8 @@ def _build_scenario(case):
             "natural_ventilation": natural_ventilation,
         },
         "weather": {"weather_ref": scenario_data["weather_ref"]},
-        "energy_prices": {"electricity_eur_kwh": 0.25},
-        "co2_factors": {"electricity_kg_kwh": 0.06},
+        "energy_prices": {"electricity_usd_kwh": 0.18},
+        "co2_factors": {"electricity_kg_kwh": 0.0},
     }
     if "shutter_hourly" in scenario_data:
         scenario["controls"]["shutters"]["hourly"] = [

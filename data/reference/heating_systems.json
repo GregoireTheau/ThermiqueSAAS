@@ -1,109 +1,47 @@
 {
   "schema_version": "0.1",
   "data_quality": "mvp_working_assumptions_to_calibrate",
-  "description": "Simplified heating equipment performance assumptions for first tests.",
+  "description": "Simplified US residential space-heating equipment assumptions for sales estimates.",
   "units": {
-    "cop": "thermal W / electric W",
-    "efficiency": "thermal W / final energy W"
+    "cop": "thermal W / final energy W",
+    "afue_equivalent": "thermal W / fuel W"
   },
   "systems": [
-        {
-            "id": "electric_radiator",
-            "name": "Electric convector or radiator",
-            "type": "electric_radiator",
-            "energy_vector": "electricity",
-            "performance_ref": {
-                "mode": "constant",
-                "cop": 1.0
-            }
-        },
-        {
-            "id": "air_air_heat_pump_standard",
-            "name": "Standard air-to-air heat pump",
-            "type": "heat_pump",
-            "energy_vector": "electricity",
-            "performance_ref": {
-                "mode": "temperature_curve",
-                "cop": 3.2,
-                "points": [
-                    {
-                        "outdoor_temperature_c": -7.0,
-                        "cop": 2.0
-                    },
-                    {
-                        "outdoor_temperature_c": 7.0,
-                        "cop": 3.2
-                    },
-                    {
-                        "outdoor_temperature_c": 15.0,
-                        "cop": 4.0
-                    }
-                ]
-            }
-        },
-        {
-            "id": "air_water_heat_pump_standard",
-            "name": "Standard air-to-water heat pump",
-            "type": "heat_pump",
-            "energy_vector": "electricity",
-            "performance_ref": {
-                "mode": "temperature_curve",
-                "cop": 3.0,
-                "points": [
-                    {
-                        "outdoor_temperature_c": -7.0,
-                        "cop": 1.9
-                    },
-                    {
-                        "outdoor_temperature_c": 7.0,
-                        "cop": 3.0
-                    },
-                    {
-                        "outdoor_temperature_c": 15.0,
-                        "cop": 3.6
-                    }
-                ]
-            }
-        },
-        {
-            "id": "gas_boiler_standard",
-            "name": "Standard gas boiler",
-            "type": "boiler",
-            "energy_vector": "gas",
-            "performance_ref": {
-                "mode": "constant",
-                "cop": 0.9
+    {
+      "id": "electric_resistance",
+      "name": "Electric resistance heat",
+      "type": "electric_resistance",
+      "energy_vector": "electricity",
+      "performance_ref": {"mode": "constant", "cop": 1.0}
+    },
+    {
+      "id": "air_source_heat_pump_standard",
+      "name": "Central air-source heat pump",
+      "type": "heat_pump",
+      "energy_vector": "electricity",
+      "performance_ref": {
+        "mode": "temperature_curve",
+        "cop": 3.2,
+        "points": [
+          {"outdoor_temperature_c": -7.0, "cop": 2.0},
+          {"outdoor_temperature_c": 7.0, "cop": 3.2},
+          {"outdoor_temperature_c": 15.0, "cop": 4.0}
+        ]
       }
     },
     {
-            "id": "gas_boiler_condensing",
-            "name": "Condensing gas boiler",
-            "type": "boiler",
-            "energy_vector": "gas",
-            "performance_ref": {
-                "mode": "constant",
-                "cop": 1.0
-      }
+      "id": "natural_gas_furnace_standard",
+      "name": "Natural gas forced-air furnace",
+      "type": "furnace",
+      "energy_vector": "natural_gas",
+      "performance_ref": {"mode": "constant", "cop": 0.80}
     },
     {
-            "id": "fuel_oil_boiler_standard",
-            "name": "Standard oil boiler",
-            "type": "boiler",
-            "energy_vector": "fuel_oil",
-            "performance_ref": {
-                "mode": "constant",
-                "cop": 0.85
-      }
-    },
-    {
-            "id": "wood_stove_standard",
-            "name": "Standard wood heating",
-            "type": "boiler",
-            "energy_vector": "wood",
-            "performance_ref": {
-                "mode": "constant",
-                "cop": 0.75
-      }
+      "id": "propane_furnace_standard",
+      "name": "Propane forced-air furnace",
+      "type": "furnace",
+      "energy_vector": "propane",
+      "performance_ref": {"mode": "constant", "cop": 0.80}
     }
   ]
 }

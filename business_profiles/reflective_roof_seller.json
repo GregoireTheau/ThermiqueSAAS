@@ -59,18 +59,18 @@
             "default": false
           },
           {
-            "id": "cooling_setpoint_day_c",
+            "id": "cooling_setpoint_day_f",
             "type": "number",
-            "label": "Daytime cooling setpoint (°C)",
+            "label": "Daytime cooling setpoint (°F)",
             "required": false,
-            "default": 26.0
+            "default": 78
           },
           {
-            "id": "cooling_setpoint_night_c",
+            "id": "cooling_setpoint_night_f",
             "type": "number",
-            "label": "Night cooling setpoint (°C)",
+            "label": "Night cooling setpoint (°F)",
             "required": false,
-            "default": 26.0
+            "default": 78
           },
           {
             "id": "airtightness_id",

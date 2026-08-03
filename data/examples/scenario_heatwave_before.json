@@ -334,9 +334,9 @@
     ]
   },
   "energy_prices": {
-    "electricity_eur_kwh": 0.25
+    "electricity_usd_kwh": 0.18
   },
   "co2_factors": {
-    "electricity_kg_kwh": 0.06
+    "electricity_kg_kwh": 0.0
   }
 }

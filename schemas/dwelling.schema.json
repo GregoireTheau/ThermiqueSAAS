@@ -570,7 +570,8 @@
         "type": {
           "enum": [
             "heat_pump",
-            "electric_radiator",
+            "electric_resistance",
+            "furnace",
             "boiler",
             "stove",
             "other"
@@ -644,6 +645,8 @@
       "enum": [
         "electricity",
         "gas",
+        "natural_gas",
+        "propane",
         "fuel_oil",
         "wood"
       ]

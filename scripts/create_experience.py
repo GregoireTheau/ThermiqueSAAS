@@ -156,8 +156,8 @@ def build_scenario(
         ),
         "setpoints": experience_type["setpoints"],
         "weather": build_weather(experience_type["season"], duration_days),
-        "energy_prices": {"electricity_eur_kwh": 0.25},
-        "co2_factors": {"electricity_kg_kwh": 0.06},
+        "energy_prices": {"electricity_usd_kwh": 0.18},
+        "co2_factors": {"electricity_kg_kwh": 0.0},
     }
 
     if experience_type["season"] == "summer":
@@ -282,7 +282,7 @@ def build_retrofit(
                 {
                     "category": "heating",
                     "system_id": system["id"],
-                    "system_ref": "air_air_heat_pump_standard",
+                    "system_ref": "air_source_heat_pump_standard",
                     "type": "heat_pump",
                     "energy_vector": "electricity",
                     "performance_ref": {

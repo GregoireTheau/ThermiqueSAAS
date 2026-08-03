@@ -200,25 +200,10 @@ SHUTTER_USAGE_LEVELS = [
 ]
 
 HEATING_SYSTEMS = [
-    {"id": "electric_radiator", "label": "Electric radiators"},
-    {"id": "air_air_heat_pump_standard", "label": "Air-to-air heat pump"},
-    {"id": "air_water_heat_pump_standard", "label": "Air-to-water heat pump"},
-]
-
-HEAT_PUMP_CURRENT_ENERGIES = [
-    {"id": "electricity", "label": "Electricity"},
-    {"id": "gas", "label": "Gas"},
-    {"id": "fuel_oil", "label": "Oil"},
-    {"id": "wood", "label": "Wood"},
-    {"id": "unknown", "label": "I don't know"},
-]
-
-HEAT_EMITTERS = [
-    {"id": "electric_radiators", "label": "Electric radiators"},
-    {"id": "water_radiators", "label": "Water radiators"},
-    {"id": "underfloor", "label": "Underfloor heating"},
-    {"id": "air_units", "label": "Wall units / air supply"},
-    {"id": "mixed", "label": "Mixed or uncertain"},
+    {"id": "natural_gas_furnace_standard", "label": "Natural gas forced-air furnace"},
+    {"id": "propane_furnace_standard", "label": "Propane forced-air furnace"},
+    {"id": "air_source_heat_pump_standard", "label": "Central air-source heat pump"},
+    {"id": "electric_resistance", "label": "Electric resistance heat"},
 ]
 
 VENTILATION_SYSTEMS = [
@@ -643,11 +628,6 @@ def collect_change_details(change_id: str) -> dict[str, Any]:
                 "Do you feel air leakage around the windows?",
                 AIRTIGHTNESS_LEVELS,
             ),
-        }
-    if change_id == "heat_pump":
-        return {
-            "current_energy": choose_one("Current heating energy", HEAT_PUMP_CURRENT_ENERGIES),
-            "heat_emitters": choose_one("Current heat emitters", HEAT_EMITTERS),
         }
     return {}
 
@@ -1276,9 +1256,7 @@ def duct_efficiency_for_heating(
     heating_ref: str,
     duct_distribution_efficiency: float,
 ) -> float:
-    if heating_ref == "air_air_heat_pump_standard":
-        return duct_distribution_efficiency
-    return 1.0
+    return duct_distribution_efficiency
 
 
 def build_cooling_systems(
@@ -1546,8 +1524,12 @@ def build_scenario(
             annual_tmy_name,
             annual_weather_dir,
         ),
-        "energy_prices": energy_prices or {"electricity_eur_kwh": 0.25},
-        "co2_factors": {"electricity_kg_kwh": 0.06},
+        "energy_prices": energy_prices or {
+            "electricity_usd_kwh": 0.18,
+            "natural_gas_usd_therm": 1.50,
+            "propane_usd_gallon": 2.50,
+        },
+        "co2_factors": {"electricity_kg_kwh": 0.0},
     }
     if experiment_spec["weather_mode"].startswith("us_"):
         weather_type = "typical" if experiment_spec["weather_mode"] == "us_typical" else "historical"
@@ -1854,13 +1836,13 @@ def build_retrofit(
             ],
         })
     if change_id == "heat_pump":
-        reference = get_catalog_item(catalog, "heating_systems", "air_air_heat_pump_standard")
+        reference = get_catalog_item(catalog, "heating_systems", "air_source_heat_pump_standard")
         return clean_retrofit({
             "system_overrides": [
                 {
                     "category": "heating",
                     "system_id": system["id"],
-                    "system_ref": "air_air_heat_pump_standard",
+                    "system_ref": "air_source_heat_pump_standard",
                     "type": reference["type"],
                     "energy_vector": reference["energy_vector"],
                     "performance_ref": reference["performance_ref"],
@@ -2020,8 +2002,7 @@ def build_customer_summary(season: str, comparison: dict[str, Any]) -> dict[str,
         },
         "headline": {
             "electricity_saved_kwh": round(energy["electricity_saved_kwh"], 2),
-            "cost_saved_eur": round(energy["cost_saved_eur"], 2),
-            "co2_saved_kg": round(energy["co2_saved_kg"], 2),
+            "cost_saved_usd": round(energy["cost_saved_usd"], 2),
             "main_gain_driver": driver["label"],
         },
         "comfort": {
@@ -2097,8 +2078,7 @@ def print_customer_summary(summary: dict[str, Any]) -> None:
         print(
             "- Energy: "
             f"{headline['electricity_saved_kwh']:.2f} kWh, "
-            f"{headline['cost_saved_eur']:.2f} EUR, "
-            f"{headline['co2_saved_kg']:.2f} kg CO2 saved"
+            f"${headline['cost_saved_usd']:.2f} saved"
         )
     elif headline["electricity_saved_kwh"] < 0:
         print(

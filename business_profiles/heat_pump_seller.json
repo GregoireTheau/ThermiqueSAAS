@@ -102,32 +102,37 @@
         "label": "Current heating",
         "questions": [
           {
-            "id": "current_energy_id",
+            "id": "current_heating_ref",
             "type": "select",
-            "label": "Current heating energy",
+            "label": "Current heating system",
             "required": true,
             "options": [
-              {"id": "electricity", "label": "Electricity"},
-              {"id": "gas", "label": "Gaz"},
-              {"id": "fuel_oil", "label": "Oil"},
-              {"id": "wood", "label": "Wood"},
-              {"id": "unknown", "label": "I don't know"}
+              {"id": "natural_gas_furnace_standard", "label": "Natural gas forced-air furnace"},
+              {"id": "propane_furnace_standard", "label": "Propane forced-air furnace"},
+              {"id": "air_source_heat_pump_standard", "label": "Central air-source heat pump"},
+              {"id": "electric_resistance", "label": "Electric resistance heat"}
             ]
           },
           {
-            "id": "heat_emitters_id",
+            "id": "hvac_duct_location_id",
             "type": "select",
-            "label": "Current heat distribution",
+            "label": "HVAC duct presence and location",
             "required": true,
             "options": [
-              {"id": "electric_radiators", "label": "Electric radiators"},
-              {"id": "water_radiators", "label": "Water radiators"},
-              {"id": "underfloor", "label": "Underfloor heating"},
-              {"id": "air_units", "label": "Wall units / air supply"},
-              {"id": "mixed", "label": "Mixed or uncertain"}
+              {"id": "no_ducts", "label": "No HVAC ducts"},
+              {"id": "conditioned_space", "label": "Ducts inside conditioned space"},
+              {"id": "conditioned_attic", "label": "Ducts in conditioned attic"},
+              {"id": "vented_attic", "label": "Ducts in vented attic"},
+              {"id": "unconditioned_crawlspace", "label": "Ducts in unconditioned crawlspace"},
+              {"id": "unconditioned_basement", "label": "Ducts in unconditioned basement"},
+              {"id": "garage", "label": "Ducts in garage"},
+              {"id": "mixed_unknown", "label": "Mixed or unknown location"}
             ]
           },
-          {"id": "heating_setpoint_c", "type": "number", "label": "Target winter heating temperature", "required": true, "default": 19.0}
+          {"id": "heating_setpoint_f", "type": "number", "label": "Target winter heating temperature (°F)", "required": true, "default": 68},
+          {"id": "electricity_price_usd_kwh", "type": "number", "label": "Electricity price ($/kWh)", "required": true, "default": 0.18},
+          {"id": "natural_gas_price_usd_therm", "type": "number", "label": "Natural gas price ($/therm)", "required": true, "default": 1.5},
+          {"id": "propane_price_usd_gallon", "type": "number", "label": "Propane price ($/gallon)", "required": true, "default": 2.5}
         ]
       },
       {

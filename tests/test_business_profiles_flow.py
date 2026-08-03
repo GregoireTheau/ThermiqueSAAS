@@ -22,7 +22,7 @@ def _base_answers():
         "proposed_roof_r_value": 49,
         "framing_type_id": "wood_frame",
         "hvac_duct_location_id": "vented_attic",
-        "heating_ref": "electric_radiator",
+        "heating_ref": "electric_resistance",
         "rooms": [
             {
                 "name": "Salon",
@@ -107,15 +107,15 @@ def test_roof_profile_uses_us_location_and_explicit_annual_weather_basis():
     assert "period_id" not in question_ids
 
 
-def test_roof_insulation_profile_asks_heating_energy_price():
+def test_roof_insulation_profile_asks_us_energy_prices():
     question = _question_by_id(
         get_profile_questionnaire("roof_insulation_seller"),
-        "heating_energy_price_eur_kwh",
+        "electricity_price_usd_kwh",
     )
 
-    assert question["label"] == "Heating energy price (€/final kWh)"
+    assert question["label"] == "Electricity price ($/kWh)"
     assert question["type"] == "number"
-    assert question["default"] == 0.25
+    assert question["default"] == 0.18
 
 
 def test_solar_protection_profile_runs_only_summer_protection_experience():
@@ -124,7 +124,7 @@ def test_solar_protection_profile_runs_only_summer_protection_experience():
 
     assert "has_cooling" in question_ids
     assert "shutter_ref" in question_ids
-    assert "current_energy_id" not in question_ids
+    assert "current_heating_ref" not in question_ids
 
     result = run_profile_experience("solar_protection_seller", _base_answers())
 
@@ -223,25 +223,25 @@ def test_heat_pump_profile_uses_existing_heating_before_retrofit():
     } | {
         "airtightness_id": "standard",
         "ventilation_id": "simple_flow",
-        "current_energy_id": "electricity",
-        "heat_emitters_id": "electric_radiators",
+        "current_heating_ref": "electric_resistance",
+        "hvac_duct_location_id": "no_ducts",
     }
 
     customer = build_customer(answers, profile, catalog)
     dwelling = customer_experience.build_dwelling(customer, catalog)
     heating = dwelling["systems"]["heating"][0]
 
-    assert heating["system_ref"] == "electric_radiator"
+    assert heating["system_ref"] == "electric_resistance"
     assert heating["performance_ref"]["cop"] == 1.0
 
     result = run_profile_experience("heat_pump_seller", answers)
     retrofit = result["simulation_runs"][0]["after_scenario"]["retrofit"]["system_overrides"][0]
 
-    assert retrofit["system_ref"] == "air_air_heat_pump_standard"
+    assert retrofit["system_ref"] == "air_source_heat_pump_standard"
     assert retrofit["performance_ref"]["cop"] >= 2.5
 
 
-def test_heat_pump_profile_maps_existing_energy_to_initial_heating():
+def test_heat_pump_profile_uses_selected_us_initial_heating():
     catalog = load_reference_catalog()
     profile = load_business_profile("heat_pump_seller")
     base_answers = {
@@ -251,16 +251,16 @@ def test_heat_pump_profile_maps_existing_energy_to_initial_heating():
     } | {
         "airtightness_id": "standard",
         "ventilation_id": "simple_flow",
-        "heat_emitters_id": "water_radiators",
+        "hvac_duct_location_id": "vented_attic",
     }
 
     expected_refs = {
-        "gas": "gas_boiler_standard",
-        "fuel_oil": "fuel_oil_boiler_standard",
-        "wood": "wood_stove_standard",
+        "natural_gas_furnace_standard",
+        "propane_furnace_standard",
+        "electric_resistance",
     }
-    for energy_id, expected_ref in expected_refs.items():
-        customer = build_customer(base_answers | {"current_energy_id": energy_id}, profile, catalog)
+    for expected_ref in expected_refs:
+        customer = build_customer(base_answers | {"current_heating_ref": expected_ref}, profile, catalog)
 
         assert customer["heating_ref"] == expected_ref
 
@@ -274,7 +274,7 @@ def test_roof_insulation_profile_runs_roof_insulation_experiences():
         "framing_type_id": "wood_frame",
         "hvac_duct_location_id": "vented_attic",
         "roof_color_id": "dark",
-        "heating_ref": "air_air_heat_pump_standard",
+        "heating_ref": "air_source_heat_pump_standard",
     }
 
     result = run_profile_experience("roof_insulation_seller", answers)
@@ -294,7 +294,7 @@ def test_roof_insulation_profile_runs_roof_insulation_experiences():
     _assert_annual_run(result["simulation_runs"][-1])
 
 
-def test_roof_insulation_uses_custom_heating_energy_price():
+def test_roof_insulation_uses_custom_electricity_price():
     base_answers = _base_answers() | {
         "adaptation_id": "roof_insulation",
         "roof_assembly_id": "compact_flat_roof",
@@ -303,21 +303,22 @@ def test_roof_insulation_uses_custom_heating_energy_price():
         "framing_type_id": "wood_frame",
         "hvac_duct_location_id": "vented_attic",
         "roof_color_id": "dark",
-        "heating_energy_price_eur_kwh": 0.5,
+        "heating_ref": "electric_resistance",
+        "electricity_price_usd_kwh": 0.5,
     }
 
     default_result = run_profile_experience("roof_insulation_seller", base_answers)
     custom_result = run_profile_experience(
         "roof_insulation_seller",
-        base_answers | {"heating_energy_price_eur_kwh": 1.0},
+        base_answers | {"electricity_price_usd_kwh": 1.0},
     )
     default_annual = default_result["simulation_runs"][-1]
     custom_annual = custom_result["simulation_runs"][-1]
 
-    assert custom_annual["before_scenario"]["energy_prices"] == {"electricity_eur_kwh": 1.0}
-    assert custom_annual["after_scenario"]["energy_prices"] == {"electricity_eur_kwh": 1.0}
-    assert custom_annual["comparison"]["summary"]["energy_savings"]["cost_saved_eur"] == (
-        2 * default_annual["comparison"]["summary"]["energy_savings"]["cost_saved_eur"]
+    assert custom_annual["before_scenario"]["energy_prices"]["electricity_usd_kwh"] == 1.0
+    assert custom_annual["after_scenario"]["energy_prices"]["electricity_usd_kwh"] == 1.0
+    assert custom_annual["comparison"]["summary"]["energy_savings"]["cost_saved_usd"] == (
+        2 * default_annual["comparison"]["summary"]["energy_savings"]["cost_saved_usd"]
     )
 
 

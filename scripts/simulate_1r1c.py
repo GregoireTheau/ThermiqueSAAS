@@ -56,8 +56,7 @@ def print_simulation_summary(
     print(f"- Thermal cooling: {totals['cooling_thermal_kwh']:.2f} kWh")
     print(f"- Electric cooling: {totals['cooling_electric_kwh']:.2f} kWh")
     print(f"- Total electricity: {totals['electricity_kwh']:.2f} kWh")
-    print(f"- Electricity cost: {totals['electricity_cost_eur']:.2f} EUR")
-    print(f"- Electricity CO2: {totals['electricity_co2_kg']:.2f} kg")
+    print(f"- Electricity cost: ${totals['electricity_cost_usd']:.2f}")
 
 
 def write_results_json(
