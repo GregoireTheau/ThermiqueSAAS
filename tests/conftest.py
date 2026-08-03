@@ -1,7 +1,41 @@
 import json
+import math
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
+
+
+def _deterministic_annual_weather():
+    """Return a plausible non-leap year without relying on provider data."""
+    start = datetime(2001, 1, 1)
+    hourly = []
+    for hour in range(365 * 24):
+        timestamp = start + timedelta(hours=hour)
+        day = hour // 24
+        hour_in_day = hour % 24
+        seasonal = 14.0 + 11.0 * math.sin(2.0 * math.pi * (day - 80) / 365.0)
+        daily = 4.0 * math.sin(2.0 * math.pi * (hour_in_day - 9) / 24.0)
+        sun = max(0.0, math.sin(math.pi * (hour_in_day - 6) / 12.0))
+        summer_factor = 0.65 + 0.35 * math.sin(
+            2.0 * math.pi * (day - 80) / 365.0,
+        )
+        solar = sun * max(0.3, summer_factor)
+        hourly.append(
+            {
+                "hour": hour,
+                "month": timestamp.month,
+                "outdoor_temperature_c": round(seasonal + daily, 2),
+                "solar_irradiance_w_m2": {
+                    "north": round(80.0 * solar, 2),
+                    "east": round((500.0 if hour_in_day < 12 else 120.0) * solar, 2),
+                    "south": round(550.0 * solar, 2),
+                    "west": round((500.0 if hour_in_day > 12 else 120.0) * solar, 2),
+                    "roof": round(700.0 * solar, 2),
+                },
+            },
+        )
+    return hourly
 
 
 @pytest.fixture(autouse=True)
@@ -45,11 +79,6 @@ def _offline_us_services(monkeypatch, tmp_path):
         if output_path.exists():
             return output_path
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        fixture_path = (
-            Path(__file__).resolve().parents[1]
-            / "data/weather/openmeteo/thermal/bordeaux_2023.weather.json"
-        )
-        fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
         reference = kwargs.get("year") or kwargs.get("tmy_name", "tmy-2024")
         payload = {
             "schema_version": "0.2",
@@ -68,7 +97,7 @@ def _offline_us_services(monkeypatch, tmp_path):
                 "engine_version": "1r1c-mvp-0.1",
                 "hourly_sha256": "test-weather-sha256",
             },
-            "hourly": fixture["hourly"],
+            "hourly": _deterministic_annual_weather(),
         }
         output_path.write_text(json.dumps(payload), encoding="utf-8")
         return output_path
