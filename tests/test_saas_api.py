@@ -68,6 +68,11 @@ def test_legal_page_is_served(tmp_path, monkeypatch):
     assert "Privacy Policy" in response.text
     assert "Legal Notice" in response.text
     assert "thermal estimates and simulations" in response.text
+    assert "not a home energy rating" in response.text
+    assert "does not sell personal information" in response.text
+    assert "To be completed before public or paid launch" in response.text
+    assert "Railway Corporation" in response.text
+    assert "Railway, Frankfurt" not in response.text
 
 
 def test_health_endpoint(tmp_path, monkeypatch):

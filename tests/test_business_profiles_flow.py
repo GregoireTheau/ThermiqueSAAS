@@ -283,7 +283,7 @@ def test_roof_insulation_profile_runs_roof_insulation_experiences():
     roof = next(surface for surface in result["dwelling"]["rooms"][0]["surfaces"] if surface["type"] == "roof")
     assert roof["solar_to_room_factor"] == 0.07
     assert roof["u_value_w_m2k"] == customer_experience.roof_u_from_r_value(11)
-    assert result["dwelling"]["systems"]["heating"][0]["distribution_efficiency"] == 0.85
+    assert result["dwelling"]["systems"]["heating"][0]["distribution_efficiency"] == 0.80
     assert result["dwelling"]["building_characteristics"]["roof_assembly"]["thermal_boundary"] == "roof_deck"
     assert [run["season"] for run in result["simulation_runs"]] == ["winter", "summer", "annual"]
     for run in result["simulation_runs"]:

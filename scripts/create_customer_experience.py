@@ -128,11 +128,11 @@ HVAC_DUCT_LOCATIONS = [
     {"id": "no_ducts", "label": "No HVAC ducts", "distribution_efficiency": 1.0},
     {"id": "conditioned_space", "label": "Ducts inside conditioned space", "distribution_efficiency": 1.0},
     {"id": "conditioned_attic", "label": "Ducts in conditioned attic", "distribution_efficiency": 1.0},
-    {"id": "unconditioned_basement", "label": "Ducts in unconditioned basement", "distribution_efficiency": 0.92},
-    {"id": "mixed_unknown", "label": "Mixed or unknown location", "distribution_efficiency": 0.90},
-    {"id": "vented_attic", "label": "Ducts in vented attic", "distribution_efficiency": 0.85},
-    {"id": "unconditioned_crawlspace", "label": "Ducts in unconditioned crawlspace", "distribution_efficiency": 0.85},
-    {"id": "garage", "label": "Ducts in garage", "distribution_efficiency": 0.85},
+    {"id": "unconditioned_basement", "label": "Ducts in unconditioned basement", "distribution_efficiency": 0.90},
+    {"id": "mixed_unknown", "label": "Mixed or unknown location", "distribution_efficiency": 0.85},
+    {"id": "vented_attic", "label": "Ducts in vented attic", "distribution_efficiency": 0.80},
+    {"id": "unconditioned_crawlspace", "label": "Ducts in unconditioned crawlspace", "distribution_efficiency": 0.80},
+    {"id": "garage", "label": "Ducts in garage", "distribution_efficiency": 0.80},
 ]
 
 R_VALUE_IP_TO_M2K_W = 0.1761101838

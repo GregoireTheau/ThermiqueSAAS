@@ -1,708 +1,90 @@
-# Modèle thermique actuel
+# Modèle thermique ThermalTwin
 
-Ce document décrit l’état actuel du modèle thermique dans le code. Il ne décrit pas un objectif réglementaire ni une méthode DPE : c’est la trace concrète du moteur utilisé aujourd’hui par l’interface SaaS et par `scripts/create_customer_experience.py`.
+État du code au 3 août 2026 — moteur `1r1c-mvp-0.1`.
 
-Sources principales du code :
+Ce document est la référence technique du modèle réellement exécuté. ThermalTwin est un outil
+d'aide à la vente : ses résultats sont des estimations indicatives, pas un HERS rating, un Manual J,
+un audit énergétique, une étude d'ingénierie, une vérification de code, un DPE ou une garantie
+d'économies.
 
-- `thermal_model/simulation.py`
-- `thermal_model/static_losses.py`
-- `utils/*.py`
-- `scripts/create_customer_experience.py`
-- `thermal_saas/business_flow.py`
-- `data/reference/*.json`
+## 1. État actuel en une phrase
 
-## 1. Structure Générale
+Le moteur est un modèle thermique horaire multi-pièces 1R1C, cohérent pour comparer un même
+logement avant/après avec la même météo et les mêmes usages, mais il n'est pas encore calibré ni
+validé sur un échantillon de logements US mesurés. Il est donc plus fiable pour classer des variantes
+et expliquer des mécanismes que pour annoncer une consommation absolue précise.
 
-Le moteur est un modèle horaire multi-pièces de type 1R1C simplifié.
+Niveau de maturité par composant :
 
-Chaque pièce est représentée par :
+| Composant | État | Niveau de confiance actuel |
+|---|---|---|
+| Conservation de l'énergie, unités, conversions | Testé dans le code | Élevé |
+| Météo historique locale et traçabilité | Implémenté, mis en cache et haché | Bon |
+| TMY NSRDB | Implémenté ; dépend de l'API et des identifiants NLR | Bon pour le contexte météo |
+| Transmission par R-value saisie | Formule physique simple | Bon si la R-value effective est correcte |
+| Géométrie, murs, fenêtres, infiltration | Valeurs déclarées ou estimées | Moyen à faible |
+| Gains solaires orientés | Approximation MVP, sans géométrie solaire | Faible à moyen |
+| HVAC et gaines | Courbes/efficacités génériques | Moyen à faible |
+| Confort horaire | Température d'air sensible seulement | Indicatif |
+| Validation sur factures/capteurs | Pas encore réalisée | Non démontré |
 
-- une température d’air unique `T_room` en °C ;
-- une capacité thermique équivalente `C_room` en J/K ;
-- des pertes par transmission ;
-- des pertes ou gains par ventilation ;
-- des apports internes ;
-- des apports solaires ;
-- des échanges éventuels avec d’autres pièces ;
-- un système de chauffage et/ou de climatisation plafonné en puissance.
+La zone IECC/ASHRAE est une métadonnée bâtiment. Elle ne remplace jamais la météo locale et ne
+modifie pas directement les températures ou le rayonnement de la simulation.
 
-L’intégration temporelle est explicite, avec un pas horaire dans les scénarios générés :
+## 2. Chaîne de calcul
 
-```text
-dt = timestep_h * 3600
-T_next = T_current + dt / C_room * Phi_net
-```
-
-où `Phi_net` est la puissance nette entrant dans la pièce, en W.
-
-Convention de signe :
-
-- puissance positive : chaleur entrant dans la pièce ;
-- puissance négative : chaleur sortant de la pièce.
-
-## 2. Constantes Globales
-
-Valeurs par défaut utilisées par le SaaS :
+Pour chaque pièce, le moteur conserve une température d'air `T_room` et une capacité thermique
+équivalente `C_room`. À chaque pas horaire :
 
 ```text
-rho_air = 1.2 kg/m3
-cp_air = 1005 J/kg.K
-dt = 1 h dans les scénarios générés
-seuil inconfort froid = 19 °C
-seuil inconfort chaud = 26 °C
-prix électricité = 0.18 $/kWh
-facteurs CO2 = neutralisés ; aucun KPI CO2 n'est publié au lancement US
-albédo sol par défaut = 0.2
-température initiale dwelling = 20 °C
-gain interne défaut dwelling = 4 W/m2
-```
+Phi_free = Phi_transmission + Phi_ventilation
+           + Phi_internal + Phi_solar + Phi_coupling
 
-Les températures de consigne par défaut des scénarios sont :
-
-```text
-hiver : heating_c = 19 °C, cooling_c = 28 °C
-été : heating_c = 18 °C, cooling_c = 26 °C
-annuel : heating_c = 19 °C, cooling_c = 26 °C
-```
-
-Les températures initiales par saison sont :
-
-```text
-hiver : 19 °C
-été : 26 °C
-annuel : 20 °C
-```
-
-## 3. Capacité Thermique 1R1C
-
-Pour chaque pièce :
-
-```text
-C_room = floor_area_m2 * equivalent_capacity_j_m2k
-```
-
-Unités :
-
-- `floor_area_m2` : m2
-- `equivalent_capacity_j_m2k` : J/m2.K
-- `C_room` : J/K
-
-Valeurs de travail par époque de construction US :
-
-| Époque US | Capacité équivalente J/m2.K |
-|---|---:|
-| `us_pre_1940` | 190000 |
-| `us_1940_1979` | 175000 |
-| `us_1980_1999` | 165000 |
-| `us_2000_2009` | 160000 |
-| `us_2010_or_later` | 155000 |
-
-Remarque : cette capacité est une inertie équivalente globale par m2. Le modèle ne distingue pas explicitement air, murs internes, mobilier et structure.
-
-## 4. Transmission Par Parois
-
-Pour chaque paroi opaque :
-
-```text
-UA_surface = U_surface * A_surface * b_boundary
-```
-
-avec :
-
-- `U_surface` en W/m2.K ;
-- `A_surface` en m2 ;
-- `b_boundary` coefficient de réduction de température.
-
-Coefficients `b_boundary` actuellement codés :
-
-| Boundary | Signification | b |
-|---|---|---:|
-| `exterior` | extérieur | 1.0 |
-| `party` | voisin / mitoyen | 0.5 |
-| `unheated_space` | local non chauffé | 0.7 |
-| `ground` | terre-plein / sol | 0.6 |
-
-Pour les fenêtres :
-
-```text
-U_window_effective = U_window * shutter_u_factor_effective
-UA_window = U_window_effective * A_window
-```
-
-Les fenêtres ne reçoivent pas de coefficient `b_boundary` dans le calcul actuel.
-Quand un volet ou une protection possède `u_factor_closed`, le facteur U est
-interpolé avec le même `opening_ratio` que les apports solaires :
-
-```text
-u_factor_effective = u_factor_closed + opening_ratio * (1 - u_factor_closed)
-```
-
-Le coefficient de transmission total avant ponts thermiques est :
-
-```text
-UA_transmission = sum(UA_surface) + sum(UA_window)
-```
-
-Le facteur de pont thermique est ensuite appliqué globalement :
-
-```text
-H_transmission = (1 + thermal_bridge_factor) * UA_transmission
-H_bridge = thermal_bridge_factor * UA_transmission
-```
-
-La puissance de transmission utilisée dans la simulation est :
-
-```text
-Phi_transmission = H_transmission * (T_out - T_room)
-```
-
-La perte affichée en statique est :
-
-```text
-Loss_transmission = H_transmission * (T_room - T_out)
-```
-
-## 5. Valeurs U Par Époque De Construction US
-
-Valeurs U de base, avant correction par niveau d’isolation :
-
-| Époque US | Mur extérieur | Toiture | Plancher | Ponts thermiques |
-|---|---:|---:|---:|---:|
-| `us_pre_1940` | 1.80 | 1.50 | 1.20 | 0.18 |
-| `us_1940_1979` | 1.00 | 0.70 | 0.80 | 0.15 |
-| `us_1980_1999` | 0.65 | 0.40 | 0.55 | 0.12 |
-| `us_2000_2009` | 0.45 | 0.28 | 0.40 | 0.10 |
-| `us_2010_or_later` | 0.28 | 0.18 | 0.25 | 0.06 |
-
-Unités U : W/m2.K.
-
-Pour les murs et planchers, les U finaux sont :
-
-```text
-U_final = U_period[type] * u_factor_isolation
-```
-
-Dans les parcours toiture US, la toiture n'utilise plus une classe qualitative :
-
-```text
-U_roof = 1 / (R_US * 0.1761101838)
-```
-
-La R-value saisie décrit l'assemblage qui sépare le volume conditionné de
-l'extérieur : plancher du grenier pour un attic ventilé, roof deck pour un
-attic conditionné, un plafond cathédrale ou une toiture compacte.
-
-Pour un système aéraulique, l'énergie finale inclut une efficacité de
-distribution liée à la position des gaines. Cette hypothèse n'affecte pas la
-chaleur livrée au logement et n'est pas appliquée aux systèmes non gainés.
-
-Les `u_factor` viennent des choix métier d’isolation. Le résultat est arrondi à 3 décimales.
-
-## 6. Géométrie Des Parois Générées
-
-Pour une pièce :
-
-```text
-volume_m3 = floor_area_m2 * height_m
-side_width_m = sqrt(floor_area_m2)
-```
-
-Pour une façade saisie :
-
-```text
-gross_wall_area = wall_length_m * height_m
-net_wall_area = max(1.0, gross_wall_area - window_area_same_orientation)
-```
-
-La façade devient une surface :
-
-```text
-type = external_wall
-boundary = exterior
-area_m2 = net_wall_area
-albedo = 0.35
-solar_to_room_factor = 0.08
-tilt_deg = 90
-```
-
-Si la pièce est contre un local non chauffé ou un voisin :
-
-```text
-area_party_or_unheated = sqrt(floor_area_m2) * height_m
-type = party_wall
-boundary = party ou unheated_space
-```
-
-Si la pièce est sous toiture :
-
-```text
-area_roof = floor_area_m2
-type = roof
-boundary = exterior
-tilt_deg = 25
-azimuth_deg = 180
-```
-
-Si la pièce est en contact avec le sol :
-
-```text
-area_floor = floor_area_m2
-type = floor
-boundary = ground
-```
-
-## 7. Fenêtres Et Protections Solaires
-
-Valeurs de vitrage :
-
-| Référence | U W/m2.K | g |
-|---|---:|---:|
-| `single_glazing_old` | 5.0 | 0.85 |
-| `double_glazing_old` | 2.8 | 0.70 |
-| `double_glazing_standard` | 1.6 | 0.55 |
-| `double_glazing_low_e` | 1.2 | 0.50 |
-| `triple_glazing` | 0.8 | 0.45 |
-
-Protections solaires :
-
-| Référence | Facteur fermé | Facteur ouvert | Facteur U fermé |
-|---|---:|---:|---:|
-| `none` | 1.00 | 1.00 | 1.00 |
-| `roller_shutter_standard` | 0.15 | 1.00 | 0.80 |
-| `roller_shutter_insulating` | 0.10 | 1.00 | 0.65 |
-| `external_blind` | 0.25 | 1.00 | 0.95 |
-| `fixed_south_overhang` | 0.35 | 0.55 | 1.00 |
-| `interior_blind` | 0.55 | 1.00 | 1.00 |
-
-`u_factor_closed` est maintenant utilisé dans le calcul de transmission horaire.
-Les volets fermés réduisent donc à la fois les apports solaires et le U effectif
-des fenêtres.
-
-Le facteur solaire effectif des volets est interpolé :
-
-```text
-shutter_factor = closed_factor + opening_ratio * (open_factor - closed_factor)
-```
-
-Le gain solaire par fenêtre est :
-
-```text
-Phi_solar_window = A_window * Irradiance_orientation * g_value * shutter_factor * mask_factor
-```
-
-avec `mask_factor` borné entre 0 et 1 dans les fonctions solaires.
-
-Le moteur applique directement l'irradiance du fichier météo local. La zone
-IECC/ASHRAE est une métadonnée de contexte bâtiment et ne modifie ni la
-température ni le rayonnement météo.
-
-## 8. Apports Solaires Opaques
-
-Certaines surfaces opaques extérieures peuvent recevoir un apport solaire transmis à la pièce.
-
-Formules :
-
-```text
-absorptivity = 1 - albedo
-Phi_absorbed = A_surface * Irradiance_orientation * mask_factor * absorptivity
-Phi_opaque_to_room = solar_to_room_factor * Phi_absorbed
-```
-
-Valeurs générées :
-
-```text
-mur extérieur : albedo = 0.35, solar_to_room_factor = 0.08
-toiture : albedo selon couleur toiture, solar_to_room_factor selon ventilation combles, défaut souvent 0.02
-```
-
-Pour le retrofit toiture réfléchissante :
-
-```text
-albedo après = 0.75
-```
-
-## 9. Ventilation Et Infiltration
-
-Le modèle sépare trois composantes :
-
-```text
-infiltration_ach
-mechanical_ach
-natural_ventilation_ach
-```
-
-Conversion ACH vers débit :
-
-```text
-q = ACH * volume_m3 / 3600
-```
-
-Coefficient thermique d’air :
-
-```text
-H_air = rho_air * cp_air * q
-```
-
-Composantes :
-
-```text
-H_infiltration = rho_air * cp_air * q_infiltration
-H_mechanical = rho_air * cp_air * q_mechanical * (1 - recovery_efficiency)
-H_natural = rho_air * cp_air * q_natural
-H_ventilation = H_infiltration + H_mechanical + H_natural
-```
-
-Puissance de ventilation :
-
-```text
-Phi_ventilation = H_ventilation * (T_out - T_room)
-```
-
-Les sorties horaires exposent aussi :
-
-```text
-infiltration_power_w
-mechanical_ventilation_power_w
-natural_ventilation_power_w
-```
-
-## 10. Valeurs De Ventilation
-
-Catalogues ACH :
-
-| Référence | ACH défaut | Récupération |
-|---|---:|---:|
-| `natural_leaky_old` | 0.90 | 0.00 |
-| `natural_average` | 0.60 | 0.00 |
-| `simple_flow` | 0.50 | 0.00 |
-| `simple_flow_hygro_a` | 0.42 | 0.00 |
-| `simple_flow_hygro_b` | 0.35 | 0.00 |
-| `double_flow_standard` | 0.45 | 0.75 |
-| `double_flow_high_efficiency` | 0.40 | 0.85 |
-| `airtight_recent` | 0.35 | 0.00 |
-
-La séparation infiltration / mécanique est faite ainsi :
-
-```text
-base_infiltration_ach = 0.15 * ach_factor
-
-si ventilation naturelle :
-    infiltration_ach = default_ach * ach_factor
-    mechanical_ach = 0
-
-sinon :
-    infiltration_ach = 0.15 * ach_factor
-    mechanical_ach = max(0, default_ach - 0.15)
-
-legacy_ach_h = default_ach * ach_factor
-```
-
-Les valeurs sont arrondies à 2 décimales dans le dwelling généré.
-
-Le `recovery_efficiency` s’applique uniquement sur la composante mécanique.
-
-## 11. Ventilation Naturelle Pilotée
-
-Les scénarios d’été générés ajoutent :
-
-```json
-{
-  "default_ach": 0.0,
-  "smart_night_cooling": true,
-  "smart_ach": 4.0
-}
-```
-
-À chaque heure :
-
-```text
-si smart_night_cooling est actif :
-    si T_out < T_room : natural_ventilation_ach = smart_ach
-    sinon : natural_ventilation_ach = 0
-```
-
-Puis les overrides horaires éventuels ont priorité :
-
-```text
-si controls.natural_ventilation.hourly contient l’heure :
-    natural_ventilation_ach = entry.ach
-```
-
-## 12. Apports Internes
-
-Les apports internes sont constants par type de pièce :
-
-| Type de pièce | Gain interne W/m2 |
-|---|---:|
-| `living` | 5.0 |
-| `kitchen` | 5.0 |
-| `bedroom` | 3.0 |
-| `office` | 3.0 |
-| autres | 2.0 |
-
-Formule :
-
-```text
-Phi_internal = internal_gain_w_m2 * floor_area_m2
-```
-
-## 13. Couplage Entre Pièces
-
-Les liens thermiques sont non orientés dans l’intention métier, mais stockés sous forme `room_a`, `room_b`.
-
-Pour chaque lien :
-
-```text
-H_link = opening_factor * u_value_w_m2k * area_m2
-Phi_b_to_a = H_link * (T_b - T_a)
-```
-
-Ensuite :
-
-```text
-Phi_coupling_room_a += Phi_b_to_a
-Phi_coupling_room_b -= Phi_b_to_a
-```
-
-Valeurs par défaut quand l’interface ne fournit que la surface commune :
-
-```text
-u_value_w_m2k = 1.8
-opening_factor = 0.8
-area_m2 défaut = min(10.0, max(4.0, sqrt(area_room_b) * height_room_b))
-```
-
-L’interface actuelle envoie des liens manuels dédupliqués par paire.
-
-## 14. Bilan Horaire D’Une Pièce
-
-À chaque heure, le moteur calcule d’abord la température libre sans chauffage ni climatisation.
-
-Puissances :
-
-```text
-Phi_transmission = H_transmission * (T_out - T_room)
-Phi_ventilation = H_ventilation * (T_out - T_room)
-Phi_envelope = (H_transmission + H_ventilation) * (T_out - T_room)
-Phi_free = Phi_envelope + Phi_internal + Phi_solar + Phi_coupling
-```
-
-Température libre :
-
-```text
 T_free_next = T_room + dt / C_room * Phi_free
 ```
 
-Puis chauffage et climatisation sont calculés sur `T_free_next`.
-
-## 15. Chauffage
-
-Puissance requise pour atteindre la consigne au pas suivant :
+Le chauffage ou la climatisation cherche ensuite à ramener la pièce à la consigne, dans la limite de
+la puissance installée :
 
 ```text
-P_heat_required = max(0, (T_heat_setpoint - T_free_next) * C_room / dt)
+P_heat_required = max(0, (T_heat - T_free_next) * C_room / dt)
+P_cool_required = max(0, (T_free_next - T_cool) * C_room / dt)
+
+T_next = T_room + dt / C_room * (Phi_free + P_heat - P_cool)
 ```
 
-Puissance disponible :
+Convention : une puissance positive entre dans la pièce ; une puissance négative en sort. Le pas
+utilisé par les parcours SaaS est `dt = 1 h`. L'intégration est explicite : une faible inertie associée
+à un grand coefficient de pertes peut donc amplifier les erreurs numériques ou produire des pics.
 
-```text
-P_heat_max = sum(max_power_w des systèmes desservant la pièce)
-P_heat = min(P_heat_required, P_heat_max)
-```
+Le before et l'after sont simulés séparément à partir d'une même description du logement et d'une
+même série météo. Le scénario after n'applique que les overrides de la mesure étudiée. Cette symétrie
+annule une partie des biais communs, sans supprimer les interactions mal modélisées.
 
-Consommation finale de chauffage par vecteur énergétique :
+## 3. Localisation et météo annuelle
 
-```text
-P_heat_final_system = (P_heat * system.max_power_w / P_heat_max) / performance_system
-heating_final_kwh_by_energy[energy_vector] += P_heat_final_system * timestep_h / 1000
-```
+### Localisation
 
-`heating_electric_kwh` ne contient plus que la part électrique du chauffage.
-Les autres vecteurs sont exposés dans `heating_final_kwh_by_energy`, puis agrégés
-dans `heating_final_kwh` et `final_energy_kwh_by_energy`.
+Le ZIP code US est obligatoire et l'adresse est optionnelle. La résolution produit :
 
-Pour les PAC, `performance_ref.mode = temperature_curve` interpole le COP selon
-la température extérieure. Le champ `cop` reste le COP nominal de lecture rapide.
+- latitude et longitude ;
+- ville, État, county et county FIPS quand disponibles ;
+- fuseau IANA local ;
+- précision et fournisseur du géocodage ;
+- zone IECC/ASHRAE par county, uniquement comme contexte.
 
-Puissance chauffage générée par défaut :
+Le cache météo est mutualisé sur une grille arrondie à `0,1°`. Deux ZIP proches qui tombent dans la
+même cellule et le même fuseau réutilisent donc le même fichier météo ; le produit ne télécharge pas
+une année par ville. C'est un compromis volontaire entre localité et nombre de fichiers.
 
-```text
-max_power_w = max(1500, total_area_m2 * 95)
-```
+### Année historique réelle
 
-Systèmes de chauffage :
+Une année historique complète explicitement choisie est téléchargée via l'archive Open-Meteo avec
+le modèle `era5_seamless`, aux coordonnées de la cellule météo et dans le fuseau IANA du logement.
+Le 29 février est retiré : une simulation annuelle contient 8 760 heures. Cette année est un scénario
+contextuel daté, pas une promesse de climat futur ni une année « normale ».
 
-| Référence | Type | Énergie | Performance |
-|---|---|---|---:|
-| `electric_resistance` | `electric_resistance` | électricité | COP 1.00 |
-| `air_source_heat_pump_standard` | `heat_pump` | électricité | COP 2.0 à -7 °C, 3.2 à 7 °C, 4.0 à 15 °C |
-| `natural_gas_furnace_standard` | `furnace` | gaz naturel | rendement 0.80 |
-| `propane_furnace_standard` | `furnace` | propane | rendement 0.80 |
-
-Pour le profil `heat_pump_seller`, le dwelling initial utilise le chauffage existant :
-
-| Saisie actuelle | Système before |
-|---|---|
-| résistance électrique | `electric_resistance` |
-| furnace gaz naturel | `natural_gas_furnace_standard` |
-| furnace propane | `propane_furnace_standard` |
-| pompe à chaleur air-source | `air_source_heat_pump_standard` |
-
-Le retrofit PAC remplace le système par :
-
-```text
-air_source_heat_pump_standard, energy_vector = electricity, COP courbe temperature_curve
-```
-
-## 16. Climatisation
-
-La climatisation est ajoutée si `has_cooling = true`.
-
-Pièces desservies :
-
-```text
-living, bedroom, office
-```
-
-Si aucune pièce de ces types n’existe, toutes les pièces sont desservies.
-
-Puissance installée :
-
-```text
-max_power_w = max(1200, total_area_m2 * 70)
-```
-
-Système généré :
-
-```text
-system_ref = air_conditioner_standard
-type = air_conditioner
-EER = 3.0
-```
-
-Catalogues de froid :
-
-| Référence | Type | EER |
-|---|---|---:|
-| `air_conditioner_entry_level` | `air_conditioner` | 2.6 |
-| `air_conditioner_standard` | `air_conditioner` | 3.0 |
-| `air_conditioner_high_efficiency` | `air_conditioner` | 3.6 |
-| `reversible_heat_pump_standard` | `reversible_heat_pump` | 3.2 |
-
-Calcul :
-
-```text
-P_cool_required = max(0, (T_free_next - T_cool_setpoint) * C_room / dt)
-P_cool = min(P_cool_required, P_cool_max)
-P_cool_electric = sum((P_cool * system.max_power_w / P_cool_max) / EER_system)
-```
-
-La température finale est ensuite :
-
-```text
-Phi_final = Phi_free + P_heat - P_cool
-T_next = T_room + dt / C_room * Phi_final
-```
-
-## 17. Énergie Et Coût US
-
-Conversion puissance vers énergie :
-
-```text
-E_kWh = P_W * timestep_h / 1000
-```
-
-Totaux scénario :
-
-```text
-heating_thermal_kwh
-heating_final_kwh_by_energy
-heating_final_kwh
-heating_electric_kwh = heating_final_kwh_by_energy["electricity"]
-cooling_thermal_kwh
-cooling_electric_kwh
-electricity_kwh = heating_electric_kwh + cooling_electric_kwh
-final_energy_kwh_by_energy = heating_final_kwh_by_energy + cooling_electricity
-final_energy_kwh
-electricity_cost_usd = electricity_kwh * electricity_usd_kwh
-natural_gas_cost_usd = natural_gas_kwh / 29.308324 * natural_gas_usd_therm
-propane_cost_usd = propane_kwh / 26.803048 * propane_usd_gallon
-energy_cost_usd = sum(cost_by_energy)
-```
-
-Prix de travail utilisés si le scénario ne fournit pas le vecteur :
-
-| Énergie | Prix | Unité commerciale |
-|---|---:|---|
-| électricité | 0.18 | $/kWh |
-| gaz naturel | 1.50 | $/therm |
-| propane | 2.50 | $/gallon |
-
-Les conversions énergétiques utilisent 100 000 Btu par therm et 91 452 Btu
-par gallon de propane (U.S. EIA). Aucun KPI CO2 n'est généré pour le lancement
-US tant qu'une source électrique régionale, datée et versionnée n'est pas intégrée.
-
-## 18. Inconfort
-
-Par pièce :
-
-```text
-cold_degree_hours = sum(max(0, heating_setpoint - T_room) * timestep_h)
-hot_degree_hours = sum(max(0, T_room - cooling_setpoint) * timestep_h)
-```
-
-Les seuils génériques utilisés ailleurs dans le résumé sont :
-
-```text
-DISCOMFORT_COLD_THRESHOLD_C = 19.0
-DISCOMFORT_HOT_THRESHOLD_C = 26.0
-```
-
-## 19. Météo Générée
-
-Les scénarios non annuels utilisent une météo synthétique.
-
-Température extérieure :
-
-```text
-T_out = base_temp + amplitude * sin(2*pi*(hour_in_day - 8)/24)
-```
-
-Les trois profils synthétiques fixes sont indépendants de la zone climatique :
-
-| Profil | Base | Amplitude |
-|---|---:|---:|
-| `generic_heatwave_reference` | 29.0 | 7.0 |
-| `generic_summer_typical` | 24.5 | 5.5 |
-| `generic_winter_design` | 3.0 | 4.0 |
-
-Irradiance synthétique hiver :
-
-```text
-peak = max(0, sin(pi*(hour_in_day - 8)/8))
-north = 0
-east = 120*peak si h < 13, sinon 30*peak
-south = 280*peak
-west = 120*peak si h > 12, sinon 30*peak
-roof = 240*peak
-```
-
-Irradiance synthétique été :
-
-```text
-peak = max(0, sin(pi*(hour_in_day - 6)/13))
-north = 80*peak
-east = 520*peak si h < 13, sinon 160*peak
-south = 620*peak
-west = 520*peak si h > 12, sinon 160*peak
-roof = 760*peak
-```
-
-## 20. Météo Open-Meteo Annuelle
-
-Pour les scénarios annuels, les données Open-Meteo sont converties en météo thermique.
-
-À partir de :
+Variables utilisées :
 
 ```text
 temperature_2m
@@ -711,148 +93,431 @@ direct_radiation
 diffuse_radiation
 ```
 
-Conversion vers orientations :
+### Année météorologique typique
+
+Le scénario annuel de référence peut utiliser un TMY NSRDB/NLR, actuellement
+`GOES Typical Meteorological Year PSM v4`, référence par défaut `tmy-2024`. Un TMY assemble des
+mois représentatifs ; il ne correspond pas à une année civile vécue. Il convient mieux à une
+estimation annuelle centrale, mais ne décrit ni un hiver extrême ni une vague de chaleur précise.
+
+### Rayonnement reçu par les parois
+
+Le fichier fournit un rayonnement horizontal. ThermalTwin le répartit actuellement avec des poids
+horaires simplifiés :
 
 ```text
-north = diffuse * 0.35
-east = diffuse * 0.5 + direct * weight(hour, 5, 12)
-south = diffuse * 0.6 + direct * weight(hour, 8, 16)
-west = diffuse * 0.5 + direct * weight(hour, 12, 19)
-roof = shortwave
+north = 0.35 * diffuse
+east  = 0.50 * diffuse + direct * weight(hour, 5, 12)
+south = 0.60 * diffuse + direct * weight(hour, 8, 16)
+west  = 0.50 * diffuse + direct * weight(hour, 12, 19)
+roof  = shortwave
 ```
 
-avec :
+Ce calcul ne tient pas compte de la latitude solaire, du jour de l'année, de l'azimut solaire exact,
+de la pente réelle, de l'horizon ou des masques géométriques. C'est l'une des principales sources
+d'erreur, notamment pour le confort d'été et les toitures réfléchissantes.
+
+### Reproductibilité
+
+Chaque météo sauvegardée contient le fournisseur, dataset, modèle, année ou référence TMY, cellule
+et coordonnées source, station/grid, fuseau, date de création, version moteur et SHA-256 des 8 760
+points. Le rapport reprend ces informations. Une reproduction exacte exige de conserver le fichier
+météo identifié par ce hash, les réponses du projet, les catalogues de paramètres et la même version
+du moteur.
+
+## 4. Enveloppe, géométrie et inertie
+
+### Transmission
+
+Pour une surface opaque :
 
 ```text
-weight(hour, start, end) = 0 si hour < start ou hour > end
-sin(pi*(hour - start)/(end - start)) sinon
+UA_surface = U * A * b_boundary
 ```
 
-Les valeurs négatives ou absentes sont ramenées à 0.
+| Limite | `b_boundary` |
+|---|---:|
+| Extérieur | 1,00 |
+| Mitoyen/voisin | 0,50 |
+| Espace non chauffé | 0,70 |
+| Sol | 0,60 |
 
-## 21. Scénarios Et Retrofits
+Les facteurs mitoyen, espace non chauffé et sol sont des raccourcis constants. Ils ne calculent ni la
+température du voisin, ni celle du vide sanitaire, ni le transfert transitoire vers le sol.
 
-Les scénarios sont construits en paire before / after.
-
-Les changements actuels :
-
-### Isolation toiture
+Les ponts thermiques sont ajoutés comme fraction globale de tout le `UA` :
 
 ```text
-surface.type == roof
-U_after = 0.18 W/m2.K
+H_transmission = (1 + thermal_bridge_factor) * sum(UA)
 ```
 
-### Toiture réfléchissante
+Ce n'est pas un calcul par longueurs et coefficients linéiques `psi * L`. Si les U saisis sont déjà
+des valeurs effectives issues d'une mesure ou d'un modèle complet, cette majoration peut compter
+deux fois certains ponts thermiques.
+
+### R-value toiture
+
+La R-value US saisie doit représenter l'assemblage effectif à la frontière du volume conditionné :
+plancher de l'attic pour un attic ventilé, roof deck pour un attic conditionné ou une toiture compacte.
 
 ```text
-surface.type == roof
-albedo_after = 0.75
+1 R_US = 0.1761101838 m2.K/W
+U_roof = 1 / (R_US * 0.1761101838)
 ```
 
-### Remplacement fenêtres
+La valeur proposée par défaut est R-49, mais ce n'est ni une prescription de code ni la bonne cible
+universelle. Le commercial doit saisir la R-value réellement vendue. Le modèle traite cette R-value
+comme effective et homogène : compression, gaps, humidité, framing fraction et défauts de pose ne
+sont pas calculés séparément.
+
+### Valeurs de repli par époque US
+
+Ces valeurs servent aux murs/planchers et à la toiture uniquement lorsque l'utilisateur ne fournit
+pas une R-value. Elles sont des hypothèses MVP non calibrées, pas des caractéristiques statistiques
+US validées :
+
+| Époque | Mur U | Toiture U | Plancher U | Ponts | Capacité J/m2.K |
+|---|---:|---:|---:|---:|---:|
+| Avant 1940 | 1,80 | 1,50 | 1,20 | 0,18 | 190 000 |
+| 1940–1979 | 1,00 | 0,70 | 0,80 | 0,15 | 175 000 |
+| 1980–1999 | 0,65 | 0,40 | 0,55 | 0,12 | 165 000 |
+| 2000–2009 | 0,45 | 0,28 | 0,40 | 0,10 | 160 000 |
+| 2010+ | 0,28 | 0,18 | 0,25 | 0,06 | 155 000 |
+
+Les coefficients qualitatifs d'isolation multiplient ensuite les U (`poor`, `standard`, `renovated`,
+etc.). L'âge seul prédit mal un logement rénové et les pratiques varient fortement par État, climat,
+ossature et code applicable. Ces valeurs sont une priorité de remplacement par des distributions
+ResStock conditionnées par vintage, zone, type de mur et type de logement.
+
+### Géométrie générée
 
 ```text
-window_ref_after = double_glazing_low_e
-U_after = 1.2 W/m2.K
-g_after = 0.50
+volume = floor_area * ceiling_height
+side_width = sqrt(floor_area)
+gross_wall_area = entered_wall_length * height
+net_wall_area = max(1 m2, gross_wall_area - windows_same_orientation)
+roof_area = floor_area
 ```
 
-### Protection solaire
+Une toiture générée utilise par défaut pente `25°`, azimut sud et surface égale à la surface de
+plancher. Une pente réelle devrait augmenter la surface (`floor_area / cos(tilt)`), et un logement à
+plusieurs niveaux ne doit pas exposer tous ses planchers à la toiture. Les simplifications de géométrie
+peuvent dominer l'erreur même avec un U exact.
+
+### Inertie 1R1C
 
 ```text
-shutter_after = roller_shutter_standard
-solar_factor_closed_after = 0.08
-solar_factor_open_after = 1.0
+C_room = floor_area * equivalent_capacity
 ```
 
-### Pompe à chaleur
+Une seule capacité représente l'air, la structure, les cloisons et le mobilier. Le modèle n'a pas de
+température de surface ni de paroi multicouche dynamique. Les maxima/minima horaires et le déphasage
+estival sont donc beaucoup plus sensibles à cette valeur que l'énergie annuelle de chauffage.
+
+## 5. Fenêtres, solaire et gains internes
+
+| Vitrage | U W/m2.K | facteur solaire g |
+|---|---:|---:|
+| Simple ancien | 5,0 | 0,85 |
+| Double ancien | 2,8 | 0,70 |
+| Double standard | 1,6 | 0,55 |
+| Double low-e | 1,2 | 0,50 |
+| Triple | 0,8 | 0,45 |
 
 ```text
-system_ref_after = air_source_heat_pump_standard
-type_after = heat_pump
-energy_vector_after = electricity
-performance_after = temperature_curve
+Phi_window_solar = area * irradiance_orientation * g * shutter * mask
+Phi_opaque_solar = area * irradiance * (1 - albedo) * solar_to_room_factor * mask
 ```
 
-## 22. Contrôles De Volets En Été
+Les valeurs vitrage sont des archétypes, pas les données NFRC du produit posé. Le masque est un
+coefficient constant et les protections suivent un horaire déclaratif. Pour une toiture, les albedos
+de travail sont 0,18 sombre, 0,25 moyen/inconnu, 0,40 clair et 0,75 après cool-roof. Le passage de
+l'énergie solaire absorbée à la pièce utilise `solar_to_room_factor` = 0,0225 attic ventilé, 0,05
+plafond incliné et 0,07 toiture plate. Ces trois facteurs sont empiriques et doivent être remplacés par
+un nœud d'attic/roof deck ou calibrés.
 
-Les scénarios été et annuel ajoutent un contrôle de volets.
+Gains internes constants :
 
-Valeurs :
+| Pièce | W/m2 |
+|---|---:|
+| Séjour, cuisine | 5 |
+| Chambre, bureau | 3 |
+| Escalier | 1 |
+| Autre | 2 |
+
+Ils n'ont ni horaire d'occupation, ni appareils, ni humidité. Ils peuvent sous-estimer les pointes de
+cuisine et surestimer une maison vide.
+
+## 6. Air neuf, infiltration et pièces
 
 ```text
-default_opening_ratio = 1.0
+q = ACH * volume / 3600
+H_air = rho_air * cp_air * q
 ```
 
-Si usage `day_closed` :
+avec `rho_air = 1,2 kg/m3` et `cp_air = 1005 J/kg.K`. Les composantes infiltration, ventilation
+mécanique et ouverture naturelle sont séparées. La récupération ne s'applique qu'au débit mécanique.
+
+| Profil | ACH total de travail | Récupération |
+|---|---:|---:|
+| Ancien fuyard naturel | 0,90 | 0 |
+| Naturel moyen | 0,60 | 0 |
+| Mécanique simple | 0,50 | 0 |
+| Hygro A / B | 0,42 / 0,35 | 0 |
+| Double flux standard / performante | 0,45 / 0,40 | 0,75 / 0,85 |
+| Récent étanche | 0,35 | 0 |
+
+Ces catégories conservent des concepts européens et ne décrivent pas correctement tous les logements
+US. Surtout, un ACH naturel supposé n'est pas un ACH50 de blower-door : les deux ne sont pas
+interchangeables sans un modèle dépendant du climat, de la hauteur et de l'exposition. L'infiltration
+constante est probablement l'une des premières causes d'erreur annuelle.
+
+Le free-cooling estival synthétique ouvre à `4 ACH` dès que l'extérieur est plus froid que la pièce,
+sans contrainte d'heure, d'humidité, de pluie, de bruit ou d'occupation. Il peut surestimer fortement
+le confort réel.
+
+Les pièces sont reliées par :
 
 ```text
-opening_ratio = 0.1 entre 8h et 19h
+H_link = opening_factor * U_link * area
 ```
 
-Si usage `partial` :
+avec repli `U_link = 1,8 W/m2.K` et `opening_factor = 0,8`. Il s'agit d'une conductance, pas d'un
+débit d'air à travers une porte.
+
+## 7. Chauffage, climatisation et gaines
+
+### Chauffage
+
+| Système | Performance de travail |
+|---|---|
+| Résistance électrique | 1,00 |
+| Furnace gaz | rendement constant 0,80 |
+| Furnace propane | rendement constant 0,80 |
+| PAC air-source | COP 2,0 à -7 °C ; 3,2 à 7 °C ; 4,0 à 15 °C |
+
+La PAC est interpolée linéairement entre les points et constante au-delà. Le modèle n'inclut pas la
+baisse de capacité, les cycles, le dégivrage, la chaleur auxiliaire, le thermostat ni un équipement
+réel. Pour un furnace, le champ interne historique s'appelle `cop`, mais représente ici un rendement
+fuel-to-heat simplifié ; `0,80` est un proxy de furnace standard, pas un AFUE mesuré du logement.
+
+Puissance de repli :
 
 ```text
-opening_ratio = 0.25 entre 8h et 19h
+P_heat_max = max(1 500 W, floor_area * 95 W/m2)
 ```
 
-Si usage `rare` :
+### Climatisation
 
 ```text
-opening_ratio = 0.75 entre 8h et 19h
+P_cool_max = max(1 200 W, floor_area * 70 W/m2)
+performance standard = 3,0 W froid / W électrique
 ```
 
-Si usage `none` :
+Le champ historique s'appelle `eer`, mais la valeur dimensionnelle W/W est un **COP froid**, pas
+un EER US en Btu/Wh. Il ne faut jamais afficher « EER 3.0 » à un client américain. Le modèle ne
+calcule que la charge sensible : pas de latent, humidité, SHR, débit d'air, fan power, cycling ou
+SEER2. La climatisation est donc un composant particulièrement peu validé.
+
+### Efficacité de distribution des gaines
+
+L'énergie finale est divisée par l'efficacité de distribution ; la chaleur utile livrée à la pièce ne
+change pas :
+
+| Emplacement | Efficacité de travail après audit 2026-08-03 |
+|---|---:|
+| Sans gaines / volume conditionné / attic conditionné | 1,00 |
+| Sous-sol non conditionné | 0,90 |
+| Mixte ou inconnu | 0,85 |
+| Attic ventilé / crawlspace / garage | 0,80 |
+
+La révision remplace les anciennes valeurs 0,92 / 0,90 / 0,85. Le DOE indique qu'un réseau typique
+peut perdre environ 20–30 % de l'air transporté ; `0,80` est donc un meilleur centre de travail pour
+les gaines en espace non conditionné. Ce n'est pas une prédiction par logement : duct-blaster,
+pourcentage de gaines hors volume, isolation et températures d'attic doivent remplacer ce proxy.
+
+## 8. Énergie, prix et confort
 
 ```text
-opening_ratio = 1.0 partout
+energy_kwh = power_w * timestep_h / 1000
+gas_cost = gas_kwh / 29.308324 * USD_per_therm
+propane_cost = propane_kwh / 26.803048 * USD_per_gallon
 ```
 
-## 23. Orientations
+Conversions : `1 therm = 100 000 Btu` et `1 gallon propane = 91 452 Btu` (U.S. EIA). Prix de repli :
 
-Les orientations utilisées par les surfaces et fenêtres sont ramenées en quatre directions cardinales plus toiture.
+| Énergie | Valeur | Statut |
+|---|---:|---|
+| Électricité | 0,18 $/kWh | Exemple, à remplacer par le tarif client |
+| Gaz naturel | 1,50 $/therm | Exemple, à remplacer par la facture locale |
+| Propane | 2,50 $/gal | Exemple, à remplacer par le prix livré |
 
-Règle :
+Ces prix ne sont pas des paramètres physiques et ne doivent pas être « calibrés » globalement. Les
+tarifs fixes, taxes, tranches, frais de livraison et variation saisonnière ne sont pas modélisés. Le
+gain en dollars est donc proportionnel au prix saisi et peut être faux même si le gain en kWh est bon.
+
+Le KPI CO2 commercial est désactivé : les facteurs valent zéro. Il ne doit revenir qu'avec une source
+électrique régionale, une année et une version explicites.
+
+Inconfort :
 
 ```text
-azimuth < 45 ou >= 315 -> north
-45 <= azimuth < 135 -> east
-135 <= azimuth < 225 -> south
-225 <= azimuth < 315 -> west
-surface roof ou tilt < 60 -> roof
+cold_degree_hours = sum(max(0, 19 °C - T_room) * dt)
+hot_degree_hours  = sum(max(0, T_room - 26 °C) * dt)
 ```
 
-## 24. Comparaison Before / After
+Dans le parcours SaaS, les valeurs proposées par défaut sont 68 °F (20 °C) pour le chauffage et
+78 °F (25,6 °C) pour la climatisation de jour comme de nuit ; l'utilisateur peut les modifier.
+La température initiale annuelle de repli est 20 °C. Les générateurs de scénarios hors SaaS conservent
+des replis historiques par saison (19 °C chauffage annuel/hiver, 26 °C refroidissement annuel/été).
 
-Le moteur applique les overrides du scénario after sur une copie du dwelling.
+Les consignes saisies par le client sont utilisées pour piloter les systèmes ; les seuils génériques de
+résumé restent 19 °C / 26 °C. La température d'air seule ne mesure ni température opérative, ni
+humidité, ni courant d'air, ni confort adaptatif.
 
-Puis il simule :
+## 9. Contrôles automatiques existants
+
+Des warnings non bloquants sont produits pour :
+
+- fenêtres > 60 % de la surface de plancher d'une pièce ;
+- ventilation totale > 3 ACH ;
+- chauffage insuffisant au point météo le plus froid ;
+- température simulée > 45 °C.
+
+Ils détectent quelques sorties manifestement suspectes, mais ne constituent pas une validation du
+modèle. Il manque notamment des contrôles sur la surface totale exposée, les R-values incompatibles
+avec l'assemblage, la puissance HVAC par zone, le bilan annuel et les discontinuités horaires.
+
+## 10. Ce qui peut induire les plus grosses erreurs
+
+Par ordre de risque actuel :
+
+1. **Mauvaise frontière thermique.** Confondre insulation at attic floor et roof deck change la
+   surface et le volume conditionné ; aucun réglage numérique ne corrige cette erreur de structure.
+2. **Infiltration supposée.** Une description « drafty/average/tight » ne remplace pas un blower-door.
+3. **Géométrie simplifiée.** Surface de toiture, murs réellement exposés, nombre d'étages et fenêtres
+   ont un effet quasi linéaire sur les charges.
+4. **Solaire approximatif.** L'orientation horaire MVP peut déplacer ou amplifier les apports.
+5. **HVAC générique.** COP, capacité, AFUE, auxiliaire et gaines peuvent fausser énergie et confort.
+6. **Archétypes par âge.** Les U et inerties actuels ne sont pas encore des distributions US validées.
+7. **Usages constants.** Occupation, consignes, ouvrants et gains internes réels sont inconnus.
+8. **1R1C.** Les pics, le déphasage et le confort radiant sont moins fiables que les tendances annuelles.
+9. **Météo de grille.** Elle décrit une cellule, pas le microclimat, l'ombre, l'altitude exacte ou le
+   futur. Une seule année historique peut être atypique.
+10. **Prix.** Le coût peut sembler précis malgré un tarif incomplet ou obsolète.
+
+Un résultat before/after peut aussi être biaisé favorablement si la mesure change en réalité
+l'étanchéité, l'humidité ou les gaines mais que le scénario ne modifie que le U de toiture.
+
+## 11. Comment mesurer les performances du modèle
+
+### Étape A — tests physiques et benchmark
+
+Créer un jeu de cas déterministes : boîte adiabatique, décroissance analytique RC, `UA * deltaT`,
+absence de gains, conservation des échanges entre pièces, COP/rendement et limites de puissance.
+Ajouter ensuite des cas ASHRAE Standard 140/BESTEST comparables. L'objectif est de trouver les bugs
+de calcul avant toute calibration sur des factures.
+
+Comparer un échantillon de maisons types à EnergyPlus/OpenStudio ou ResStock, composant par
+composant : chauffage utile, refroidissement sensible, heures hors consigne et delta before/after.
+Une concordance sur la consommation totale seule peut masquer des erreurs qui se compensent.
+
+### Étape B — protocole pilote mesuré
+
+Pour chaque logement pilote, collecter avec consentement :
+
+- 12 à 24 mois de factures électricité/gaz/propane, idéalement données horaires ou quotidiennes ;
+- météo correspondant exactement à la période de facture ;
+- consignes et horaires, occupation approximative et autres gros usages ;
+- surface/plans, orientation, pente et photos de l'attic ;
+- R-value, épaisseur, matériau, continuité et emplacement réel de l'isolant ;
+- blower-door ACH50 et, pour systèmes gainés, duct leakage ;
+- marque/modèle, AFUE, SEER2/HSPF2, tables capacité/COP et chauffage auxiliaire ;
+- mesures de température intérieure avant/après, dans plusieurs pièces si possible.
+
+Séparer l'énergie HVAC des autres usages quand c'est possible. Sinon, ajuster une base non-HVAC
+explicite et conserver son incertitude.
+
+### Étape C — métriques et séparation des données
+
+Mesurer au minimum :
 
 ```text
-before_result = simulate_1r1c(dwelling_before, scenario_before)
-after_result = simulate_1r1c(dwelling_after, scenario_after)
-delta = before - after
+MBE ou NMBE      = biais moyen signé
+CV(RMSE)         = dispersion normalisée
+MAE              = erreur absolue lisible
+erreur du delta  = (saving_predicted - saving_measured)
+couverture       = part des mesures dans l'intervalle annoncé
 ```
 
-Pour les métriques d’énergie, un delta positif signifie généralement une économie.
+À titre de repère de calibration, les lignes directrices FEMP/ASHRAE citées par le DOE donnent pour
+des modèles calibrés : mensuel MBE ±5 % et CV(RMSE) 15 % ; horaire MBE ±10 % et CV(RMSE) 30 %.
+Ce sont des seuils de calibration de bâtiment, pas la preuve qu'un modèle prédit correctement une
+rénovation future.
 
-Pour les températures et inconforts, le rapport interprète ensuite selon le contexte.
+Séparer obligatoirement :
 
-## 25. Limites Actuelles À Garder En Tête
+- calibration/train : logements utilisés pour ajuster les paramètres ;
+- validation : logements jamais vus pendant l'ajustement ;
+- test avant/après : chantiers avec mesure post-travaux et normalisation météo.
 
-Le modèle actuel est volontairement simplifié :
+Publier les résultats par zone climatique, époque, type d'attic, fuel et qualité des données, pas
+seulement une moyenne nationale.
 
-- pas de modèle radiatif intérieur détaillé ;
-- pas de température de surface intérieure ;
-- pas de paroi multicouche dynamique ;
-- pas de stockage solaire dans les murs ;
-- pas de vraie géométrie solaire ;
-- pas d’ombrage géométrique ;
-- pas de débit VMC pièce par pièce réel ;
-- pas de réseau aéraulique ;
-- pas de puissance système saisie finement par pièce ;
-- les chaudières gaz/fioul/bois utilisent le champ `cop` comme rendement simplifié ;
-- les ponts thermiques sont un facteur global, pas des longueurs `psi * L` ;
-- les pièces sont couplées par une conductance simple, sans modèle de porte ni débit d’air réel ;
-- la météo synthétique est un ordre de grandeur, pas une météo réglementaire.
+### Étape D — incertitude
+
+Faire varier les entrées incertaines dans des plages documentées (R effectif, infiltration, gains,
+consigne, surface, gaines, COP) par analyse de sensibilité ou Monte Carlo. Le rapport commercial doit
+à terme afficher une plage P10–P90 ou basse/centrale/haute, jamais uniquement un nombre décimal.
+
+## 12. Roadmap d'amélioration du modèle
+
+Ordre recommandé :
+
+1. Instrumenter 10–20 maisons pilotes et obtenir au moins quelques chantiers before/after.
+2. Ajouter la saisie ou mesure ACH50, duct leakage et caractéristiques exactes de l'équipement.
+3. Remplacer les U/inerties par des distributions ResStock conditionnées par région, vintage,
+   ossature et type de logement ; conserver la provenance/version de chaque tirage.
+4. Remplacer la projection solaire par une transposition physique utilisant position solaire,
+   azimut, pente et DNI/DHI ; ajouter des masques simples.
+5. Ajouter un nœud attic/roof deck puis humidité/latent si le marché vend le confort d'été.
+6. Utiliser des courbes constructeur PAC/AC avec capacité, dégivrage et auxiliaire ; séparer COP,
+   AFUE, EER2/SEER2 dans le schéma au lieu du champ legacy `cop/eer`.
+7. Calibrer seulement les paramètres observables et globalement identifiables ; ne pas ajuster dix
+   coefficients pour reproduire une facture unique.
+8. Versionner moteur et catalogue séparément, geler les artefacts météo et ajouter une suite
+   ASHRAE 140 à la CI.
+9. N'autoriser des promesses plus précises qu'après validation hors échantillon et mise en place
+   d'intervalles d'incertitude.
+
+## 13. Décisions prises lors de cet audit
+
+- Les valeurs d'enveloppe, inertie, ventilation, solaire et HVAC restent explicitement marquées
+  `mvp_working_assumptions_to_calibrate` : aucune source ne justifie de les rendre universelles.
+- Les efficacités de gaines hors volume conditionné ont été rendues moins optimistes, conformément
+  à l'ordre de grandeur DOE de 20–30 % de pertes courantes.
+- Le champ de climatisation `eer` est désormais documenté comme un COP W/W legacy pour éviter une
+  interprétation erronée en EER US.
+- Les prix restent modifiables et ne sont pas remplacés par une moyenne nationale qui serait vite
+  obsolète et peu pertinente localement.
+- Les facteurs CO2 restent neutralisés.
+
+## 14. Sources de référence pour la suite
+
+- Météo historique : Open-Meteo Historical Weather API, modèle demandé `era5_seamless`.
+- TMY : NLR NSRDB GOES TMY PSM v4.
+- Archétypes et validation US : NLR/DOE ResStock Technical Reference et End-Use Load Profiles.
+- Conversions fuels : U.S. EIA, *Energy units and calculators explained*.
+- Pertes de gaines : U.S. DOE Energy Saver, ordre de grandeur 20–30 % pour un réseau typique.
+- Mesure et vérification : U.S. DOE FEMP, *M&V Guidelines*, version 5.0.
+- Benchmark de simulation : ASHRAE Standard 140 / BESTEST et cas EnergyPlus associés.
+
+Sources de code faisant foi :
+
+- `thermal_model/simulation.py`
+- `thermal_model/static_losses.py`
+- `thermal_model/weather.py`
+- `thermal_model/physical_validation.py`
+- `scripts/create_customer_experience.py`
+- `thermal_saas/business_flow.py`
+- `data/reference/*.json`

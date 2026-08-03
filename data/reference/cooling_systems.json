@@ -1,9 +1,9 @@
 {
   "schema_version": "0.1",
   "data_quality": "mvp_working_assumptions_to_calibrate",
-  "description": "Simplified cooling equipment performance assumptions for sensible cooling.",
+  "description": "Simplified sensible-cooling performance assumptions. The legacy field is named eer, but its dimensionless W/W values are cooling COP values, not US EER ratings in Btu/Wh.",
   "units": {
-    "eer": "cooling W / electric W"
+    "eer": "legacy field: dimensionless cooling COP in thermal W / electric W"
   },
   "systems": [
     {
