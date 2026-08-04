@@ -637,21 +637,8 @@ def _auth_payload(
 def _report_branding_payload(
     organization: dict[str, Any],
     branding: dict[str, Any] | None,
-) -> dict[str, Any] | None:
-    if branding is None:
-        return None
-    if not any(
-        branding.get(field)
-        for field in (
-            "logo_url",
-            "primary_color",
-            "phone",
-            "email_contact",
-            "website",
-            "legal_mention",
-        )
-    ):
-        return None
+) -> dict[str, Any]:
+    branding = branding or {}
     return {
         "organization_name": organization["name"],
         "logo_url": branding.get("logo_url"),
