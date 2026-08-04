@@ -162,6 +162,18 @@ Generate report fixtures:
 python scripts/generate_report_fixtures.py
 ```
 
+Run the US model-validation matrix:
+
+```bash
+python scripts/run_model_validation.py \
+  --weather-type historical \
+  --weather-year 2023 \
+  --output-dir outputs/model_validation/historical_2023
+```
+
+The protocol, KPI definitions, first baseline, and interpretation rules are in
+[docs/ModelValidationBenchmark.md](docs/ModelValidationBenchmark.md).
+
 Create a beta user through the admin API:
 
 ```bash

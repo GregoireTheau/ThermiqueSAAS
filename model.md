@@ -1,6 +1,6 @@
 # Modèle thermique ThermalTwin
 
-État du code au 3 août 2026 — moteur `1r1c-mvp-0.1`.
+État du code au 4 août 2026 — moteur `1r1c-mvp-0.2`.
 
 Ce document est la référence technique du modèle réellement exécuté. ThermalTwin est un outil
 d'aide à la vente : ses résultats sont des estimations indicatives, pas un HERS rating, un Manual J,
@@ -384,9 +384,16 @@ Des warnings non bloquants sont produits pour :
 - chauffage insuffisant au point météo le plus froid ;
 - température simulée > 45 °C.
 
+Le banc `scripts/run_model_validation.py` ajoute, sur une matrice US annuelle,
+la fermeture du bilan énergétique, la non-négativité des énergies, la monotonie
+des principaux paramètres et la conservation de la puissance totale des systèmes
+centraux. Il marque aussi les cas à demande de chauffage négligeable ou limités
+par la puissance installée. Le protocole et la baseline sont dans
+`docs/ModelValidationBenchmark.md`.
+
 Ils détectent quelques sorties manifestement suspectes, mais ne constituent pas une validation du
 modèle. Il manque notamment des contrôles sur la surface totale exposée, les R-values incompatibles
-avec l'assemblage, la puissance HVAC par zone, le bilan annuel et les discontinuités horaires.
+avec l'assemblage et les discontinuités horaires.
 
 ## 10. Ce qui peut induire les plus grosses erreurs
 
@@ -417,6 +424,11 @@ Créer un jeu de cas déterministes : boîte adiabatique, décroissance analytiq
 absence de gains, conservation des échanges entre pièces, COP/rendement et limites de puissance.
 Ajouter ensuite des cas ASHRAE Standard 140/BESTEST comparables. L'objectif est de trouver les bugs
 de calcul avant toute calibration sur des factures.
+
+Première étape réalisée le 4 août 2026 : 10 archétypes US et 23 variations
+one-at-a-time ont été exécutés sur météo historique 2023. Les 33 runs et 140
+contrôles passent avec `1r1c-mvp-0.2`. Cette baseline mesure la cohérence et la
+sensibilité, pas encore l'erreur face à une référence indépendante.
 
 Comparer un échantillon de maisons types à EnergyPlus/OpenStudio ou ResStock, composant par
 composant : chauffage utile, refroidissement sensible, heures hors consigne et delta before/after.
@@ -501,6 +513,9 @@ Ordre recommandé :
 - Les prix restent modifiables et ne sont pas remplacés par une moyenne nationale qui serait vite
   obsolète et peu pertinente localement.
 - Les facteurs CO2 restent neutralisés.
+- Depuis `1r1c-mvp-0.2`, la puissance maximale d'un système central est une
+  capacité totale répartie entre les pièces desservies au prorata de leur surface ;
+  elle n'est plus dupliquée dans chaque pièce.
 
 ## 14. Sources de référence pour la suite
 

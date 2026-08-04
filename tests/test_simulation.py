@@ -60,6 +60,29 @@ def test_duct_distribution_losses_increase_final_energy_not_delivered_heat():
     assert losses["totals"]["heating_final_kwh"] > baseline["totals"]["heating_final_kwh"]
 
 
+def test_central_system_capacity_is_shared_between_served_rooms():
+    dwelling = _resolved_dwelling()
+    scenario = load_scenario("data/examples/scenario_simple.json")
+    dwelling["systems"]["heating"] = [
+        {
+            "id": "central_heating",
+            "type": "electric_resistance",
+            "served_rooms": ["living_room", "bedroom"],
+            "max_power_w": 1000.0,
+            "performance_ref": {"mode": "constant", "cop": 1.0},
+            "distribution_efficiency": 1.0,
+        },
+    ]
+
+    results = simulate_1r1c(dwelling, scenario, 1.2, 1005.0)
+    peak_delivered_w = max(
+        sum(room["heating_power_w"] for room in hour["rooms"].values())
+        for hour in results["hourly"]
+    )
+
+    assert peak_delivered_w <= 1000.0 + 1e-9
+
+
 def test_heatwave_after_reflective_roof_simulation():
     dwelling = _resolved_dwelling()
     scenario = load_scenario("data/examples/scenario_heatwave.json")
