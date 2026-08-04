@@ -290,7 +290,7 @@ def build_report_model(comparison: dict[str, Any]) -> dict[str, Any]:
             "model": "Hourly 1R1C thermal simulation, room by room",
             "engine_version": experiment.get("weather_trace", {}).get(
                 "engine_version",
-                "1r1c-mvp-0.1",
+                "1r1c-mvp-0.2",
             ),
             "reported_values": (
                 "Calculated from before/after simulations; no measured performance "
@@ -2024,7 +2024,7 @@ def _render_context_params(
         (
             "Reproducibility",
             escape(
-                f"Engine {trace.get('engine_version', '1r1c-mvp-0.1')} · "
+                f"Engine {trace.get('engine_version', '1r1c-mvp-0.2')} · "
                 f"weather {str(trace.get('hourly_sha256', 'not recorded'))[:16]}"
             ),
         ),

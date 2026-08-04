@@ -65,8 +65,8 @@ def simulate_1r1c(
         )
         for room_id, room in rooms.items()
     }
-    heating_by_room = _index_systems_by_room(dwelling["systems"]["heating"])
-    cooling_by_room = _index_systems_by_room(dwelling["systems"]["cooling"])
+    heating_by_room = _index_systems_by_room(dwelling["systems"]["heating"], rooms)
+    cooling_by_room = _index_systems_by_room(dwelling["systems"]["cooling"], rooms)
 
     hourly_results: list[dict[str, Any]] = []
     totals = {
@@ -446,11 +446,24 @@ def _sum_energy(
     return sum(energy_from_power(hour[power_key], timestep_h) for hour in room_hours)
 
 
-def _index_systems_by_room(systems: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+def _index_systems_by_room(
+    systems: list[dict[str, Any]],
+    rooms: dict[str, dict[str, Any]],
+) -> dict[str, list[dict[str, Any]]]:
     systems_by_room: dict[str, list[dict[str, Any]]] = {}
     for system in systems:
-        for room_id in system["served_rooms"]:
-            systems_by_room.setdefault(room_id, []).append(system)
+        served_rooms = [room_id for room_id in system["served_rooms"] if room_id in rooms]
+        served_area_m2 = sum(rooms[room_id]["floor_area_m2"] for room_id in served_rooms)
+        for room_id in served_rooms:
+            allocated_system = {
+                **system,
+                "max_power_w": (
+                    system["max_power_w"]
+                    * rooms[room_id]["floor_area_m2"]
+                    / served_area_m2
+                ),
+            }
+            systems_by_room.setdefault(room_id, []).append(allocated_system)
     return systems_by_room
 
 
