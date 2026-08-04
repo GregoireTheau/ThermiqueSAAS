@@ -23,6 +23,15 @@ const state = {
   brandingEditorOpen: false,
 };
 
+const DEFAULT_BRAND_COLOR = "#1E3A5F";
+const BRAND_PALETTES = [
+  {id: "midnight", name: "Midnight", primary: "#1E3A5F", light: "#E8ECEF", dark: "#1E3A5F"},
+  {id: "ocean", name: "Ocean", primary: "#075985", light: "#E6EEF3", dark: "#075985"},
+  {id: "indigo", name: "Indigo", primary: "#3730A3", light: "#EBEAF6", dark: "#3730A3"},
+  {id: "violet", name: "Violet", primary: "#6D28D9", light: "#F0EAFB", dark: "#6D28D9"},
+  {id: "charcoal", name: "Charcoal", primary: "#374151", light: "#EBECEE", dark: "#374151"},
+];
+
 const els = {
   email: document.querySelector("#email"),
   password: document.querySelector("#password"),
@@ -63,7 +72,9 @@ const els = {
   brandingForm: document.querySelector("#brandingForm"),
   brandingLogo: document.querySelector("#brandingLogo"),
   brandingLogoPreview: document.querySelector("#brandingLogoPreview"),
-  brandingColorPicker: document.querySelector("#brandingColorPicker"),
+  brandingPaletteOptions: document.querySelector("#brandingPaletteOptions"),
+  brandingCustomColorSection: document.querySelector("#brandingCustomColorSection"),
+  brandingCustomColor: document.querySelector("#brandingCustomColor"),
   brandingPrimaryColor: document.querySelector("#brandingPrimaryColor"),
   brandingPhone: document.querySelector("#brandingPhone"),
   brandingEmail: document.querySelector("#brandingEmail"),
@@ -190,16 +201,39 @@ async function loadBranding() {
 function applyBranding(branding) {
   state.branding = branding;
   state.brandingLogoUrl = branding.logo_url || "";
-  els.brandingPrimaryColor.value = branding.primary_color || "#1a5c3a";
-  els.brandingColorPicker.value = /^#[0-9a-fA-F]{6}$/.test(els.brandingPrimaryColor.value)
+  els.brandingPrimaryColor.value = branding.primary_color || DEFAULT_BRAND_COLOR;
+  els.brandingCustomColor.value = /^#[0-9a-fA-F]{6}$/.test(els.brandingPrimaryColor.value)
     ? els.brandingPrimaryColor.value
-    : "#1a5c3a";
+    : DEFAULT_BRAND_COLOR;
   els.brandingPhone.value = branding.phone || "";
   els.brandingEmail.value = branding.email_contact || "";
   els.brandingWebsite.value = branding.website || "";
   els.brandingLegalMention.value = branding.legal_mention || "";
   renderLogoPreview();
+  renderPaletteOptions();
   renderBrandingSummary();
+}
+
+function renderPaletteOptions() {
+  const selectedColor = els.brandingPrimaryColor.value.toUpperCase();
+  els.brandingPaletteOptions.innerHTML = BRAND_PALETTES.map((palette) => `
+    <button
+      type="button"
+      class="paletteSwatch${selectedColor === palette.primary ? " selected" : ""}"
+      data-brand-color="${palette.primary}"
+      aria-pressed="${selectedColor === palette.primary}"
+      title="${palette.name}"
+    >
+      <span class="palettePreview" style="--palette-primary:${palette.primary};--palette-light:${palette.light};--palette-dark:${palette.dark}"></span>
+      <span>${palette.name}</span>
+    </button>
+  `).join("");
+}
+
+function selectBrandColor(color) {
+  els.brandingPrimaryColor.value = color;
+  els.brandingCustomColor.value = color;
+  renderPaletteOptions();
 }
 
 function collectBranding() {
@@ -259,7 +293,7 @@ function renderBrandingSummary() {
     || branding.website
     || branding.legal_mention
   );
-  const color = branding.primary_color || "#d7dde5";
+  const color = branding.primary_color || DEFAULT_BRAND_COLOR;
   els.brandingSummary.innerHTML = `
     <div class="brandingSummaryRow">
       <div class="brandingIdentity">
@@ -1611,12 +1645,18 @@ els.brandingSummary.addEventListener("click", (event) => {
   if (event.target.dataset.openBranding !== undefined) openBrandingEditor();
 });
 els.brandingLogo.addEventListener("change", handleLogoUpload);
-els.brandingColorPicker.addEventListener("input", () => {
-  els.brandingPrimaryColor.value = els.brandingColorPicker.value;
+els.brandingPaletteOptions.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-brand-color]");
+  if (button) selectBrandColor(button.dataset.brandColor);
+});
+els.brandingCustomColor.addEventListener("input", () => {
+  els.brandingPrimaryColor.value = els.brandingCustomColor.value;
+  renderPaletteOptions();
 });
 els.brandingPrimaryColor.addEventListener("input", () => {
   if (/^#[0-9a-fA-F]{6}$/.test(els.brandingPrimaryColor.value)) {
-    els.brandingColorPicker.value = els.brandingPrimaryColor.value;
+    els.brandingCustomColor.value = els.brandingPrimaryColor.value;
+    renderPaletteOptions();
   }
 });
 els.profileSelect.addEventListener("change", () => {

@@ -82,13 +82,21 @@
             <input id="brandingLogo" type="file" accept="image/png,image/jpeg,image/svg+xml">
           </label>
           <div id="brandingLogoPreview" class="logoPreview"></div>
-          <label>
-            Primary color
-            <div class="colorControl">
-              <input id="brandingColorPicker" type="color" value="#1a5c3a">
-              <input id="brandingPrimaryColor" type="text" value="#1a5c3a" maxlength="7">
-            </div>
-          </label>
+          <fieldset class="paletteFieldset">
+            <legend>Report color palette</legend>
+            <p class="fieldHint">Choose a print-safe palette. Status and chart colors remain unchanged.</p>
+            <div id="brandingPaletteOptions" class="paletteOptions" role="group" aria-label="Report color palette"></div>
+          </fieldset>
+          <details id="brandingCustomColorSection" class="customColorSection">
+            <summary>Custom (advanced)</summary>
+            <label>
+              Custom primary color
+              <div class="colorControl">
+                <input id="brandingCustomColor" type="color" value="#1E3A5F">
+                <input id="brandingPrimaryColor" type="text" value="#1E3A5F" maxlength="7">
+              </div>
+            </label>
+          </details>
           <label>
             Phone
             <input id="brandingPhone" type="text">
@@ -180,6 +188,6 @@
     <a href="/legal" target="_blank" rel="noopener">Terms · Privacy · Legal notice</a>
   </footer>
 
-  <script src="/static/app.js?v=20260802-us-weather"></script>
+  <script src="/static/app.js?v=20260804-report-branding"></script>
 </body>
 </html>

@@ -99,6 +99,19 @@ def test_storage_persists_organization_branding_and_injects_report(tmp_path):
     assert "--c-accent: #1a5c3a;" in html
 
 
+def test_storage_uses_organization_name_and_default_report_palette_without_branding(tmp_path):
+    db_path = tmp_path / "thermal_saas.sqlite"
+    organization = create_organization("Acme Roofing", "window_seller", db_path)
+    project = create_project(organization["id"], "Johnson Residence", None, db_path)
+    save_project_answers(project["id"], _answers(), db_path)
+
+    simulation_runs = create_simulation_runs(project["id"], db_path)["simulation_runs"]
+    html = get_simulation_report_html(simulation_runs[0]["id"], db_path)
+
+    assert "Acme Roofing" in html
+    assert "--c-accent: #1E3A5F;" in html
+
+
 def test_init_db_migrates_legacy_schema(tmp_path):
     db_path = tmp_path / "legacy.sqlite"
     with sqlite3.connect(db_path) as connection:

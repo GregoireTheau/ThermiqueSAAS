@@ -1,3 +1,5 @@
+from datetime import date
+
 from thermal_model import (
     build_report_model,
     compare_scenarios,
@@ -7,7 +9,12 @@ from thermal_model import (
     render_report_html,
     resolve_dwelling_references,
 )
-from thermal_model.reporting import get_comfort_mode, get_room_status
+from thermal_model.reporting import (
+    BRAND_PALETTES,
+    _contrast_ratio,
+    get_comfort_mode,
+    get_room_status,
+)
 from thermal_saas.business_flow import run_profile_experience
 
 
@@ -108,9 +115,9 @@ def test_render_report_html_contains_report_sections_without_hourly_traces():
     html = render_report_html(report)
 
     assert "<!doctype html>" in html
-    assert "Simulation reflective roof - summer comfort" in html
+    assert "Thermal Study" in html
     assert "Executive Summary" in html
-    assert "Scenario</div>Thermal simulation during a heatwave episode" in html
+    assert "Scenario: Thermal simulation during a heatwave episode" in html
     assert "roofing" not in html
     assert "Scenarios" not in html
     assert "Context" in html
@@ -121,6 +128,7 @@ def test_render_report_html_contains_report_sections_without_hourly_traces():
     assert "Reading the Results" in html
     assert "Room Details" in html
     assert "Report generated automatically" in html
+    assert "ThermalTwin · ThermalTwin" not in html
     assert "Simulation limits" not in html
     assert "24 h" in html
     assert "°F" in html
@@ -131,7 +139,56 @@ def test_render_report_html_contains_report_sections_without_hourly_traces():
     assert "CO₂" not in html
     assert "kg CO2" not in html
     assert ".00 °C" not in html
-    assert comparison["dwelling_id"] in html
+    assert comparison["dwelling_id"] not in html
+    assert comparison["dwelling_name"] in html
+
+
+def test_branded_report_header_is_client_facing_and_keeps_semantic_colors():
+    comparison = _comparison(
+        "data/examples/scenario_heatwave_before.json",
+        "data/examples/scenario_heatwave.json",
+    )
+    report = build_report_model(comparison)
+    report["source"]["dwelling_id"] = "client_2"
+    report["source"]["dwelling_name"] = "Johnson Residence"
+    report["source"]["location"].update({
+        "address": "12 Peachtree Street",
+        "city": "Atlanta",
+        "state": "Georgia",
+        "postal_code": "30303",
+    })
+
+    html = render_report_html(
+        report,
+        branding={
+            "organization_name": "Acme Roofing",
+            "logo_url": "data:image/png;base64,AAAA",
+            "primary_color": "#3730A3",
+            "phone": "(404) 555-0100",
+            "email_contact": "hello@acme.example",
+            "website": "acme.example",
+        },
+    )
+    header = html.split('<header class="report-header">', 1)[1].split("</header>", 1)[0]
+
+    assert "Acme Roofing" in header
+    assert "12 Peachtree Street" in header
+    assert "Atlanta" in header
+    assert date.today().strftime("%B") in header
+    assert "Johnson Residence" in header
+    assert "client_2" not in header
+    assert 'class="header-project-info"' in header
+    assert "--c-accent: #3730A3;" in html
+    assert "--c-gain: #3730A3;" not in html
+    assert "--c-gain: #15803d;" in html
+    assert 'class="kpi-number"' in html
+    assert 'class="kpi-unit"' in html
+
+
+def test_report_palette_presets_meet_wcag_aa_contrast():
+    for primary, (light, dark) in BRAND_PALETTES.items():
+        assert _contrast_ratio(primary, "#FFFFFF") >= 4.5
+        assert _contrast_ratio(dark, light) >= 4.5
 
 
 def test_report_context_only_mentions_cooling_setpoints_when_cooling_exists():
@@ -317,7 +374,7 @@ def test_business_report_presentation_is_profile_specific():
     assert ">Jun<" in reflective_result["simulation_runs"][0]["report_html"]
     assert ">May<" not in reflective_result["simulation_runs"][0]["report_html"]
     assert (
-        "Scenario</div>Thermal simulation from June to September before and after "
+        "Scenario: Thermal simulation from June to September before and after "
         "adding a reflective roof coating."
         in reflective_result["simulation_runs"][0]["report_html"]
     )
@@ -347,7 +404,6 @@ def test_business_report_presentation_is_profile_specific():
     assert "Final energy saved" not in [
         kpi["label"] for kpi in reflective["report"]["primary_kpis"]
     ]
-    assert "real heatwave zoom" in reflective["report_html"]
     assert "simulated temperature hour by hour" in reflective["report_html"]
 
     windows_result = run_profile_experience(

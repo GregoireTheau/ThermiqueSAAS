@@ -10,6 +10,15 @@ from typing import Any
 DISCOMFORT_COLD_THRESHOLD_C = 19.0
 DISCOMFORT_HOT_THRESHOLD_C = 26.0
 
+DEFAULT_BRAND_PRIMARY = "#1E3A5F"
+BRAND_PALETTES = {
+    "#1E3A5F": ("#E8ECEF", "#1E3A5F"),
+    "#075985": ("#E6EEF3", "#075985"),
+    "#3730A3": ("#EBEAF6", "#3730A3"),
+    "#6D28D9": ("#F0EAFB", "#6D28D9"),
+    "#374151": ("#EBECEE", "#374151"),
+}
+
 PROFILE_BY_ADAPTATION = {
     "heat_pump": "heat_pump_seller",
     "roof_insulation": "roof_insulation_seller",
@@ -310,7 +319,8 @@ def render_report_html(
     narrative = report["narrative"]
     headline = report["headline"]
     energy = report["energy_breakdown"]
-    generated_date = date.today().strftime("%d/%m/%Y")
+    today = date.today()
+    generated_date = f"{today.strftime('%B')} {today.day}, {today.year}"
     branding = _normalize_branding(branding)
     profiles_by_room = {
         profile["room_id"]: profile
@@ -348,7 +358,7 @@ def render_report_html(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Thermal report - {escape(source["dwelling_id"])}</title>
+  <title>Thermal Study - {escape(_client_facing_reference(source))}</title>
   <style>
     :root {{
       color-scheme: light;
@@ -360,6 +370,8 @@ def render_report_html(
       --c-muted: #64748b;
       --c-accent: #1d4ed8;
       --c-accent-light: #dbeafe;
+      --c-accent-dark: #1d4ed8;
+      --c-accent-contrast: #ffffff;
       --c-gain: #15803d;
       --c-gain-light: #dcfce7;
       --c-loss: #c2410c;
@@ -383,34 +395,23 @@ def render_report_html(
       padding: 34px 30px 42px;
     }}
     .report-header {{
+      border-top: 6px solid var(--c-accent);
       border-bottom: 1px solid var(--c-border);
-      padding-bottom: 16px;
+      padding: 20px 0 18px;
       margin-bottom: 18px;
       page-break-inside: avoid;
     }}
     .header-top {{
       display: grid;
-      grid-template-columns: 180px 1fr 220px;
-      gap: 20px;
-      align-items: center;
-    }}
-    .logo {{
-      width: 126px;
-      height: 40px;
-      border: 1px solid var(--c-border);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--c-accent);
-      font-weight: 700;
-      letter-spacing: .04em;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, .72fr);
+      gap: 24px;
+      align-items: start;
     }}
     .brand-block {{
       display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 12px;
-      align-items: center;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
       min-width: 0;
     }}
     .brand-logo-img {{
@@ -422,20 +423,51 @@ def render_report_html(
       font-size: 1.4rem;
       font-weight: 750;
       color: var(--c-text);
+      overflow-wrap: anywhere;
+    }}
+    .brand-mark {{
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      background: var(--c-accent);
+      color: var(--c-accent-contrast);
+      font-size: 18px;
+      font-weight: 800;
     }}
     .brand-contact {{
       color: var(--c-muted);
       font-size: 12px;
-      margin-top: 2px;
+      margin-top: 5px;
+      overflow-wrap: anywhere;
     }}
-    .header-center {{
-      text-align: center;
+    .header-project-info {{
+      min-width: 0;
+      padding: 12px 14px;
+      border: 1px solid var(--c-border);
+      border-left: 4px solid var(--c-accent);
+      border-radius: 8px;
+      background: var(--c-surface);
     }}
-    .header-divider {{
-      width: 70%;
-      height: 1px;
-      background: var(--c-border);
-      margin: 12px auto;
+    .project-info-row {{
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: 10px;
+      padding: 3px 0;
+      overflow-wrap: anywhere;
+    }}
+    .header-title {{
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--c-border);
+    }}
+    .header-subtitle {{
+      margin: 6px 0 0;
+      color: var(--c-muted);
+      font-size: 15px;
     }}
     .legal-mention {{
       margin-top: 6px;
@@ -445,7 +477,6 @@ def render_report_html(
     h1, h2, h3 {{ margin: 0; line-height: 1.15; }}
     h1 {{
       font-size: 26px;
-      text-align: center;
       font-weight: 750;
     }}
     h2 {{
@@ -466,21 +497,6 @@ def render_report_html(
       font-weight: 750;
       text-transform: uppercase;
       letter-spacing: 0;
-    }}
-    .ref-box {{
-      text-align: right;
-      color: var(--c-muted);
-      font-size: 13px;
-    }}
-    .header-meta {{
-      display: grid;
-      grid-template-columns: 1fr 1.6fr .7fr;
-      gap: 12px;
-      margin-top: 16px;
-      padding: 12px;
-      background: var(--c-surface);
-      border: 1px solid var(--c-border);
-      border-radius: 8px;
     }}
     section {{
       margin-top: 24px;
@@ -508,8 +524,8 @@ def render_report_html(
       color: var(--c-text);
     }}
     .alert-cold {{
-      background: var(--c-accent-light);
-      border-left: 4px solid var(--c-accent);
+      background: #dbeafe;
+      border-left: 4px solid #1d4ed8;
       color: var(--c-text);
     }}
       .info-note {{
@@ -539,14 +555,29 @@ def render_report_html(
       min-height: 132px;
     }}
     .kpi-value {{
-      font-size: 38px;
+      font-size: clamp(27px, 3.1vw, 36px);
       font-weight: 780;
-      line-height: 1;
+      line-height: 1.05;
       margin: 9px 0 8px;
-      color: var(--c-neutral);
+      color: var(--c-accent-dark);
+      min-width: 0;
     }}
-    .kpi-value.gain, .gain {{ color: var(--c-gain); }}
-    .kpi-value.loss, .loss {{ color: var(--c-loss); }}
+    .kpi-number {{
+      display: block;
+      white-space: nowrap;
+    }}
+    .kpi-unit {{
+      display: block;
+      margin-top: 5px;
+      color: var(--c-muted);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.2;
+      white-space: normal;
+    }}
+    .gain {{ color: var(--c-gain); }}
+    .loss {{ color: var(--c-loss); }}
+    .kpi-value.gain, .kpi-value.loss {{ color: var(--c-accent-dark); }}
     .kpi-sub {{
       color: var(--c-muted);
       font-size: 13px;
@@ -724,6 +755,15 @@ def render_report_html(
       .print-action {{ display: none; }}
       body {{ font-size: 12px; }}
       .context-grid {{ grid-template-columns: 1fr; }}
+      .header-top {{ grid-template-columns: minmax(0, 1fr) 280px; }}
+      .kpi-value {{ font-size: 29px; }}
+    }}
+    @media (max-width: 680px) {{
+      main {{ padding: 22px 18px 32px; }}
+      .header-top, .summary-grid, .room-tables {{ grid-template-columns: 1fr; }}
+      .header-top {{ gap: 16px; }}
+      .kpi {{ min-height: 0; }}
+      .kpi-value {{ font-size: 34px; }}
     }}
   </style>
 </head>
@@ -797,24 +837,28 @@ def _report_location(location: dict[str, Any]) -> dict[str, Any]:
 
 
 def _normalize_branding(branding: dict[str, Any] | None) -> dict[str, Any] | None:
-    if not branding:
-        return None
     cleaned = {
         key: value.strip() if isinstance(value, str) else value
-        for key, value in branding.items()
+        for key, value in (branding or {}).items()
     }
-    return cleaned if any(cleaned.values()) else None
+    cleaned["organization_name"] = cleaned.get("organization_name") or "ThermalTwin"
+    cleaned["primary_color"] = cleaned.get("primary_color") or DEFAULT_BRAND_PRIMARY
+    return cleaned
 
 
 def _render_branding_css(branding: dict[str, Any] | None) -> str:
-    if not branding:
-        return ""
-    primary_color = branding.get("primary_color")
-    if not primary_color:
-        return ""
+    primary_color = str((branding or {}).get("primary_color") or DEFAULT_BRAND_PRIMARY)
+    palette_key = primary_color.upper()
+    light_color, dark_color = BRAND_PALETTES.get(
+        palette_key,
+        (_mix_hex(primary_color, "#FFFFFF", 0.90), _accessible_on_white(primary_color)),
+    )
+    contrast_color = "#FFFFFF" if _contrast_ratio(primary_color, "#FFFFFF") >= 4.5 else "#0F172A"
     return f"""
       --c-accent: {escape(primary_color)};
-      --c-gain: {escape(primary_color)};
+      --c-accent-light: {escape(light_color)};
+      --c-accent-dark: {escape(dark_color)};
+      --c-accent-contrast: {escape(contrast_color)};
     """
 
 
@@ -824,27 +868,7 @@ def _render_report_header(
     generated_date: str,
     branding: dict[str, Any] | None,
 ) -> str:
-    if not branding:
-        return f"""
-    <header class="report-header">
-      <div class="header-top">
-        <div class="logo">THERMAL</div>
-        <h1>{escape(experiment["title"])}</h1>
-        <div class="ref-box">
-          <div><strong>Reference</strong></div>
-          <div>{escape(source["dwelling_id"])}</div>
-          <div>{escape(generated_date)}</div>
-        </div>
-      </div>
-      <div class="header-meta">
-        <div><div class="label">Home</div>{escape(source["dwelling_id"])}</div>
-        <div><div class="label">Scenario</div>{escape(_format_scenario_summary(experiment))}</div>
-        <div><div class="label">Duration</div>{_format_duration(experiment)}</div>
-      </div>
-      <div class="print-action"><button type="button" onclick="printReport()">Print / PDF</button></div>
-    </header>
-"""
-
+    branding = branding or {}
     organization_name = branding.get("organization_name") or "ThermalTwin"
     contact = _join_non_empty(
         branding.get("phone"),
@@ -855,7 +879,7 @@ def _render_report_header(
     logo_html = (
         f'<img class="brand-logo-img" src="{escape(logo_url)}" alt="Logo">'
         if logo_url
-        else f'<div class="brand-name">{escape(organization_name)}</div>'
+        else f'<div class="brand-mark" aria-hidden="true">{escape(organization_name[:1].upper())}</div>'
     )
     location = source.get("location", {})
     location_text = _join_non_empty(
@@ -864,32 +888,27 @@ def _render_report_header(
         location.get("state"),
         location.get("postal_code"),
     )
-    project_name = source.get("dwelling_name") or source["dwelling_id"]
-    scenario_label = experiment.get("adaptation_label") or _scenario_intervention_label(experiment)
+    project_name = _client_facing_reference(source)
+    scenario_label = _format_scenario_summary(experiment)
     return f"""
     <header class="report-header">
       <div class="header-top">
         <div class="brand-block">
           {logo_html}
           <div>
+            <div class="brand-name">{escape(organization_name)}</div>
             <div class="brand-contact">{escape(contact)}</div>
           </div>
         </div>
-        <div class="header-center">
-          <div class="header-divider"></div>
-          <h1>Thermal Study — {escape(project_name)}</h1>
-          <p>Scenario: {escape(scenario_label)}</p>
-        </div>
-        <div class="ref-box">
-          <div>{escape(location_text)}</div>
-          <div>{escape(generated_date)}</div>
-          <div><strong>Reference</strong> {escape(source["dwelling_id"])}</div>
+        <div class="header-project-info">
+          <div class="project-info-row"><span class="label">Property</span><span>{escape(location_text or "Address not provided")}</span></div>
+          <div class="project-info-row"><span class="label">Date</span><span>{escape(generated_date)}</span></div>
+          <div class="project-info-row"><span class="label">Reference</span><span>{escape(project_name)}</span></div>
         </div>
       </div>
-      <div class="header-meta">
-        <div><div class="label">Home</div>{escape(source["dwelling_id"])}</div>
-        <div><div class="label">Report prepared by</div>{escape(organization_name)}</div>
-        <div><div class="label">Duration</div>{_format_duration(experiment)}</div>
+      <div class="header-title">
+        <h1>Thermal Study</h1>
+        <p class="header-subtitle">Scenario: {escape(scenario_label)}</p>
       </div>
       <div class="print-action"><button type="button" onclick="printReport()">Print / PDF</button></div>
     </header>
@@ -897,15 +916,14 @@ def _render_report_header(
 
 
 def _render_report_footer(branding: dict[str, Any] | None) -> str:
-    if not branding:
-        return '<footer class="footer">Report generated automatically · ThermalTwin</footer>'
-    parts = [
+    branding = branding or {}
+    parts = _unique_non_empty(
         branding.get("organization_name"),
         branding.get("phone"),
         branding.get("email_contact"),
         branding.get("website"),
         "ThermalTwin",
-    ]
+    )
     legal = branding.get("legal_mention")
     legal_html = (
         f'<div class="legal-mention">{escape(legal)}</div>'
@@ -914,14 +932,75 @@ def _render_report_footer(branding: dict[str, Any] | None) -> str:
     )
     return f"""
     <footer class="footer">
-      {escape(_join_non_empty(*parts))}
+      Report generated automatically · {escape(_join_non_empty(*parts))}
       {legal_html}
     </footer>
 """
 
 
+def _client_facing_reference(source: dict[str, Any]) -> str:
+    name = str(source.get("dwelling_name") or "").strip()
+    technical_id = str(source.get("dwelling_id") or "").strip()
+    if name and name != technical_id:
+        return name
+    readable = technical_id.replace("_", " ").replace("-", " ").strip()
+    return readable.title() or "Customer property"
+
+
+def _hex_to_rgb(color: str) -> tuple[int, int, int]:
+    normalized = color.lstrip("#")
+    return tuple(int(normalized[index:index + 2], 16) for index in (0, 2, 4))
+
+
+def _mix_hex(color: str, target: str, target_weight: float) -> str:
+    source_rgb = _hex_to_rgb(color)
+    target_rgb = _hex_to_rgb(target)
+    mixed = tuple(
+        round(source + (destination - source) * target_weight)
+        for source, destination in zip(source_rgb, target_rgb, strict=True)
+    )
+    return "#" + "".join(f"{channel:02X}" for channel in mixed)
+
+
+def _relative_luminance(color: str) -> float:
+    channels = []
+    for channel in _hex_to_rgb(color):
+        value = channel / 255.0
+        channels.append(value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4)
+    return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+
+
+def _contrast_ratio(first: str, second: str) -> float:
+    lighter, darker = sorted(
+        (_relative_luminance(first), _relative_luminance(second)),
+        reverse=True,
+    )
+    return (lighter + 0.05) / (darker + 0.05)
+
+
+def _accessible_on_white(color: str) -> str:
+    candidate = color
+    for _ in range(10):
+        if _contrast_ratio(candidate, "#FFFFFF") >= 4.5:
+            return candidate
+        candidate = _mix_hex(candidate, "#000000", 0.15)
+    return "#0F172A"
+
+
 def _join_non_empty(*values: Any) -> str:
     return " · ".join(str(value).strip() for value in values if str(value or "").strip())
+
+
+def _unique_non_empty(*values: Any) -> list[str]:
+    unique = []
+    seen = set()
+    for value in values:
+        cleaned = str(value or "").strip()
+        normalized = cleaned.casefold()
+        if cleaned and normalized not in seen:
+            unique.append(cleaned)
+            seen.add(normalized)
+    return unique
 
 
 def _build_room_report(room_id: str, room_delta: dict[str, Any]) -> dict[str, Any]:
@@ -1916,14 +1995,24 @@ def _render_executive_summary(report: dict[str, Any]) -> str:
 
 def _render_kpi(label: str, metric: dict[str, Any]) -> str:
     value_class = _value_class(metric["delta"])
+    value, unit = _format_kpi_delta(metric)
+    unit_html = f'<span class="kpi-unit">{unit}</span>' if unit else ""
     return f"""
         <div class="kpi">
           <div class="label">{escape(label)}</div>
-          <div class="kpi-value {value_class}">{_format_delta(metric)}</div>
+          <div class="kpi-value {value_class}"><span class="kpi-number">{value}</span>{unit_html}</div>
           <div class="kpi-sub">{_format_before_after(metric)}</div>
           <div class="kpi-sub">{_format_pct(metric)} variation</div>
         </div>
 """
+
+
+def _format_kpi_delta(metric: dict[str, Any]) -> tuple[str, str]:
+    value = _format_number(metric["delta"], 2)
+    display_unit = _display_unit(metric["unit"])
+    if display_unit == "$":
+        return f"${value}", ""
+    return value, escape(display_unit)
 
 
 def _primary_discomfort_metric(report: dict[str, Any]) -> dict[str, Any]:

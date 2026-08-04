@@ -258,6 +258,69 @@ summary {
   padding: 3px;
 }
 
+.paletteFieldset {
+  min-width: 0;
+  margin: 14px 0 10px;
+  padding: 0;
+  border: 0;
+}
+
+.paletteFieldset legend {
+  padding: 0;
+  font-weight: 700;
+}
+
+.fieldHint {
+  margin: 4px 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.paletteOptions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.paletteSwatch {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-height: 42px;
+  margin: 0;
+  padding: 5px 7px;
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+}
+
+.paletteSwatch:hover,
+.paletteSwatch.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.palettePreview {
+  height: 28px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--palette-primary) 0 48%, var(--palette-light) 48% 76%, var(--palette-dark) 76%);
+}
+
+.customColorSection {
+  margin: 10px 0 14px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.customColorSection summary {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .logoPreview {
   min-height: 44px;
   margin-top: 10px;

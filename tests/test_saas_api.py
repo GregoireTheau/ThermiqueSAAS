@@ -45,16 +45,22 @@ def test_frontend_app_is_served(tmp_path, monkeypatch):
 
     assert response.status_code == 200
     assert "ThermalTwin" in response.text
-    assert "/static/app.js?v=20260802-us-weather" in response.text
+    assert "/static/app.js?v=20260804-report-branding" in response.text
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
 
     script = client.get("/static/app.js").text
+    styles = client.get("/static/styles.css").text
     assert "Area ft²" in script
     assert "Height ft" in script
     assert "°F" in script
     assert "cost_saved_usd" in script
     assert "cost_saved_eur" not in script
+    assert "BRAND_PALETTES" in script
+    assert "brandingPaletteOptions" in response.text
+    assert 'id="brandingCustomColor"' in response.text
+    assert "paletteSwatch" in styles
+    assert 'id="brandingColorPicker"' not in response.text
 
 
 def test_legal_page_is_served(tmp_path, monkeypatch):
